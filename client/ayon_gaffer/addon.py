@@ -53,7 +53,6 @@ class GafferAddon(
     enabled = True
 
     def initialize(self, module_settings):
-        self.log.info("INIT GAFFER")
         self.enabled = True
 
     def add_implementation_envs(self, env, _app):
@@ -75,13 +74,7 @@ class GafferAddon(
         return [".gfr"]
 
     def get_plugin_paths(self):
-        """Ftrack plugin paths."""
-        self.log.info("setting gaffer plugin paths")
-        return {
-            #"publish": [os.path.join(RVX_MODULE_DIR, "plugins", "publish")],
-            #"load": [os.path.join(RVX_MODULE_DIR, "plugins", "load")],
-            #"create": [os.path.join(RVX_MODULE_DIR, "plugins", "create")]
-        }
+        return {}
 
     def tray_init(self):
         # doing nothing in here for now

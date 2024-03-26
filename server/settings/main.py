@@ -7,7 +7,6 @@ from ayon_server.settings import (
 )
 
 
-
 def validate_json_dict(value):
     if not value.strip():
         return "{}"
