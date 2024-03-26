@@ -140,3 +140,4 @@ cython_debug/
 *.sublime-workspace
 *.sublime-project
 package
+install_ayon_gaffer.sh
