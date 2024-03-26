@@ -2,8 +2,13 @@ from openpype.pipeline import (
     load,
     get_representation_path,
 )
-from ayon_gaffer.api import get_root, imprint_container
-from ayon_gaffer.api.lib import set_node_color, arrange, make_box
+from openpype.hosts.gaffer.api import get_root, imprint_container
+from openpype.hosts.gaffer.api.lib import (
+    set_node_color,
+    arrange,
+    make_box,
+    find_camera_paths
+)
 
 import Gaffer
 import GafferScene
@@ -40,7 +45,7 @@ class GafferLoadAlembicCamera(load.LoaderPlugin):
 
         path_filter = GafferScene.PathFilter("all")
         box.addChild(path_filter)
-        path_filter["paths"].setValue(IECore.StringVectorData(["*"]))
+
         create_set["filter"].setInput(path_filter["out"])
 
         box["BoxOut"]["in"].setInput(create_set["out"])
@@ -53,6 +58,14 @@ class GafferLoadAlembicCamera(load.LoaderPlugin):
         # Set the filename
         path = self.filepath_from_context(context).replace("\\", "/")
         box["fileName"].setValue(path)
+
+        # Find all cameras in the loaded scene
+        cameras = find_camera_paths(reader["out"])
+        if len(cameras) > 0:
+            camera_filter = cameras
+        else:
+            camera_filter = ['*']
+        path_filter["paths"].setValue(IECore.StringVectorData(camera_filter))
 
         # Layout the nodes within the box
         arrange(box.children(Gaffer.Node))
@@ -79,7 +92,7 @@ class GafferLoadAlembicCamera(load.LoaderPlugin):
         node["fileName"].setValue(path)
 
         # Update the imprinted representation
-        node["user"]["representation"].SetValue(str(representation["_id"]))
+        node["user"]["representation"].setValue(str(representation["_id"]))
 
     def remove(self, container):
         node = container["_node"]

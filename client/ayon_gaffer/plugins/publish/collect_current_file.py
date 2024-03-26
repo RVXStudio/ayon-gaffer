@@ -1,6 +1,7 @@
 import pyblish.api
 
-from ayon_gaffer.api import get_root
+from openpype.lib import get_version_from_path
+from openpype.hosts.gaffer.api import get_root
 
 
 class CollectCurrentScriptGaffer(pyblish.api.ContextPlugin):
@@ -16,7 +17,15 @@ class CollectCurrentScriptGaffer(pyblish.api.ContextPlugin):
         script = get_root()
         assert script, "Must have active Gaffer script"
         context.data["currentScript"] = script
+        self.log.info(f"Collected currentScript:[{script}],")
 
         # Store path to current file
         filepath = script["fileName"].getValue()
         context.data['currentFile'] = filepath
+        self.log.info(f"Collected currentFile:[{filepath}],")
+
+        # store the version
+        context.data["version"] = get_version_from_path(filepath)
+        self.log.info(f"Collected version:[{context.data['version']}],")
+
+

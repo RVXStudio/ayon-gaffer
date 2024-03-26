@@ -23,7 +23,7 @@ class GafferSetFrameRangeLoader(load.LoaderPlugin):
 
     def load(self, context, name, namespace, data):
 
-        from ayon_gaffer.api import get_root
+        from openpype.hosts.gaffer.api import get_root
         import GafferUI
 
         version = context['version']
@@ -63,7 +63,7 @@ class GafferSetFrameRangeWithHandlesLoader(load.LoaderPlugin):
 
     def load(self, context, name, namespace, data):
 
-        from ayon_gaffer.api import get_root
+        from openpype.hosts.gaffer.api import get_root
         import GafferUI
 
         version = context['version']

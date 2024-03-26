@@ -2,8 +2,8 @@ from openpype.pipeline import (
     load,
     get_representation_path,
 )
-from ayon_gaffer.api import get_root, imprint_container
-from ayon_gaffer.api.lib import set_node_color
+from openpype.hosts.gaffer.api import get_root, imprint_container
+from openpype.hosts.gaffer.api.lib import set_node_color
 
 import Gaffer
 
@@ -11,7 +11,7 @@ import Gaffer
 class GafferLoadReference(load.LoaderPlugin):
     """Reference a gaffer scene"""
 
-    families = ["gafferScene"]
+    families = ["gafferNodes"]
     representations = ["gfr"]
 
     label = "Reference Gaffer Scene"
@@ -25,7 +25,7 @@ class GafferLoadReference(load.LoaderPlugin):
 
         path = self.filepath_from_context(context).replace("\\", "/")
 
-        reference = Gaffer.Reference()
+        reference = Gaffer.Reference(name)
         script.addChild(reference)
         reference.load(path)
 
@@ -53,7 +53,7 @@ class GafferLoadReference(load.LoaderPlugin):
         node.load(path)
 
         # Update the imprinted representation
-        node["user"]["representation"].SetValue(str(representation["_id"]))
+        node["user"]["representation"].setValue(str(representation["_id"]))
 
     def remove(self, container):
         node = container["_node"]

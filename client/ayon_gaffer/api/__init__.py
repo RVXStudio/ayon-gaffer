@@ -8,17 +8,11 @@ from .pipeline import (
 
 )
 
-from .plugin import (
-    GafferCreator
-)
-
 __all__ = [
     "GafferHost",
 
     "imprint_container",
 
     "set_root",
-    "get_root",
-
-    "GafferCreator"
+    "get_root"
 ]

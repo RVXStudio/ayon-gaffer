@@ -3,53 +3,56 @@
 import os
 import sys
 import json
-import logging
 
 import Gaffer  # noqa
 
 from openpype.host import HostBase, IWorkfileHost, ILoadHost, IPublishHost
+from openpype.hosts.gaffer.api.nodes import RenderLayerNode
 
 import pyblish.api
-
-from openpype.lib import (
-    register_event_callback,
-    emit_event
-)
 
 from openpype.pipeline import (
     register_creator_plugin_path,
     register_loader_plugin_path,
-    AVALON_CONTAINER_ID
+    AVALON_CONTAINER_ID,
+    get_current_asset_name,
+    get_current_task_name,
 )
-from ayon_gaffer import GAFFER_HOST_DIR
+from openpype.hosts.gaffer import GAFFER_HOST_DIR
+import openpype.hosts.gaffer.api.nodes
+import openpype.hosts.gaffer.api.lib
+from openpype.lib import Logger
 
-log = logging.getLogger("ayon_gaffer")
+log = Logger.get_logger("openpype.hosts.gaffer.api.pipeline")
 
 PLUGINS_DIR = os.path.join(GAFFER_HOST_DIR, "plugins")
 PUBLISH_PATH = os.path.join(PLUGINS_DIR, "publish")
 LOAD_PATH = os.path.join(PLUGINS_DIR, "load")
 CREATE_PATH = os.path.join(PLUGINS_DIR, "create")
 INVENTORY_PATH = os.path.join(PLUGINS_DIR, "inventory")
-JSON_PREFIX = "JSON::"
 
 self = sys.modules[__name__]
 self.root = None
 
+# A prefix used for storing JSON blobs in string plugs
+JSON_PREFIX = "JSON:::"
 
-def set_root(root):
+
+def set_root(root: Gaffer.ScriptNode):
     self.root = root
 
 
-def get_root():
+def get_root() -> Gaffer.ScriptNode:
     return self.root
 
 
 class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
     name = "gaffer"
-    context_plug = "openpype_context"
+
+    _context_plug = "openpype_context"
+
     def __init__(self, application):
         super(GafferHost, self).__init__()
-        self._has_been_setup = False
         self.application = application
 
     def install(self):
@@ -59,20 +62,7 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         register_loader_plugin_path(LOAD_PATH)
         register_creator_plugin_path(CREATE_PATH)
 
-        log.info("Installing callbacks ... ")
         self._register_callbacks()
-        # register_event_callback("init", on_init)
-        # self._register_callbacks()
-        # register_event_callback("before.save", before_save)
-        # register_event_callback("save", on_save)
-        # register_event_callback("open", on_open)
-        register_event_callback("new", on_new)
-
-        # pyblish.api.register_callback(
-        #     "instanceToggled", on_pyblish_instance_toggled
-        # )
-
-        self._has_been_setup = True
 
     def has_unsaved_changes(self):
         script = get_root()
@@ -97,10 +87,11 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
             import GafferUI.FileMenu
             GafferUI.FileMenu.addRecentFile(application, dst_path)
 
+        self.update_project_root_directory(script)
+
         return dst_path
 
     def open_workfile(self, filepath):
-
         if not os.path.exists(filepath):
             raise RuntimeError("File does not exist: {}".format(filepath))
 
@@ -159,31 +150,66 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         return {}
 
     def _register_callbacks(self):
-        self.application.root()["scripts"].childAddedSignal().connect(self._on_scene_new, scoped=False)
+        scripts_list = self.application.root()["scripts"]
+        scripts_list.childAddedSignal().connect(self._on_scene_new,
+                                                scoped=False)
+
+    def update_project_root_directory(self, script_node):
+        log.info("updating project root directory")
+        script_node['variables']['projectRootDirectory']['value'].setValue(
+            self.work_root(os.environ))  # noqa
+
+    def update_root_context_variables(self, script_node):
+        ctxt = self.get_current_context()
+
+        openpype.hosts.gaffer.api.lib.update_root_context_variables(
+            script_node,
+            ctxt["project_name"],
+            ctxt["asset_name"]
+        )
 
     def _on_scene_new(self, script_container, script_node):
-        emit_event("new")
+        # Update the projectRootDirectory variable for new workfile scripts
+        self.update_project_root_directory(script_node)
+        self.update_root_context_variables(script_node)
+        openpype.hosts.gaffer.api.lib.set_framerate(script_node)
+        log.debug(f'Adding childAddedSignal to {script_node}')
+        script_node.childAddedSignal().connect(
+            self.connect_render_layer_signals,
+            scoped=False
+        )
 
-        script_node['variables']['projectRootDirectory']['value'].setValue(self.work_root(os.environ))
+        # since the childAddedSignal gets added after the initial scene is
+        # loaded we need to manually trigger the connect render layer
+        # signal for the renderlayer nodes in the scene
+        for node in script_node.children(RenderLayerNode):
+            self.connect_render_layer_signals(script_node, node)
+
+        openpype.hosts.gaffer.api.nodes.check_boxnode_versions(script_node)
+
+    def connect_render_layer_signals(self, script_node, new_node):
+        if isinstance(new_node, RenderLayerNode):
+            try:
+                new_node.connect_signals()
+                # new_node.update_outputs()
+            except Exception as err:
+                log.error(f"Could not connect signals for render layer"
+                          f"{new_node}: {err}")
 
 
-def on_new():
-    pass
-
-
-def imprint_container(node,
-                      name,
-                      namespace,
-                      context,
-                      loader=None):
+def imprint_container(node: Gaffer.Node,
+                      name: str,
+                      namespace: str,
+                      context: dict,
+                      loader: str = None):
     """Imprint a Loader with metadata
 
     Containerisation enables a tracking of version, author and origin
     for loaded assets.
 
     Arguments:
-        tool (object): The node in Fusion to imprint as container, usually a
-            Loader.
+        node (Gaffer.Node): The node in Gaffer to imprint as container,
+            usually a node loaded by a Loader.
         name (str): Name of resulting assembly
         namespace (str): Namespace under which to host container
         context (dict): Asset information
@@ -193,22 +219,20 @@ def imprint_container(node,
         None
 
     """
-
-    data = [
-        ("schema", "openpype:container-2.0"),
-        ("id", AVALON_CONTAINER_ID),
-        ("name", str(name)),
-        ("namespace", str(namespace)),
-        ("loader", str(loader)),
-        ("representation", str(context["representation"]["_id"])),
-    ]
-
+    data = {
+        "schema": "openpype:container-2.0",
+        "id": AVALON_CONTAINER_ID,
+        "name": str(name),
+        "namespace": str(namespace),
+        "loader": str(loader),
+        "representation": str(context["representation"]["_id"]),
+    }
     imprint(node, data)
 
 
 def imprint(node: Gaffer.Node,
             data: dict,
-            section: str = "AYON"):
+            section: str = "OpenPype"):
     """Store and persist data on a node as `user` data.
 
     Args:
@@ -226,7 +250,7 @@ def imprint(node: Gaffer.Node,
 
     FLAGS = Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic
 
-    for key, value in data:
+    for key, value in data.items():
         # Dict to JSON
         if isinstance(value, dict):
             value = json.dumps(value)
@@ -265,3 +289,10 @@ def imprint(node: Gaffer.Node,
             Gaffer.Metadata.registerValue(plug, "layout:section", section)
 
         node["user"][key] = plug
+
+
+def get_context_label():
+    return "{0}, {1}".format(
+        get_current_asset_name(),
+        get_current_task_name()
+    )

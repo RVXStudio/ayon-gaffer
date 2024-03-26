@@ -4,10 +4,10 @@ from openpype.pipeline import (
     AutoCreator,
     CreatedInstance,
 )
-from ayon_gaffer.api import (
+from openpype.hosts.gaffer.api import (
     get_root,
 )
-from ayon_gaffer.api.plugin import CreatorImprintReadMixin
+from openpype.hosts.gaffer.api.plugin import CreatorImprintReadMixin
 
 
 class GafferWorkfileCreator(AutoCreator, CreatorImprintReadMixin):
@@ -71,7 +71,7 @@ class GafferWorkfileCreator(AutoCreator, CreatorImprintReadMixin):
         if existing_instance is None:
             existing_instance_asset = None
         elif AYON_SERVER_ENABLED:
-            existing_instance_asset = existing_instance["folderPath"]
+            existing_instance_asset = existing_instance.get("folderPath")
         else:
             existing_instance_asset = existing_instance["asset"]
 
@@ -86,7 +86,7 @@ class GafferWorkfileCreator(AutoCreator, CreatorImprintReadMixin):
                 "variant": self.default_variant
             }
             if AYON_SERVER_ENABLED:
-                data["folderPath"] = asset_name
+                data["asset"] = asset_name
             else:
                 data["asset"] = asset_name
             data.update(self.get_dynamic_data(
@@ -110,7 +110,7 @@ class GafferWorkfileCreator(AutoCreator, CreatorImprintReadMixin):
                 project_name, host_name
             )
             if AYON_SERVER_ENABLED:
-                existing_instance["folderPath"] = asset_name
+                existing_instance["asset"] = asset_name
             else:
                 existing_instance["asset"] = asset_name
             existing_instance["task"] = task_name

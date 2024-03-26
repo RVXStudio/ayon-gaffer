@@ -1,4 +1,4 @@
-from .gaffer_module import (
+from .addon import (
     GafferAddon,
     GAFFER_HOST_DIR,
 )

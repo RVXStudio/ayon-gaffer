@@ -4,8 +4,8 @@ from openpype.pipeline import (
     load,
     get_representation_path,
 )
-from ayon_gaffer.api import get_root, imprint_container
-from ayon_gaffer.api.lib import set_node_color
+from openpype.hosts.gaffer.api import get_root, imprint_container
+from openpype.hosts.gaffer.api.lib import set_node_color
 
 
 class GafferLoadArnoldVDB(load.LoaderPlugin):
@@ -54,7 +54,7 @@ class GafferLoadArnoldVDB(load.LoaderPlugin):
         node["fileName"].setValue(path)
 
         # Update the imprinted representation
-        node["user"]["representation"].SetValue(str(representation["_id"]))
+        node["user"]["representation"].setValue(str(representation["_id"]))
 
     def remove(self, container):
         node = container["_node"]
