@@ -3,7 +3,7 @@ import GafferArnold
 import GafferScene
 import IECore
 import imath
-import openpype.hosts.gaffer.api.nodes.render_settings
+import ayon_gaffer.api.nodes.render_settings
 
 Gaffer.Metadata.registerValue( parent, "serialiser:milestoneVersion", 1, persistent=False )
 Gaffer.Metadata.registerValue( parent, "serialiser:majorVersion", 3, persistent=False )
@@ -12,7 +12,7 @@ Gaffer.Metadata.registerValue( parent, "serialiser:patchVersion", 0, persistent=
 
 __children = {}
 
-__children["RenderSettings"] = openpype.hosts.gaffer.api.nodes.render_settings.RenderSettingsNode( "RenderSettings" )
+__children["RenderSettings"] = ayon_gaffer.api.nodes.render_settings.RenderSettingsNode( "RenderSettings" )
 parent.addChild( __children["RenderSettings"] )
 __children["RenderSettings"].addChild( Gaffer.V2fPlug( "__uiPosition", defaultValue = imath.V2f( 0, 0 ), flags = Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic, ) )
 __children["RenderSettings"].addChild( GafferScene.StandardOptions( "StandardOptions" ) )

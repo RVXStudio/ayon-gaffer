@@ -13,11 +13,11 @@ from openpype.lib import (
 )
 from openpype.client import get_asset_by_name
 
-from openpype.hosts.gaffer.api import (
+from ayon_gaffer.api import (
     get_root,
 )
-from openpype.hosts.gaffer.api.pipeline import imprint, JSON_PREFIX
-from openpype.hosts.gaffer.api.nodes import (
+from ayon_gaffer.api.pipeline import imprint, JSON_PREFIX
+from ayon_gaffer.api.nodes import (
     AyonPublishTask,
     RenderLayerNode,
 )

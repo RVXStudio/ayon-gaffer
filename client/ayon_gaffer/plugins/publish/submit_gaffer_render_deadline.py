@@ -24,7 +24,7 @@ import GafferDeadline
 import Gaffer
 import GafferDispatch
 
-log = Logger.get_logger("openpype.hosts.gaffer.plugins.publish.submit_gaffer_render_deadline")
+log = Logger.get_logger("ayon_gaffer.plugins.publish.submit_gaffer_render_deadline")
 
 
 class GafferSubmitDeadline(pyblish.api.InstancePlugin,

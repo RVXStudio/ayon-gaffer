@@ -1,4 +1,4 @@
-from openpype.hosts.gaffer.api import plugin
+from ayon_gaffer.api import plugin
 
 import Gaffer
 import GafferScene

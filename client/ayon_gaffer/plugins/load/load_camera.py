@@ -2,8 +2,8 @@ from openpype.pipeline import (
     load,
     get_representation_path,
 )
-from openpype.hosts.gaffer.api import get_root, imprint_container
-from openpype.hosts.gaffer.api.lib import (
+from ayon_gaffer.api import get_root, imprint_container
+from ayon_gaffer.api.lib import (
     set_node_color,
     arrange,
     make_box,

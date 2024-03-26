@@ -1,13 +1,13 @@
 import os
 
 import IECore
-from openpype.hosts.gaffer.api.nodes import (
+from ayon_gaffer.api.nodes import (
     AyonPublishTask,
     RenderLayerNode,
     RenderSettingsNode
 )
-import openpype.hosts.gaffer.api.pipeline
-from openpype.hosts.gaffer import GAFFER_HOST_DIR
+import ayon_gaffer.api.pipeline
+from ayon_gaffer import GAFFER_HOST_DIR
 
 
 application = application  # noqa
@@ -30,5 +30,5 @@ IECore.registerRunTimeTyped(
 
 
 boxnode_path = os.path.join(GAFFER_HOST_DIR, "api", "nodes", "boxnodes")
-openpype.hosts.gaffer.api.nodes.register_boxnode_path(boxnode_path)
-openpype.hosts.gaffer.api.nodes.update_boxnode_menu(application)
+ayon_gaffer.api.nodes.register_boxnode_path(boxnode_path)
+ayon_gaffer.api.nodes.update_boxnode_menu(application)

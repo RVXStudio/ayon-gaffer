@@ -6,7 +6,7 @@ import GafferOSL
 import GafferScene
 import IECore
 import imath
-import openpype.hosts.gaffer.api.nodes.render_layer
+import ayon_gaffer.api.nodes.render_layer
 
 Gaffer.Metadata.registerValue( parent, "serialiser:milestoneVersion", 1, persistent=False )
 Gaffer.Metadata.registerValue( parent, "serialiser:majorVersion", 3, persistent=False )
@@ -15,7 +15,7 @@ Gaffer.Metadata.registerValue( parent, "serialiser:patchVersion", 0, persistent=
 
 __children = {}
 
-__children["RenderLayer"] = openpype.hosts.gaffer.api.nodes.render_layer.RenderLayerNode( "RenderLayer" )
+__children["RenderLayer"] = ayon_gaffer.api.nodes.render_layer.RenderLayerNode( "RenderLayer" )
 parent.addChild( __children["RenderLayer"] )
 __children["RenderLayer"].addChild( Gaffer.V2fPlug( "__uiPosition", defaultValue = imath.V2f( 0, 0 ), flags = Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic, ) )
 __children["RenderLayer"].addChild( Gaffer.BoxIn( "BoxIn" ) )

@@ -4,10 +4,10 @@ from openpype.pipeline import (
     AutoCreator,
     CreatedInstance,
 )
-from openpype.hosts.gaffer.api import (
+from ayon_gaffer.api import (
     get_root,
 )
-from openpype.hosts.gaffer.api.plugin import CreatorImprintReadMixin
+from ayon_gaffer.api.plugin import CreatorImprintReadMixin
 
 
 class GafferWorkfileCreator(AutoCreator, CreatorImprintReadMixin):

@@ -1,7 +1,7 @@
 import pyblish.api
 
 from openpype.lib import get_version_from_path
-from openpype.hosts.gaffer.api import get_root
+from ayon_gaffer.api import get_root
 
 
 class CollectCurrentScriptGaffer(pyblish.api.ContextPlugin):

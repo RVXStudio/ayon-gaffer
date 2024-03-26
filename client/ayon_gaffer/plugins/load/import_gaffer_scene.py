@@ -1,8 +1,8 @@
 from openpype.lib import BoolDef
 from openpype.pipeline import load
 
-from openpype.hosts.gaffer.api import get_root
-from openpype.hosts.gaffer.api.lib import make_box
+from ayon_gaffer.api import get_root
+from ayon_gaffer.api.lib import make_box
 
 import Gaffer
 

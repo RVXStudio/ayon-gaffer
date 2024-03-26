@@ -10,7 +10,7 @@ from openpype.lib import Logger
 
 DEFAULT_OUTPUT_PATH = "${project:rootDirectory}/${script:name}/{layer_name}"
 
-log = Logger.get_logger("openpype.hosts.gaffer.api.nodes.render_layer")
+log = Logger.get_logger("ayon_gaffer.api.nodes.render_layer")
 
 
 def sync_plugs_to_contexts(node):

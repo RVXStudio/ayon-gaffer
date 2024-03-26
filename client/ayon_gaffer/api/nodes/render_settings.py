@@ -3,7 +3,7 @@ import Gaffer
 
 from openpype.lib import Logger
 
-log = Logger.get_logger('openpype.hosts.gaffer.api.nodes.render_settings')
+log = Logger.get_logger('ayon_gaffer.api.nodes.render_settings')
 
 
 class RenderSettingsNode(Gaffer.Box):

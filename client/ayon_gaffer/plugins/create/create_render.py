@@ -1,11 +1,11 @@
-from openpype.hosts.gaffer.api import plugin
+from ayon_gaffer.api import plugin
 from openpype.lib import (
     BoolDef
 )
 
 
 import Gaffer
-from openpype.hosts.gaffer.api.nodes import AyonPublishTask
+from ayon_gaffer.api.nodes import AyonPublishTask
 
 
 class CreateGafferRender(plugin.GafferRenderCreator):

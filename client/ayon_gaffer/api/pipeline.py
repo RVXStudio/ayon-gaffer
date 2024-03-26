@@ -7,7 +7,7 @@ import json
 import Gaffer  # noqa
 
 from openpype.host import HostBase, IWorkfileHost, ILoadHost, IPublishHost
-from openpype.hosts.gaffer.api.nodes import RenderLayerNode
+from ayon_gaffer.api.nodes import RenderLayerNode
 
 import pyblish.api
 
@@ -18,12 +18,12 @@ from openpype.pipeline import (
     get_current_asset_name,
     get_current_task_name,
 )
-from openpype.hosts.gaffer import GAFFER_HOST_DIR
-import openpype.hosts.gaffer.api.nodes
-import openpype.hosts.gaffer.api.lib
+from ayon_gaffer import GAFFER_HOST_DIR
+import ayon_gaffer.api.nodes
+import ayon_gaffer.api.lib
 from openpype.lib import Logger
 
-log = Logger.get_logger("openpype.hosts.gaffer.api.pipeline")
+log = Logger.get_logger("ayon_gaffer.api.pipeline")
 
 PLUGINS_DIR = os.path.join(GAFFER_HOST_DIR, "plugins")
 PUBLISH_PATH = os.path.join(PLUGINS_DIR, "publish")
@@ -61,6 +61,10 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         pyblish.api.register_plugin_path(PUBLISH_PATH)
         register_loader_plugin_path(LOAD_PATH)
         register_creator_plugin_path(CREATE_PATH)
+        log.info("Registering paths")
+        log.info(PUBLISH_PATH)
+        log.info(LOAD_PATH)
+        log.info(CREATE_PATH)
 
         self._register_callbacks()
 
@@ -162,7 +166,7 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
     def update_root_context_variables(self, script_node):
         ctxt = self.get_current_context()
 
-        openpype.hosts.gaffer.api.lib.update_root_context_variables(
+        ayon_gaffer.api.lib.update_root_context_variables(
             script_node,
             ctxt["project_name"],
             ctxt["asset_name"]
@@ -172,7 +176,7 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         # Update the projectRootDirectory variable for new workfile scripts
         self.update_project_root_directory(script_node)
         self.update_root_context_variables(script_node)
-        openpype.hosts.gaffer.api.lib.set_framerate(script_node)
+        ayon_gaffer.api.lib.set_framerate(script_node)
         log.debug(f'Adding childAddedSignal to {script_node}')
         script_node.childAddedSignal().connect(
             self.connect_render_layer_signals,
@@ -185,7 +189,7 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         for node in script_node.children(RenderLayerNode):
             self.connect_render_layer_signals(script_node, node)
 
-        openpype.hosts.gaffer.api.nodes.check_boxnode_versions(script_node)
+        ayon_gaffer.api.nodes.check_boxnode_versions(script_node)
 
     def connect_render_layer_signals(self, script_node, new_node):
         if isinstance(new_node, RenderLayerNode):

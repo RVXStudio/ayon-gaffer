@@ -4,8 +4,8 @@ import os
 import Gaffer
 import IECore
 from openpype.lib import get_formatted_current_time
-from openpype.hosts.gaffer.api.colorspace import ARenderProduct
-from openpype.hosts.gaffer.api.lib import get_color_management_preferences
+from ayon_gaffer.api.colorspace import ARenderProduct
+from ayon_gaffer.api.lib import get_color_management_preferences
 
 
 class CollectRender(pyblish.api.InstancePlugin):
@@ -130,6 +130,8 @@ class CollectRender(pyblish.api.InstancePlugin):
         )
         data["label"] = label
         instance.data.update(data)
+
+        instance.data["families"].append("render.farm")
 
     def create_generic_path(self, in_path):
         return re.sub(self._frame_expression, r'\1%04d\2', in_path)

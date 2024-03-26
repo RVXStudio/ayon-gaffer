@@ -6,15 +6,15 @@ See: http://www.gafferhq.org/documentation/0.53.0.0/Tutorials/Scripting/AddingAM
 
 """
 from openpype.pipeline import install_host, registered_host
-from openpype.hosts.gaffer.api import GafferHost, set_root, lib
-from openpype.hosts.gaffer.api.pipeline import get_context_label
+from ayon_gaffer.api import GafferHost, set_root, lib
+from ayon_gaffer.api.pipeline import get_context_label
 from openpype import AYON_SERVER_ENABLED
 from openpype.lib import Logger
 
 import GafferUI
 import IECore
 
-log = Logger.get_logger("openpype.hosts.gaffer.startup.gui.menu")
+log = Logger.get_logger("ayon_gaffer.startup.gui.menu")
 
 # Make sure linter ignores undefined `application`, Gaffer startup provides it
 application = application # noqa

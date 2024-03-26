@@ -1,5 +1,5 @@
-from openpype.hosts.gaffer.api.lib import make_box, set_node_color
-from openpype.hosts.gaffer.api import plugin
+from ayon_gaffer.api.lib import make_box, set_node_color
+from ayon_gaffer.api import plugin
 
 import Gaffer
 

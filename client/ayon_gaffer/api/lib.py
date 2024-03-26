@@ -18,7 +18,7 @@ from openpype.client import (
 from openpype.lib import Logger
 import ayon_api
 
-log = Logger.get_logger('openpype.hosts.gaffer.api.lib')
+log = Logger.get_logger('ayon_gaffer.api.lib')
 
 
 def set_node_color(node: Gaffer.Node, color: Tuple[float, float, float]):
