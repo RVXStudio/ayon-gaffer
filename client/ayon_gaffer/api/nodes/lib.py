@@ -214,7 +214,7 @@ class BoxNodeManager():
                 if (current_version not in existing_versions or
                         existing_versions.index(current_version) != 0):
                     Gaffer.Metadata.registerValue(
-                        box_node, 'icon', 'bomb.png')
+                        box_node, "icon", "rocking-chair.png")
                     to_update_count += 1
                 else:
                     default_icon = Gaffer.Metadata.value(
