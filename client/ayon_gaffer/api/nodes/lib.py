@@ -207,6 +207,9 @@ class BoxNodeManager():
         ok_count = 0
         for box_node in script_node.children(Gaffer.Box):
             node_type = box_node.typeName().split("::")[-1]
+            if BOXNODE_VERSION_PLUG_NAME not in box_node.keys():
+                log.debug(f"[{box_node}] does not have version plug. Skipping")
+                continue
             current_version = box_node[BOXNODE_VERSION_PLUG_NAME].getValue()
             if node_type in node_types:
                 existing_versions = sorted(
