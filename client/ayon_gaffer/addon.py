@@ -57,7 +57,7 @@ class GafferAddon(
 
     def add_implementation_envs(self, env, _app):
         # Add requirements to GAFFER_EXTENSION_PATHS
-        startup_path = GAFFER_HOST_DIR
+        startup_path = os.path.join(GAFFER_HOST_DIR, "deploy")
         if env.get("GAFFER_EXTENSION_PATHS"):
             startup_path += os.pathsep + env["GAFFER_EXTENSION_PATHS"]
 
