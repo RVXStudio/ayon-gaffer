@@ -103,6 +103,7 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         if script:
             script["fileName"].setValue(filepath)
             script.load()
+        self._on_scene_new(script.ancestor(Gaffer.ScriptContainer), script)
         return filepath
 
     def get_current_workfile(self):
