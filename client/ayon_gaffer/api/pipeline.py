@@ -177,6 +177,7 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         # Update the projectRootDirectory variable for new workfile scripts
         self.update_project_root_directory(script_node)
         self.update_root_context_variables(script_node)
+        ayon_gaffer.api.lib.create_multishot_context_vars(script_node)
         ayon_gaffer.api.lib.set_framerate(script_node)
         log.debug(f'Adding childAddedSignal to {script_node}')
         script_node.childAddedSignal().connect(
