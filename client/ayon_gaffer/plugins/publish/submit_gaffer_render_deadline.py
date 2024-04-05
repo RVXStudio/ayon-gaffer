@@ -24,6 +24,8 @@ import GafferDeadline
 import Gaffer
 import GafferDispatch
 
+import ayon_gaffer.api.lib
+
 log = Logger.get_logger("ayon_gaffer.plugins.publish.submit_gaffer_render_deadline")
 
 
@@ -298,26 +300,21 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
         return context_var_nodes[0]
 
     def set_render_context_vars(self, root_node, render_shot):
+        self.log.info(f"Setting render context var {root_node}")
         # first find the task output plug
         context_var_node = self.get_last_context_var_node(root_node)
         if "render:shot" not in context_var_node["variables"].keys():
-            render_shot_plug = Gaffer.NameValuePlug(
-                    "render:shot",
-                    Gaffer.StringPlug(
-                        "value",
-                        defaultValue='',
-                        flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic
-                    ),
-                    True,
-                    "render:shot",
-                    Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic)
+            self.log.info("no render:shot in node, creating")
+            render_shot_plug = ayon_gaffer.api.lib.create_render_shot_plug()
             context_var_node["variables"].addChild(render_shot_plug)
         else:
+            self.log.info('render:shot in node!')
             render_shot_plug = context_var_node["variables"]["render:shot"]
 
         old_render_shot_value = render_shot_plug["value"].getValue()
         old_render_shot_enabled = render_shot_plug["enabled"].getValue()
         render_shot_plug["value"].setValue(render_shot)
+        self.log.info(f'setting render:shot to {render_shot}')
         render_shot_plug["enabled"].setValue(True)
         return {"render:shot": {"value": old_render_shot_value,
                                 "enabled": old_render_shot_enabled}}
@@ -329,4 +326,3 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
                 var_plug = context_var_node["variables"][var_name]
                 for key, value in var_data.items():
                     var_plug[key].setValue(value)
-
