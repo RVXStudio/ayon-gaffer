@@ -39,7 +39,7 @@ class RenderLayerNode(Gaffer.Box):
         self.addChild(Gaffer.StringPlug(
             "frame_range",
             flags=Gaffer.Plug.Flags.Default,
-            defaultValue="full_range"
+            defaultValue="layer_range"
         ))
 
         self.addChild(Gaffer.StringPlug(
@@ -66,6 +66,13 @@ class RenderLayerNode(Gaffer.Box):
             flags=Gaffer.Plug.Flags.Default
         )
         self.addChild(cleanup_paths_plug)
+
+        layer_range_plug = Gaffer.V2iPlug(
+            "layer_range",
+            defaultValue=imath.V2i(0, 0),
+            flags=Gaffer.Plug.Flags.Default
+        )
+        self.addChild(layer_range_plug)
 
     def connect_signals(self):
         if self.plug_signal is None:
@@ -227,10 +234,22 @@ Gaffer.Metadata.registerNode(
             """,
             "nodule:type", "",
             "plugValueWidget:type", "GafferUI.PresetsPlugValueWidget",
+            "preset:layer_range", "layer_range",
+            "preset:timeline", "timeline",
+            "preset:first_last", "first_last",
             "preset:full_range", "full_range",
             "preset:start_end", "start_end",
             "preset:custom", "custom",
             "layout:section", "Render Layer",
+        ],
+        "layer_range": [
+            "description",
+            """
+            A field to have the full shot range - to be loaded by spreadsheet
+            """,
+            "nodule:type", "",
+            "layout:section", "Render Layer",
+            "layout:index", 5,
         ],
 
         "out_render": [
