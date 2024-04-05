@@ -356,11 +356,30 @@ def copy_plug(plug, destination_node):
                   f"{destination_node}: {err}")
 
 
-def get_all_plugs(in_node, thelist):
+def get_all_plugs(in_node, thelist, include_non_serializable=True):
     for plug in in_node.children(Gaffer.Plug):
+        if not include_non_serializable and not bool(plug.getFlags() & Gaffer.Plug.Flags.Serialisable):
+            continue
         thelist.append(plug)
         if len(plug.children(Gaffer.Plug)) > 0:
-            get_all_plugs(plug, thelist)
+            get_all_plugs(plug, thelist, include_non_serializable)
+
+def get_plug_tree(in_node, include_non_serializable=False):
+    plugs = {}
+
+    def plug_traversal(in_node, plug_dict, include_non_serializable):
+        for plug in in_node.children(Gaffer.Plug):
+            if not include_non_serializable and not bool(plug.getFlags() & Gaffer.Plug.Flags.Serialisable):
+                continue
+
+            if plug not in plug_dict.keys():
+                plug_dict[plug] = {}
+
+            if len(plug.children(Gaffer.Plug)) > 0:
+                plug_traversal(plug, plug_dict[plug], include_non_serializable)
+
+    plug_traversal(in_node, plugs, include_non_serializable)
+    return plugs
 
 
 def get_node_connections(node, include_non_serializable=False):
@@ -457,3 +476,25 @@ def set_root_context_variables(script_node, var_dict):
             )
 
         context_vars[var_name]["value"].setValue(var_data)
+
+
+def create_render_shot_plug():
+    render_shot_plug = Gaffer.NameValuePlug(
+        "render:shot",
+        Gaffer.StringPlug(
+            "value",
+            defaultValue='',
+            flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic
+        ),
+        True,
+        "render:shot",
+        Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic)
+    return render_shot_plug
+
+
+def create_multishot_context_vars(script_node):
+    context_vars = script_node["variables"]
+    existing_variables = [var["name"].getValue() for var in context_vars.children()]
+    if "render:shot" not in existing_variables:
+        render_shot_plug = create_render_shot_plug()
+        context_vars.addChild(render_shot_plug)
