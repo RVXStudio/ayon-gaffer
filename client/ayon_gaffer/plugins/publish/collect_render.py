@@ -3,6 +3,8 @@ import pyblish.api
 import os
 import Gaffer
 import IECore
+from openpype.pipeline import publish
+
 from openpype.lib import get_formatted_current_time
 from ayon_gaffer.api.colorspace import ARenderProduct
 from ayon_gaffer.api.lib import get_color_management_preferences
@@ -51,16 +53,26 @@ class CollectRender(pyblish.api.InstancePlugin):
             frame_range = layer['frame_range'].getValue()
             gctxt_start_frame = ctxt.get("frameRange:start")
             gctxt_end_frame = ctxt.get("frameRange:end")
-            if frame_range == 'start_end':
+            if frame_range in ["start_end", "first_last"]:
                 frames = [gctxt_start_frame, gctxt_end_frame]
-            elif frame_range == 'custom':
+            elif frame_range == "custom":
                 frames = IECore.FrameList.parse(
-                    layer['custom_frames'].getValue()
+                    layer["custom_frames"].getValue()
                 ).asList()
-            else:
+            elif frame_range in ["timeline", "full_range"]:
                 frames = IECore.FrameList.parse(
                     f'{gctxt_start_frame}-{gctxt_end_frame}'
                 ).asList()
+            elif frame_range == "layer_range":
+                lr_start_frame = layer["layer_range"]["x"].getValue()
+                lr_end_frame = layer["layer_range"]["y"].getValue()
+                frames = IECore.FrameList.parse(
+                    f"{lr_start_frame}-{lr_end_frame}"
+                ).asList()
+            else:
+                raise publish.KnownPublishError(
+                    f"unknown frame range value [{frame_range}] encountered")
+            self.log.info(f"layer frames [{layer_name}]: {frames}")
             self.log.info(f"layer: {layer_name}: {outputs}")
 
             expected_files = {}
