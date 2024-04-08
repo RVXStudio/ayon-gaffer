@@ -134,7 +134,8 @@ class CollectRender(pyblish.api.InstancePlugin):
             "colorspaceConfig": colorspace_data["config"],
             "colorspaceDisplay": colorspace_data["display"],
             "colorspaceView": colorspace_data["view"],
-            "outputDir": output_dir
+            "outputDir": output_dir,
+            "do_hardlink": True
         }
         label = "{0} ({1})".format(layer_name, instance.data["asset"])
         label += "  [{0}-{1}]".format(
