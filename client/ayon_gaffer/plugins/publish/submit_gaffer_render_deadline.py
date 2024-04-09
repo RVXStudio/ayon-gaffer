@@ -46,7 +46,7 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
 
     # presets
     priority = 50
-    chunk_size = 3
+    chunk_size = 1
     concurrent_tasks = 1
     group = "skjoldur"
     pool = "main"
@@ -132,6 +132,10 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
         # families = instance.data["families"]
         frames = instance.data['frameList']
 
+        # set the publish priority to follow the given priority
+        instance.data["priority"] = instance.data["attributeValues"].get(
+            "priority", self.priority)
+
         node = instance.data["transientData"]["node"]
         # context = instance.context
         self.log.info(f"Submitting {node}")
@@ -158,7 +162,7 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
                 "{dispatcher['frameRange'].getValue()}"
             )
             self.populate_dispatcher_env_vars(node)
-            saved_settings = self.apply_submission_settings(node)
+            saved_settings = self.apply_submission_settings(node, instance)
 
             saved_context_vars = self.set_render_context_vars(node, render_shot_name)
 
@@ -242,7 +246,7 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
                     deadline_env_plug.removeChild(plug)
         self.log.info('... done!')
 
-    def apply_submission_settings(self, root_node):
+    def apply_submission_settings(self, root_node, instance):
         self.log.info(
             f"Applying submission settings for"
             f"[{root_node.getName()}]"
@@ -261,6 +265,10 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
 
             for key, value in self.deadline_attrs.items():
                 deadline_settings[key].setValue(value)
+
+            # set priority
+            priority = instance.data["attributeValues"].get("priority", self.priority)
+            deadline_settings["priority"].setValue(priority)
         return saved_values
 
     def restore_submission_settings(self, root_node, old_settings):
