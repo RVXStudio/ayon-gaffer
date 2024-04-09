@@ -107,6 +107,11 @@ class BoxNodeManager():
 
         replacements = []
         for node in nodes:
+            if BOXNODE_VERSION_PLUG_NAME not in node.keys():
+                log.info(f"Node {node} is not a proper boxnode, it's missing"
+                         f"the {BOXNODE_VERSION_PLUG_NAME} plug")
+                continue
+
             # for node in nodes:
             node_type = node.typeName().split("::")[-1]
             old_version = node[BOXNODE_VERSION_PLUG_NAME].getValue()
@@ -114,9 +119,10 @@ class BoxNodeManager():
                 latest_version = cls.get_versions_for_node_type(node_type)[0]
 
                 if new_version is None:
-                    new_version = latest_version
-                if new_version == old_version:
-                    log.info("Already at latest")
+                    input_version = latest_version
+                else:
+                    input_version = new_version
+                if input_version == old_version:
                     continue
                 new_node = cls.create(
                     node.scriptNode(), node_type, new_version)
