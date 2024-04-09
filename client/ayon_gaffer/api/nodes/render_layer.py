@@ -39,7 +39,7 @@ class RenderLayerNode(Gaffer.Box):
         self.addChild(Gaffer.StringPlug(
             "frame_range",
             flags=Gaffer.Plug.Flags.Default,
-            defaultValue="layer_range"
+            defaultValue="timeline"
         ))
 
         self.addChild(Gaffer.StringPlug(
