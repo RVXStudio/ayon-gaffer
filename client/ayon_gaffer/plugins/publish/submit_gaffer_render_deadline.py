@@ -69,6 +69,7 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
         "AVALON_TASK": "",
         "AVALON_APP_NAME": "",
         "AYON_BUNDLE_NAME": "",
+        "DEADLINE_ENVIRONMENT_CACHE_DIR": "",
     }
 
     deadline_attrs = {
