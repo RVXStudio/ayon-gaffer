@@ -1,5 +1,5 @@
-from openpype.lib import BoolDef
-from openpype.pipeline import load
+from ayon_core.lib import BoolDef
+from ayon_core.pipeline import load
 
 from ayon_gaffer.api import get_root
 from ayon_gaffer.api.lib import make_box
@@ -10,7 +10,7 @@ import Gaffer
 class GafferImportScene(load.LoaderPlugin):
     """Import a gaffer scene (unmanaged)"""
 
-    families = ["gafferNodes", "workfile"]
+    product_types = ["gafferNodes", "workfile"]
     representations = ["gfr"]
 
     label = "Import Gaffer Scene"

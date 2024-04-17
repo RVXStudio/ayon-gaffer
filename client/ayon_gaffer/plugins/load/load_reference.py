@@ -1,4 +1,4 @@
-from openpype.pipeline import (
+from ayon_core.pipeline import (
     load,
     get_representation_path,
 )
@@ -11,7 +11,7 @@ import Gaffer
 class GafferLoadReference(load.LoaderPlugin):
     """Reference a gaffer scene"""
 
-    families = ["gafferNodes"]
+    product_types = ["gafferNodes"]
     representations = ["gfr"]
 
     label = "Reference Gaffer Scene"

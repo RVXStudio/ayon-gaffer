@@ -11,11 +11,7 @@ if sys.version_info >= (3, 9, 0):
 else:
     from typing import Iterator
 
-from openpype.pipeline import registered_host
-from openpype.client import (
-    get_asset_by_name
-)
-from openpype.lib import Logger
+from ayon_core.lib import Logger
 import ayon_api
 
 log = Logger.get_logger('ayon_gaffer.api.lib')

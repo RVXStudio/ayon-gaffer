@@ -1,4 +1,4 @@
-from openpype.pipeline import (
+from ayon_core.pipeline import (
     load,
     get_representation_path,
 )
@@ -11,7 +11,7 @@ import GafferScene
 class GafferLoadScene(load.LoaderPlugin):
     """Load Scene"""
 
-    families = ["pointcache", "model", "usd"]
+    product_types = ["pointcache", "model", "usd"]
     representations = ["abc", "usd"]
 
     label = "Load scene"

@@ -7,14 +7,12 @@ from datetime import datetime
 import requests
 import pyblish.api
 
-from openpype import AYON_SERVER_ENABLED
-from openpype.pipeline import legacy_io
-from openpype.pipeline.publish import (
-    OpenPypePyblishPluginMixin
+
+from ayon_core.pipeline.publish import (
+    AyonPyblishPluginMixin
 )
-from openpype.tests.lib import is_in_tests
-from openpype.lib import (
-    is_running_from_build,
+
+from ayon_core.lib import (
     BoolDef,
     NumberDef,
     Logger
@@ -30,7 +28,7 @@ log = Logger.get_logger("ayon_gaffer.plugins.publish.submit_gaffer_render_deadli
 
 
 class GafferSubmitDeadline(pyblish.api.InstancePlugin,
-                           OpenPypePyblishPluginMixin):
+                           AyonPyblishPluginMixin):
     """Submit write to Deadline
 
     Renders are submitted via GafferDeadline

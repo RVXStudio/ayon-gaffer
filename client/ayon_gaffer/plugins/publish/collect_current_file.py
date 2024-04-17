@@ -1,6 +1,6 @@
 import pyblish.api
 
-from openpype.lib import get_version_from_path
+from ayon_core.lib import get_version_from_path
 from ayon_gaffer.api import get_root
 
 

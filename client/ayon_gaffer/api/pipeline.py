@@ -6,12 +6,12 @@ import json
 
 import Gaffer  # noqa
 
-from openpype.host import HostBase, IWorkfileHost, ILoadHost, IPublishHost
+from ayon_core.host import HostBase, IWorkfileHost, ILoadHost, IPublishHost
 from ayon_gaffer.api.nodes import RenderLayerNode
 
 import pyblish.api
 
-from openpype.pipeline import (
+from ayon_core.pipeline import (
     register_creator_plugin_path,
     register_loader_plugin_path,
     AVALON_CONTAINER_ID,
@@ -21,7 +21,7 @@ from openpype.pipeline import (
 from ayon_gaffer import GAFFER_HOST_DIR
 import ayon_gaffer.api.nodes
 import ayon_gaffer.api.lib
-from openpype.lib import Logger
+from ayon_core.lib import Logger
 
 log = Logger.get_logger("ayon_gaffer.api.pipeline")
 
@@ -49,7 +49,7 @@ def get_root() -> Gaffer.ScriptNode:
 class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
     name = "gaffer"
 
-    _context_plug = "openpype_context"
+    _context_plug = "ayon_context"
 
     def __init__(self, application):
         super(GafferHost, self).__init__()
@@ -238,7 +238,7 @@ def imprint_container(node: Gaffer.Node,
 
 def imprint(node: Gaffer.Node,
             data: dict,
-            section: str = "OpenPype"):
+            section: str = "Ayon"):
     """Store and persist data on a node as `user` data.
 
     Args:

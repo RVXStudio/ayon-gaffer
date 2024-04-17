@@ -1,6 +1,6 @@
 import os
 
-from openpype.pipeline import (
+from ayon_core.pipeline import (
     load,
     get_representation_path,
 )
@@ -13,7 +13,7 @@ import GafferImage
 class GafferLoadImage(load.LoaderPlugin):
     """Load Image or Image sequence"""
 
-    families = ["imagesequence", "review", "render", "plate"]
+    product_types = ["imagesequence", "review", "render", "plate"]
     representations = ["*"]
 
     label = "Load sequence"

@@ -1,5 +1,5 @@
 from ayon_gaffer.api import plugin
-from openpype.lib import (
+from ayon_core.lib import (
     BoolDef
 )
 
@@ -9,9 +9,9 @@ from ayon_gaffer.api.nodes import AyonPublishTask
 
 
 class CreateGafferRender(plugin.GafferRenderCreator):
-    identifier = "io.openpype.creators.gaffer.render"
+    identifier = "io.ayon.creators.gaffer.render"
     label = "Render"
-    family = "render"
+    product_type = "render"
     description = "Farm rendering"
     icon = "fa5.film"
 
@@ -25,9 +25,9 @@ class CreateGafferRender(plugin.GafferRenderCreator):
         ]
 
     def _create_node(self,
-                     subset_name: str,
+                     product_name: str,
                      pre_create_data: dict,
                      script: Gaffer.ScriptNode) -> Gaffer.Node:
-        node = AyonPublishTask(subset_name)
+        node = AyonPublishTask(product_name)
         script.addChild(node)
         return node

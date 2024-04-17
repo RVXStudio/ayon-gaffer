@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
-"""OpenPype startup script.
+"""AYON startup script.
 
-Add OpenPype Menu entries to GafferUI
+Add AYON Menu entries to GafferUI
 See: http://www.gafferhq.org/documentation/0.53.0.0/Tutorials/Scripting/AddingAMenuItem/index.html  # noqa
 
 """
-from openpype.pipeline import install_host, registered_host
+from ayon_core.pipeline import install_host, registered_host
 from ayon_gaffer.api import GafferHost, set_root, lib
 from ayon_gaffer.api.pipeline import get_context_label
-from openpype import AYON_SERVER_ENABLED
-from openpype.lib import Logger
+from ayon_core.lib import Logger
 
 import GafferUI
 import IECore
@@ -19,14 +18,11 @@ log = Logger.get_logger("ayon_gaffer.startup.gui.menu")
 # Make sure linter ignores undefined `application`, Gaffer startup provides it
 application = application # noqa
 
-if AYON_SERVER_ENABLED:
-    menu_label = 'AYON'
-else:
-    menu_label = 'OpenPype'
+menu_label = 'AYON'
 
 
 def ayon_menu(menu):
-    from openpype.tools.utils import host_tools
+    from ayon_core.tools.utils import host_tools
 
     def get_main_window(menu):
         script_window = menu.ancestor(GafferUI.ScriptWindow)
@@ -89,7 +85,7 @@ def ayon_menu(menu):
     return definition
 
 
-def _install_openpype_menu():
+def _install_ayon_menu():
     definition = GafferUI.ScriptWindow.menuDefinition(application)
     definition.append(menu_label, {"subMenu": ayon_menu})
 
@@ -113,10 +109,10 @@ def update_root_context_variables_callback(menu):
     )
 
 
-def _install_openpype():
-    log.info("Installing OpenPype ...")
+def _install_ayon():
+    log.info("Installing ayon ...")
     install_host(GafferHost(application))
 
 
-_install_openpype()
-_install_openpype_menu()
+_install_ayon()
+_install_ayon_menu()

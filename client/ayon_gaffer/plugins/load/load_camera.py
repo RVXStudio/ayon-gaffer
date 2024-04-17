@@ -1,4 +1,4 @@
-from openpype.pipeline import (
+from ayon_core.pipeline import (
     load,
     get_representation_path,
 )
@@ -18,7 +18,7 @@ import IECore
 class GafferLoadAlembicCamera(load.LoaderPlugin):
     """Load Alembic Camera"""
 
-    families = ["camera"]
+    product_types = ["camera"]
     representations = ["abc"]
 
     label = "Load camera"

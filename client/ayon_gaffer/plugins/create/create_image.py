@@ -5,16 +5,16 @@ import GafferImage
 
 
 class CreateGafferImage(plugin.GafferCreatorBase):
-    identifier = "io.openpype.creators.gaffer.image"
+    identifier = "io.ayon.creators.gaffer.image"
     label = "Image"
-    family = "image"
+    product_type = "image"
     description = "Image writer"
     icon = "fa5.eye"
 
     def _create_node(self,
-                     subset_name: str,
+                     product_name: str,
                      pre_create_data: dict,
                      script: Gaffer.ScriptNode) -> Gaffer.Node:
-        node = GafferImage.ImageWriter(subset_name)
+        node = GafferImage.ImageWriter(product_name)
         script.addChild(node)
         return node

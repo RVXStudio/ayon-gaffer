@@ -6,7 +6,7 @@ import GafferImage
 import GafferScene
 import IECore
 import Gaffer
-from openpype.lib import Logger
+from ayon_core.lib import Logger
 
 DEFAULT_OUTPUT_PATH = "${project:rootDirectory}/${script:name}/{layer_name}"
 
