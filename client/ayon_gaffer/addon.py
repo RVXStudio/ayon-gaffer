@@ -1,7 +1,5 @@
 import os
 
-import click
-
 
 from ayon_core.addon import (
     AYONAddon,IHostAddon
@@ -62,8 +60,3 @@ class GafferAddon(
 
     def tray_menu(self, tray_menu):
         pass
-
-
-@click.group(GafferAddon.name, help="Gaffer addon related commands.")
-def cli_main():
-    pass

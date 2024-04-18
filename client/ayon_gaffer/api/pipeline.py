@@ -15,7 +15,7 @@ from ayon_core.pipeline import (
     register_creator_plugin_path,
     register_loader_plugin_path,
     AVALON_CONTAINER_ID,
-    get_current_asset_name,
+    get_current_folder_path,
     get_current_task_name,
 )
 from ayon_gaffer import GAFFER_HOST_DIR
@@ -299,6 +299,6 @@ def imprint(node: Gaffer.Node,
 
 def get_context_label():
     return "{0}, {1}".format(
-        get_current_asset_name(),
+        get_current_folder_path(),
         get_current_task_name()
     )
