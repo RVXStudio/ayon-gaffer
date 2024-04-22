@@ -10,6 +10,7 @@ from ayon_gaffer.api.nodes import AyonPublishTask
 
 class CreateGafferRender(plugin.GafferRenderCreator):
     identifier = "io.ayon.creators.gaffer.render"
+    deprecated_identifiers = ["io.openpype.creators.gaffer.render"]
     label = "Render"
     product_type = "render"
     description = "Farm rendering"

@@ -4,6 +4,7 @@ from ayon_core.pipeline import (
     AutoCreator,
     CreatedInstance,
 )
+from ayon_core.pipeline.context_tools import get_current_task_entity
 from ayon_gaffer.api import (
     get_root,
 )
@@ -34,7 +35,7 @@ class GafferWorkfileCreator(AutoCreator, CreatorImprintReadMixin):
 
         instance = CreatedInstance(
             product_type=self.product_type,
-            product_name=data["subset"],
+            product_name=data["productName"],
             data=data,
             creator=self
         )
@@ -69,15 +70,16 @@ class GafferWorkfileCreator(AutoCreator, CreatorImprintReadMixin):
         host_name = self.create_context.host_name
 
         if existing_instance is None:
-            existing_instance_asset = None
+            existing_instance_folder = None
         else:
-            existing_instance_asset = existing_instance.get("folderPath")
+            existing_instance_folder = existing_instance.get("folderPath")
 
         if existing_instance is None:
             folder_doc = ayon_api.get_folder_by_path(project_name, folder_path)
-            subset_name = self.get_product_name(
-                self.default_variant, task_name, folder_doc,
-                project_name, host_name
+            task_entity = get_current_task_entity()
+            product_name = self.get_product_name(
+                project_name, folder_doc, task_entity,
+                self.default_variant, host_name
             )
             data = {
                 "task": task_name,
@@ -91,21 +93,22 @@ class GafferWorkfileCreator(AutoCreator, CreatorImprintReadMixin):
             ))
 
             new_instance = CreatedInstance(
-                self.family, subset_name, data, self
+                self.product_type, product_name, data, self
             )
             new_instance.transient_data["node"] = script
             self._add_instance_to_context(new_instance)
 
         elif (
-            existing_instance_asset != folder_path
+            existing_instance_folder != folder_path
             or existing_instance["task"] != task_name
         ):
             folder_doc = ayon_api.get_folder_by_path(project_name, folder_path)
-            subset_name = self.get_subset_name(
-                self.default_variant, task_name, folder_doc,
-                project_name, host_name
+            task_entity = get_current_task_entity()
+            product_name = self.get_product_name(
+                project_name, folder_doc, task_entity,
+                self.default_variant, host_name
             )
 
             existing_instance["folderPath"] = folder_path
             existing_instance["task"] = task_name
-            existing_instance["productName"] = subset_name
+            existing_instance["productName"] = product_name

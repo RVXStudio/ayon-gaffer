@@ -15,7 +15,12 @@ import ayon_api
 from ayon_gaffer.api import (
     get_root,
 )
-from ayon_gaffer.api.pipeline import imprint, JSON_PREFIX
+from ayon_gaffer.api.pipeline import (
+    imprint,
+    JSON_PREFIX
+)
+from ayon_core.pipeline import AYON_INSTANCE_ID
+
 from ayon_gaffer.api.nodes import (
     AyonPublishTask,
     RenderLayerNode,
@@ -39,16 +44,22 @@ class CreatorImprintReadMixin:
     """Mixin providing _read and _imprint methods to be used by Creators."""
 
     attr_prefix = "ayon_"
+    op_attr_prefix = "openpype_"
 
     def _read(self, node: Gaffer.Node) -> dict:
         all_user_data = read(node)
 
         # Consider only data with the special attribute prefix
         # and strip off the prefix as for the resulting data
-        prefix_len = len(self.attr_prefix)
+
         ayon_data = {}
         for key, value in all_user_data.items():
-            if not key.startswith(self.attr_prefix):
+
+            if key.startswith(self.attr_prefix):
+                prefix_len = len(self.attr_prefix)
+            elif key.startswith(self.op_attr_prefix):
+                prefix_len = len(self.op_attr_prefix)
+            else:
                 continue
 
             if isinstance(value, str) and value.startswith(JSON_PREFIX):
@@ -124,7 +135,7 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
 
     def create(self, product_name, instance_data, pre_create_data):
         instance_data.update({
-            "id": "pyblish.avalon.instance",
+            "id": AYON_INSTANCE_ID,
             "productName": product_name
         })
 
@@ -236,7 +247,7 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
     def create(self, product_name, instance_data, pre_create_data):
         self.log.info('create()')
         instance_data.update({
-            "id": "pyblish.avalon.instance",
+            "id": AYON_INSTANCE_ID,
             "productName": product_name
         })
 
@@ -279,9 +290,15 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
         self.log.info('Collecting instances!')
         script = get_root()
         assert script, "Must have a gaffer scene script as root"
+
+        if hasattr(self, "deprecated_identifiers"):
+            identifiers = [self.identifier] + self.deprecated_identifiers
+        else:
+            identifiers = [self.identifier]
         for publish_node in script.children(AyonPublishTask):
             data = self._read(publish_node)
-            if data.get("creator_identifier") != self.identifier:
+            if data.get("creator_identifier") not in identifiers:
+                self.log.info("{} - {}".format(data.get("creator_identifier"), self.identifier))
                 self.log.debug(f'Skipping {publish_node}, wrong creator id')
                 continue
 
@@ -300,12 +317,16 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
                     "variant": layer_name,
                 }
                 instance_data["folderPath"] = folder_path
-                asset_doc = ayon_api.get_folder_by_path(project_name, folder_path)
+                folder = ayon_api.get_folder_by_path(project_name, folder_path)
+                task_entity = ayon_api.get_task_by_name(
+                    project_name, folder["id"], instance_data["task"]
+                )
                 product_name = self.get_product_name(
+                    project_name,
+                    folder,
+                    task_entity,
                     layer_name,
-                    instance_data["task"],
-                    asset_doc,
-                    project_name)
+                    )
 
                 instance = CreatedInstance(
                     product_type=self.product_type,

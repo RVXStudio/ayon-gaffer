@@ -1,5 +1,6 @@
 from ayon_gaffer.api.lib import make_box, set_node_color
 from ayon_gaffer.api import plugin
+from ayon_gaffer.api.pipeline import AYON_CONTAINER_ID
 
 import Gaffer
 
@@ -25,7 +26,7 @@ class CreateGafferNodes(plugin.GafferCreatorBase):
                 # that for publish
                 box_node = box_nodes[0]
                 data = self._read(box_node)
-                if data.get("id") == "pyblish.avalon.instance":
+                if data.get("id") == AYON_CONTAINER_ID:
                     raise plugin.GafferCreatorError(
                         "This box is already being published!")
             else:

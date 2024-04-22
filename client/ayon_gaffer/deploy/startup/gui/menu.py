@@ -105,7 +105,7 @@ def update_root_context_variables_callback(menu):
     lib.update_root_context_variables(
         script_node,
         ayon_context["project_name"],
-        ayon_context["asset_name"]
+        ayon_context["folder_path"]
     )
 
 

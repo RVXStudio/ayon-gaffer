@@ -15,6 +15,7 @@ from ayon_core.pipeline import (
     register_creator_plugin_path,
     register_loader_plugin_path,
     AVALON_CONTAINER_ID,
+    AYON_CONTAINER_ID,
     get_current_folder_path,
     get_current_task_name,
 )
@@ -126,7 +127,7 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
             if any(key not in user for key in required):
                 continue
 
-            if user["id"].getValue() != AVALON_CONTAINER_ID:
+            if user["id"].getValue() not in {AYON_CONTAINER_ID, AVALON_CONTAINER_ID}:
                 continue
             container = {
                 key: user[key].getValue() for key in required
@@ -170,7 +171,7 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         ayon_gaffer.api.lib.update_root_context_variables(
             script_node,
             ctxt["project_name"],
-            ctxt["asset_name"]
+            ctxt["folder_path"]
         )
 
     def _on_scene_new(self, script_container, script_node):
@@ -227,7 +228,7 @@ def imprint_container(node: Gaffer.Node,
     """
     data = {
         "schema": "openpype:container-2.0",
-        "id": AVALON_CONTAINER_ID,
+        "id": AYON_CONTAINER_ID,
         "name": str(name),
         "namespace": str(namespace),
         "loader": str(loader),

@@ -8,9 +8,7 @@ import requests
 import pyblish.api
 
 
-from ayon_core.pipeline.publish import (
-    AyonPyblishPluginMixin
-)
+from ayon_core.pipeline import AYONPyblishPluginMixin
 
 from ayon_core.lib import (
     BoolDef,
@@ -28,7 +26,7 @@ log = Logger.get_logger("ayon_gaffer.plugins.publish.submit_gaffer_render_deadli
 
 
 class GafferSubmitDeadline(pyblish.api.InstancePlugin,
-                           AyonPyblishPluginMixin):
+                           AYONPyblishPluginMixin):
     """Submit write to Deadline
 
     Renders are submitted via GafferDeadline
@@ -61,11 +59,10 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
         "FTRACK_API_KEY": "",
         "FTRACK_API_USER": "",
         "FTRACK_SERVER": "",
-        "OPENPYPE_SG_USER": "",
-        "AVALON_PROJECT": "",
-        "AVALON_ASSET": "",
-        "AVALON_TASK": "",
-        "AVALON_APP_NAME": "",
+        "AYON_PROJECT_NAME": "",
+        "AYON_FOLDER_PATH": "",
+        "AYON_TASK_NAME": "",
+        "AYON_HOST_NAME": "",
         "AYON_BUNDLE_NAME": "",
         "DEADLINE_ENVIRONMENT_CACHE_DIR": "",
     }
@@ -139,7 +136,7 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
         # context = instance.context
         self.log.info(f"Submitting {node}")
         with node.scriptNode().context() as ctxt:
-            render_shot_name = instance.data["asset"].split("/")[-1]
+            render_shot_name = instance.data["folderPath"].split("/")[-1]
             # create a dispatcher
             dispatcher = GafferDeadline.DeadlineDispatcher()
             # set some dispatcher settings

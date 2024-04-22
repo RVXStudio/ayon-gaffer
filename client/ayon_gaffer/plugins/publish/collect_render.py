@@ -32,7 +32,7 @@ class CollectRender(pyblish.api.InstancePlugin):
         layer.update_outputs()
 
         with Gaffer.Context(layer.scriptNode().context()) as ctxt:
-            ctxt["render:shot"] = instance.data["asset"].split("/")[-1]
+            ctxt["render:shot"] = instance.data["folderPath"].split("/")[-1]
             ctxt['layer_name'] = ctxt.substitute(
                 layer["layer_name"].getValue())
             ctxt['layer_type'] = layer['layer_type'].getValue()
@@ -137,7 +137,7 @@ class CollectRender(pyblish.api.InstancePlugin):
             "outputDir": output_dir,
             "do_hardlink": True
         }
-        label = "{0} ({1})".format(layer_name, instance.data["asset"])
+        label = "{0} ({1})".format(layer_name, instance.data["folderPath"])
         label += "  [{0}-{1}]".format(
             int(data["frameStart"]), int(data["frameEnd"])
         )
