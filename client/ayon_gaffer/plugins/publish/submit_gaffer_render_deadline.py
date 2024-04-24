@@ -44,8 +44,9 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
     priority = 50
     chunk_size = 1
     concurrent_tasks = 1
-    group = "skjoldur"
-    pool = "main"
+    group = ""
+    primary_pool = ""
+    secondary_pool = ""
     department = ""
     limit_groups = {}
     use_gpu = False
@@ -62,14 +63,9 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
         "AYON_PROJECT_NAME": "",
         "AYON_FOLDER_PATH": "",
         "AYON_TASK_NAME": "",
-        "AYON_HOST_NAME": "",
+        "AYON_APP_NAME": "",
         "AYON_BUNDLE_NAME": "",
         "DEADLINE_ENVIRONMENT_CACHE_DIR": "",
-    }
-
-    deadline_attrs = {
-        "group": group,
-        "pool": pool
     }
 
     @classmethod
@@ -98,19 +94,9 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
                 maximum=10
             ),
             BoolDef(
-                "use_gpu",
-                default=cls.use_gpu,
-                label="Use GPU"
-            ),
-            BoolDef(
                 "suspend_publish",
                 default=False,
                 label="Suspend publish"
-            ),
-            BoolDef(
-                "workfile_dependency",
-                default=True,
-                label="Workfile Dependency"
             )
         ]
 
@@ -133,7 +119,9 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
             "priority", self.priority)
 
         node = instance.data["transientData"]["node"]
-        # context = instance.context
+
+        self.deadline_attrs = self.collect_deadline_attrs(instance)
+
         self.log.info(f"Submitting {node}")
         with node.scriptNode().context() as ctxt:
             render_shot_name = instance.data["folderPath"].split("/")[-1]
@@ -330,3 +318,21 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
                 var_plug = context_var_node["variables"][var_name]
                 for key, value in var_data.items():
                     var_plug[key].setValue(value)
+
+    def collect_deadline_attrs(self, instance):
+        """
+        Construct a dictionary with dispatcher plug names mapped to submission
+        parameters from the publisher
+
+        """
+
+        primary_pool = instance.data.get("primaryPool", "none")
+        secondary_pool = instance.data.get("secondaryPool", "none")
+        group = instance.data.get("group", "")
+
+        return {
+            "pool": primary_pool,
+            "secondaryPool": secondary_pool,
+            "group": group
+        }
+
