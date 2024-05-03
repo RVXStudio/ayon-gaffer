@@ -133,6 +133,12 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
         else:
             self.selected_nodes = []
 
+    def create_nice_label(self, instance_data):
+        product_name = instance_data["productName"]
+
+        folder_path = instance_data["folderPath"]
+        return f"{product_name} [{folder_path.split('/')[-1]}]"
+
     def create(self, product_name, instance_data, pre_create_data):
         instance_data.update({
             "id": AYON_INSTANCE_ID,
@@ -160,6 +166,10 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
 
         # Insert the transient data
         instance.transient_data["node"] = node
+        new_label = self.create_nice_label(instance.data)
+        instance.data["label"] = new_label
+
+        node.setName(f"{product_name}_{instance.data['folderPath'].split('/')[-1]}")
 
         self._add_instance_to_context(instance)
 
@@ -179,6 +189,10 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
 
             # Collect transient data
             created_instance.transient_data["node"] = node
+            new_label = self.create_nice_label(created_instance.data)
+            created_instance.data["label"] = new_label
+            #new_label = f"{product_name} [{folder_path.split('/')[-1]}]"
+            #instance.data["label"] = new_label
 
             self._add_instance_to_context(created_instance)
 
