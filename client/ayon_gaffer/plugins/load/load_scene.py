@@ -23,7 +23,11 @@ class GafferLoadScene(load.LoaderPlugin):
         # Create the Loader with the filename path set
         script = get_root()
         node = GafferScene.SceneReader()
-        node.setName(name)
+
+        folder = context["asset"]
+        folder_name = folder["name"]
+
+        node.setName(f"{folder_name}_{name}")
 
         path = self.filepath_from_context(context).replace("\\", "/")
         node["fileName"].setValue(path)
