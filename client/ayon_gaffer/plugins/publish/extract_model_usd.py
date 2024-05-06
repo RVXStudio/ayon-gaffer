@@ -3,7 +3,7 @@ import re
 
 import pyblish.api
 
-from ayon_core.pipeline import publish
+from openpype.pipeline import publish
 
 
 class ExtractGafferModelUsd(
