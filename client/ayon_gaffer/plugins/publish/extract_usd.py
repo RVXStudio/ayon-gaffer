@@ -6,16 +6,16 @@ import pyblish.api
 from openpype.pipeline import publish
 
 
-class ExtractGafferModelUsd(
+class ExtractGafferUSD(
     publish.Extractor,
     publish.OpenPypePyblishPluginMixin
 ):
     """Export Gaffer Scene Writer"""
 
     order = pyblish.api.ExtractorOrder
-    label = "Extract Gaffer Model USD"
+    label = "Extract Gaffer USD"
     hosts = ["gaffer"]
-    families = ["model"]
+    families = ["model", "look"]
 
     def process(self, instance):
 
