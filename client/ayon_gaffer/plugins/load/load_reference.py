@@ -53,7 +53,7 @@ class GafferLoadReference(load.LoaderPlugin):
         node.load(path)
 
         # Update the imprinted representation
-        node["user"]["representation"].setValue(str(representation["_id"]))
+        node["user"]["representation"].setValue(str(representation["id"]))
 
     def remove(self, container):
         node = container["_node"]

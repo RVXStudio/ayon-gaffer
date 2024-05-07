@@ -92,7 +92,7 @@ class GafferLoadAlembicCamera(load.LoaderPlugin):
         node["fileName"].setValue(path)
 
         # Update the imprinted representation
-        node["user"]["representation"].setValue(str(representation["_id"]))
+        node["user"]["representation"].setValue(str(representation["id"]))
 
     def remove(self, container):
         node = container["_node"]

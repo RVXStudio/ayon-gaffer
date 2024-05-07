@@ -232,7 +232,7 @@ def imprint_container(node: Gaffer.Node,
         "name": str(name),
         "namespace": str(namespace),
         "loader": str(loader),
-        "representation": str(context["representation"]["_id"]),
+        "representation": str(context["representation"]["id"]),
     }
     imprint(node, data)
 
