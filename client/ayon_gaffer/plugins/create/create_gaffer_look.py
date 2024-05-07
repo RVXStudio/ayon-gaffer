@@ -6,8 +6,8 @@ import GafferScene
 
 class CreateGafferLook(plugin.GafferCreatorBase):
     identifier = "io.ayon.creators.gaffer.look"
-    label = "Look"
-    product_type = "look"
+    label = "Look (experimental; just USD)"
+    family = "look"
     description = "Scene writer to look"
     icon = "gears"
 
