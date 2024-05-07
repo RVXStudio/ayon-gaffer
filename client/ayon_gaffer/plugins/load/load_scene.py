@@ -11,7 +11,7 @@ import GafferScene
 class GafferLoadScene(load.LoaderPlugin):
     """Load Scene"""
 
-    product_types = ["pointcache", "model", "usd"]
+    product_types = ["pointcache", "model", "usd", "look"]
     representations = ["abc", "usd"]
 
     label = "Load scene"
