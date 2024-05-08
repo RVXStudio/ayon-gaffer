@@ -65,6 +65,8 @@ class CreatorImprintReadMixin:
             if isinstance(value, str) and value.startswith(JSON_PREFIX):
                 value = value[len(JSON_PREFIX):]  # strip off JSON prefix
                 value = json.loads(value)
+            elif isinstance(value, str) and value == "<None>":
+                value = None
 
             key = key[prefix_len:]      # strip off prefix
             ayon_data[key] = value
@@ -145,6 +147,9 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
             "productName": product_name
         })
 
+        # strip out the task
+        instance_data["task"] = None
+
         script = get_root()
         assert script, "Must have a gaffer scene script as root"
 
@@ -162,6 +167,7 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
             creator=self,
         )
         data = instance.data_to_store()
+
         self._imprint(node, data)
 
         # Insert the transient data

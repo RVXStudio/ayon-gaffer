@@ -278,6 +278,9 @@ def imprint(node: Gaffer.Node,
                             exc_info=sys.exc_info())
                 pass
 
+        if value is None:
+            value = "<None>"
+
         # Generate new plug with value as default value
         if isinstance(value, str):
             plug = Gaffer.StringPlug(key, defaultValue=value, flags=FLAGS)
