@@ -338,7 +338,8 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
                 )
                 instance.transient_data["node"] = layer
                 instance.transient_data["parent_publish_node"] = publish_node
-                new_label = f"{subset_name} [{asset_name.split('/')[-1]}]"
+                # new_label = f"{subset_name} [{asset_name.split('/')[-1]}]"
+                new_label = f"{subset_name} [{asset_name}]"
                 instance.data["label"] = new_label
                 self._add_instance_to_context(instance)
 
