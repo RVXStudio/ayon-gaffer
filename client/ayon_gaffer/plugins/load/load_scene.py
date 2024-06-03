@@ -1,4 +1,4 @@
-from openpype.pipeline import (
+from ayon_core.pipeline import (
     load,
     get_representation_path,
 )
@@ -11,7 +11,7 @@ import GafferScene
 class GafferLoadScene(load.LoaderPlugin):
     """Load Scene"""
 
-    families = ["pointcache", "model", "usd", "look", "animation", "layout"]
+    product_types = ["pointcache", "model", "usd", "look", "animation", "layout"]
     representations = ["abc", "usd"]
 
     label = "Load scene"
@@ -55,7 +55,7 @@ class GafferLoadScene(load.LoaderPlugin):
         node["fileName"].setValue(path)
 
         # Update the imprinted representation
-        node["user"]["representation"].setValue(str(representation["_id"]))
+        node["user"]["representation"].setValue(str(representation["id"]))
 
     def remove(self, container):
         node = container["_node"]

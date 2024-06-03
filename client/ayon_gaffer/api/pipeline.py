@@ -6,22 +6,23 @@ import json
 
 import Gaffer  # noqa
 
-from openpype.host import HostBase, IWorkfileHost, ILoadHost, IPublishHost
+from ayon_core.host import HostBase, IWorkfileHost, ILoadHost, IPublishHost
 from ayon_gaffer.api.nodes import RenderLayerNode
 
 import pyblish.api
 
-from openpype.pipeline import (
+from ayon_core.pipeline import (
     register_creator_plugin_path,
     register_loader_plugin_path,
     AVALON_CONTAINER_ID,
-    get_current_asset_name,
+    AYON_CONTAINER_ID,
+    get_current_folder_path,
     get_current_task_name,
 )
 from ayon_gaffer import GAFFER_HOST_DIR
 import ayon_gaffer.api.nodes
 import ayon_gaffer.api.lib
-from openpype.lib import Logger
+from ayon_core.lib import Logger
 
 log = Logger.get_logger("ayon_gaffer.api.pipeline")
 
@@ -49,7 +50,7 @@ def get_root() -> Gaffer.ScriptNode:
 class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
     name = "gaffer"
 
-    _context_plug = "openpype_context"
+    _context_plug = "ayon_context"
 
     def __init__(self, application):
         super(GafferHost, self).__init__()
@@ -126,7 +127,7 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
             if any(key not in user for key in required):
                 continue
 
-            if user["id"].getValue() != AVALON_CONTAINER_ID:
+            if user["id"].getValue() not in {AYON_CONTAINER_ID, AVALON_CONTAINER_ID}:
                 continue
             container = {
                 key: user[key].getValue() for key in required
@@ -170,7 +171,7 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         ayon_gaffer.api.lib.update_root_context_variables(
             script_node,
             ctxt["project_name"],
-            ctxt["asset_name"]
+            ctxt["folder_path"]
         )
 
     def _on_scene_new(self, script_container, script_node):
@@ -227,18 +228,18 @@ def imprint_container(node: Gaffer.Node,
     """
     data = {
         "schema": "openpype:container-2.0",
-        "id": AVALON_CONTAINER_ID,
+        "id": AYON_CONTAINER_ID,
         "name": str(name),
         "namespace": str(namespace),
         "loader": str(loader),
-        "representation": str(context["representation"]["_id"]),
+        "representation": str(context["representation"]["id"]),
     }
     imprint(node, data)
 
 
 def imprint(node: Gaffer.Node,
             data: dict,
-            section: str = "OpenPype"):
+            section: str = "Ayon"):
     """Store and persist data on a node as `user` data.
 
     Args:
@@ -302,6 +303,6 @@ def imprint(node: Gaffer.Node,
 
 def get_context_label():
     return "{0}, {1}".format(
-        get_current_asset_name(),
+        get_current_folder_path(),
         get_current_task_name()
     )

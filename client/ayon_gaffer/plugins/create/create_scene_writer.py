@@ -5,16 +5,16 @@ import GafferScene
 
 
 class CreateGafferPointcache(plugin.GafferCreatorBase):
-    identifier = "io.openpype.creators.gaffer.pointcache"
+    identifier = "io.ayon.creators.gaffer.pointcache"
     label = "Pointcache"
-    family = "pointcache"
+    product_type = "pointcache"
     description = "Scene writer to pointcache"
     icon = "gears"
 
     def _create_node(self,
-                     subset_name: str,
+                     product_name: str,
                      pre_create_data: dict,
                      script: Gaffer.ScriptNode) -> Gaffer.Node:
-        node = GafferScene.SceneWriter(subset_name)
+        node = GafferScene.SceneWriter(product_name)
         script.addChild(node)
         return node

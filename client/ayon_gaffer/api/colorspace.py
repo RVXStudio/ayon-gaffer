@@ -1,7 +1,7 @@
 import attr
 import Gaffer
 from ayon_gaffer.api.lib import get_color_management_preferences
-from openpype.pipeline.colorspace import get_display_view_colorspace_name
+from ayon_core.pipeline.colorspace import get_display_view_colorspace_name
 
 
 @attr.s

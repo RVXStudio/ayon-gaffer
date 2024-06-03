@@ -5,9 +5,10 @@ import GafferScene
 
 
 class CreateGafferModel(plugin.GafferCreatorBase):
-    identifier = "io.openpype.creators.gaffer.model"
+
+    identifier = "io.ayon.creators.gaffer.model"
     label = "Model"
-    family = "model"
+    product_type = "model"
     description = "Scene writer to model"
     icon = "gears"
 

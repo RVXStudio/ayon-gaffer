@@ -1,22 +1,26 @@
 import json
 from abc import abstractmethod
 
-from openpype.pipeline import (
+from ayon_core.pipeline import (
     Creator as NewCreator,
     CreatedInstance,
     CreatorError,
 )
-from openpype import AYON_SERVER_ENABLED
 
-from openpype.lib import (
+from ayon_core.lib import (
     BoolDef
 )
-from openpype.client import get_asset_by_name
+import ayon_api
 
 from ayon_gaffer.api import (
     get_root,
 )
-from ayon_gaffer.api.pipeline import imprint, JSON_PREFIX
+from ayon_gaffer.api.pipeline import (
+    imprint,
+    JSON_PREFIX
+)
+from ayon_core.pipeline import AYON_INSTANCE_ID
+
 from ayon_gaffer.api.nodes import (
     AyonPublishTask,
     RenderLayerNode,
@@ -39,17 +43,23 @@ def read(node):
 class CreatorImprintReadMixin:
     """Mixin providing _read and _imprint methods to be used by Creators."""
 
-    attr_prefix = "openpype_"
+    attr_prefix = "ayon_"
+    op_attr_prefix = "openpype_"
 
     def _read(self, node: Gaffer.Node) -> dict:
         all_user_data = read(node)
 
         # Consider only data with the special attribute prefix
         # and strip off the prefix as for the resulting data
-        prefix_len = len(self.attr_prefix)
-        openpype_data = {}
+
+        ayon_data = {}
         for key, value in all_user_data.items():
-            if not key.startswith(self.attr_prefix):
+
+            if key.startswith(self.attr_prefix):
+                prefix_len = len(self.attr_prefix)
+            elif key.startswith(self.op_attr_prefix):
+                prefix_len = len(self.op_attr_prefix)
+            else:
                 continue
 
             if isinstance(value, str) and value.startswith(JSON_PREFIX):
@@ -59,11 +69,11 @@ class CreatorImprintReadMixin:
                 value = None
 
             key = key[prefix_len:]      # strip off prefix
-            openpype_data[key] = value
+            ayon_data[key] = value
 
-        openpype_data["instance_id"] = node.fullName()
+        ayon_data["instance_id"] = node.fullName()
 
-        return openpype_data
+        return ayon_data
 
     def _imprint(self, node: Gaffer.Node, data: dict):
         # Instance id is the node's unique full name so we don't need to
@@ -72,12 +82,12 @@ class CreatorImprintReadMixin:
         data.pop("instance_id", None)
 
         # Prefix all keys
-        openpype_data = {}
+        ayon_data = {}
         for key, value in data.items():
             key = f"{self.attr_prefix}{key}"
-            openpype_data[key] = value
+            ayon_data[key] = value
 
-        imprint(node, openpype_data)
+        imprint(node, ayon_data)
 
 
 class GafferCreatorError(CreatorError):
@@ -97,7 +107,7 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
 
     @abstractmethod
     def _create_node(self,
-                     subset_name: str,
+                     product_name: str,
                      pre_create_data: dict) -> Gaffer.Node:
         """Create the relevant node type for the instance.
 
@@ -105,7 +115,7 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
         updating imprinted data on this node.
 
         Arguments:
-            subset_name (str): The subset name to be created. Usually used for
+            product_name (str): The product name to be created. Usually used for
                 the node's name.
             pre_create_data (dict): The `pre_create_data` of the `create` call
                 of this Creator.
@@ -126,14 +136,15 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
             self.selected_nodes = []
 
     def create_nice_label(self, instance_data):
-        product_name = instance_data["subset"]
+        product_name = instance_data["productName"]
+
         folder_path = instance_data["folderPath"]
         return f"{product_name} [{folder_path.split('/')[-1]}]"
 
-    def create(self, subset_name, instance_data, pre_create_data):
+    def create(self, product_name, instance_data, pre_create_data):
         instance_data.update({
-            "id": "pyblish.avalon.instance",
-            "subset": subset_name
+            "id": AYON_INSTANCE_ID,
+            "productName": product_name
         })
 
         # strip out the task
@@ -146,12 +157,12 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
         self.set_selected_nodes(pre_create_data, script)
 
         # Create a box node for publishing
-        node = self._create_node(subset_name, pre_create_data, script)
+        node = self._create_node(product_name, pre_create_data, script)
 
         # Register the CreatedInstance
         instance = CreatedInstance(
-            family=self.family,
-            subset_name=subset_name,
+            product_type=self.product_type,
+            product_name=product_name,
             data=instance_data,
             creator=self,
         )
@@ -164,7 +175,7 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
         new_label = self.create_nice_label(instance.data)
         instance.data["label"] = new_label
 
-        node.setName(f"{subset_name}_{instance.data['folderPath'].split('/')[-1]}")
+        node.setName(f"{product_name}_{instance.data['folderPath'].split('/')[-1]}")
 
         self._add_instance_to_context(instance)
 
@@ -234,7 +245,7 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
 
     @abstractmethod
     def _create_node(self,
-                     subset_name: str,
+                     product_name: str,
                      pre_create_data: dict) -> Gaffer.Node:
         """Create the relevant node type for the instance.
 
@@ -242,7 +253,7 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
         updating imprinted data on this node.
 
         Arguments:
-            subset_name (str): The subset name to be created. Usually used for
+            product_name (str): The product name to be created. Usually used for
                 the node's name.
             pre_create_data (dict): The `pre_create_data` of the `create` call
                 of this Creator.
@@ -253,18 +264,18 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
         """
         pass
 
-    def create(self, subset_name, instance_data, pre_create_data):
+    def create(self, product_name, instance_data, pre_create_data):
         self.log.info('create()')
         instance_data.update({
-            "id": "pyblish.avalon.instance",
-            "subset": subset_name
+            "id": AYON_INSTANCE_ID,
+            "productName": product_name
         })
 
         script = get_root()
         assert script, "Must have a gaffer scene script as root"
 
         # Create a box node for publishing
-        node = self._create_node(subset_name, pre_create_data, script)
+        node = self._create_node(product_name, pre_create_data, script)
 
         # add an annotation to highlight where this is publishing to
         Gaffer.Metadata.registerValue(
@@ -279,8 +290,8 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
         )
         # Register the CreatedInstance
         instance = CreatedInstance(
-            family=self.family,
-            subset_name=subset_name,
+            product_type=self.product_type,
+            product_name=product_name,
             data=instance_data,
             creator=self,
         )
@@ -299,9 +310,15 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
         self.log.info('Collecting instances!')
         script = get_root()
         assert script, "Must have a gaffer scene script as root"
+
+        if hasattr(self, "deprecated_identifiers"):
+            identifiers = [self.identifier] + self.deprecated_identifiers
+        else:
+            identifiers = [self.identifier]
         for publish_node in script.children(AyonPublishTask):
             data = self._read(publish_node)
-            if data.get("creator_identifier") != self.identifier:
+            if data.get("creator_identifier") not in identifiers:
+                self.log.info("{} - {}".format(data.get("creator_identifier"), self.identifier))
                 self.log.debug(f'Skipping {publish_node}, wrong creator id')
                 continue
 
@@ -314,32 +331,34 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
                 layer_name = layer['layer_name'].getValue()
 
                 project_name = self.create_context.get_current_project_name()
-                asset_name = data["folderPath"]
+                folder_path = data["folderPath"]
                 instance_data = {
                     "task": data["task"],
                     "variant": layer_name,
                 }
-                if AYON_SERVER_ENABLED:
-                    instance_data["folderPath"] = asset_name
-                else:
-                    instance_data["asset"] = asset_name
-                asset_doc = get_asset_by_name(project_name, asset_name)
-                subset_name = self.get_subset_name(
+                instance_data["folderPath"] = folder_path
+                folder = ayon_api.get_folder_by_path(project_name, folder_path)
+                task_entity = ayon_api.get_task_by_name(
+                    project_name, folder["id"], instance_data["task"]
+                )
+                product_name = self.get_product_name(
+                    project_name,
+                    folder,
+                    task_entity,
                     layer_name,
-                    instance_data["task"],
-                    asset_doc,
-                    project_name)
+                    )
 
                 instance = CreatedInstance(
-                    family=self.family,
-                    subset_name=subset_name,
+                    product_type=self.product_type,
+                    product_name=product_name,
                     data=instance_data,
                     creator=self
                 )
                 instance.transient_data["node"] = layer
                 instance.transient_data["parent_publish_node"] = publish_node
-                # new_label = f"{subset_name} [{asset_name.split('/')[-1]}]"
-                new_label = f"{subset_name} [{asset_name}]"
+
+                new_label = f"{product_name} [{folder_path}]"
+
                 instance.data["label"] = new_label
                 self._add_instance_to_context(instance)
 

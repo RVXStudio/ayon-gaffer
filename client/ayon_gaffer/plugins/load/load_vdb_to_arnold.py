@@ -1,6 +1,6 @@
 import os
 
-from openpype.pipeline import (
+from ayon_core.pipeline import (
     load,
     get_representation_path,
 )
@@ -11,7 +11,7 @@ from ayon_gaffer.api.lib import set_node_color
 class GafferLoadArnoldVDB(load.LoaderPlugin):
     """Load VDB to Arnold"""
 
-    families = ["vdbcache"]
+    product_types = ["vdbcache"]
     representations = ["vdb"]
 
     label = "Load VDB to Arnold"
@@ -54,7 +54,7 @@ class GafferLoadArnoldVDB(load.LoaderPlugin):
         node["fileName"].setValue(path)
 
         # Update the imprinted representation
-        node["user"]["representation"].setValue(str(representation["_id"]))
+        node["user"]["representation"].setValue(str(representation["id"]))
 
     def remove(self, container):
         node = container["_node"]

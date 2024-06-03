@@ -2,7 +2,7 @@ from pathlib import Path
 import pyblish.api
 
 from ayon_gaffer.api import get_root
-from openpype.pipeline import registered_host
+from ayon_core.pipeline import registered_host
 
 
 class GafferSaveScript(pyblish.api.ContextPlugin):

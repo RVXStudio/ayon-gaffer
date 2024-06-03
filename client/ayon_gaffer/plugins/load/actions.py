@@ -2,18 +2,18 @@
 
 """
 
-from openpype.pipeline import load
+from ayon_core.pipeline import load
 
 
 class GafferSetFrameRangeLoader(load.LoaderPlugin):
     """Set frame range excluding pre- and post-handles"""
 
-    families = ["animation",
-                "camera",
-                "imagesequence",
-                "yeticache",
-                "pointcache",
-                "render"]
+    product_types = ["animation",
+                     "camera",
+                     "imagesequence",
+                     "yeticache",
+                     "pointcache",
+                     "render"]
     representations = ["*"]
 
     label = "Set frame range"
@@ -48,12 +48,12 @@ class GafferSetFrameRangeLoader(load.LoaderPlugin):
 class GafferSetFrameRangeWithHandlesLoader(load.LoaderPlugin):
     """Set frame range including pre- and post-handles"""
 
-    families = ["animation",
-                "camera",
-                "imagesequence",
-                "yeticache",
-                "pointcache",
-                "render"]
+    product_types = ["animation",
+                     "camera",
+                     "imagesequence",
+                     "yeticache",
+                     "pointcache",
+                     "render"]
     representations = ["*"]
 
     label = "Set frame range (with handles)"

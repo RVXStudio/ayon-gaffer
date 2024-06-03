@@ -1,7 +1,7 @@
 import imath
 import Gaffer
 
-from openpype.lib import Logger
+from ayon_core.lib import Logger
 
 log = Logger.get_logger('ayon_gaffer.api.nodes.render_settings')
 

@@ -1,51 +1,23 @@
 import os
-import copy
-import sys
-import platform
-import tempfile
-import json
-import subprocess
 
-import click
-from qtpy import QtCore, QtWidgets, QtGui
-import pyblish.api
 
-from openpype.modules import (
-    OpenPypeModule,
-    ITrayModule,
+from ayon_core.addon import (
+    AYONAddon,IHostAddon
+)
+from ayon_core.modules import (
     IPluginPaths,
-    ILaunchHookPaths,
-    IHostAddon
-)
-from openpype.lib import Logger
-from openpype.settings import (
-    get_system_settings,
-    get_project_settings,
-    get_local_settings
-)
-from openpype.pipeline import (
-    register_loader_plugin_path,
-    register_creator_plugin_path
+    
 )
 
-from openpype.lib import register_event_callback
-from openpype.lib.execute import (
-    get_linux_launcher_args
-)
-# from . import lib
-#import rvx_ayon.luts
-# import rvx_core.utils
-import ayon_api
-from functools import partial
+from ayon_core.modules.interfaces import ILaunchHookPaths
+
 
 GAFFER_HOST_DIR = os.path.dirname(os.path.abspath(__file__))
 _URL_NOT_SET = object()
 
 
 class GafferAddon(
-    OpenPypeModule,
-    IPluginPaths,
-    ILaunchHookPaths,
+    AYONAddon,
     IHostAddon,
 ):
     name = "gaffer"
@@ -88,8 +60,3 @@ class GafferAddon(
 
     def tray_menu(self, tray_menu):
         pass
-
-
-@click.group(GafferAddon.name, help="Gaffer addon related commands.")
-def cli_main():
-    pass

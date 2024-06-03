@@ -6,7 +6,7 @@ import imath
 
 import IECore
 
-from openpype.lib import Logger
+from ayon_core.lib import Logger
 from ayon_gaffer.api import lib
 
 log = Logger.get_logger(__name__)

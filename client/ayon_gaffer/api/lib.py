@@ -11,11 +11,7 @@ if sys.version_info >= (3, 9, 0):
 else:
     from typing import Iterator
 
-from openpype.pipeline import registered_host
-from openpype.client import (
-    get_asset_by_name
-)
-from openpype.lib import Logger
+from ayon_core.lib import Logger
 import ayon_api
 
 log = Logger.get_logger('ayon_gaffer.api.lib')
@@ -229,11 +225,9 @@ def set_framerate(script_node):
     log.info(f"Set framerate to [{fps}]")
 
 
-def update_root_context_variables(script_node, project_name, asset_name):
-    folder = next(ayon_api.get_folders(
-        project_name,
-        folder_paths=[asset_name])
-    )
+def update_root_context_variables(script_node, project_name, folder_path):
+    folder = ayon_api.get_folder_by_path(project_name, folder_path)
+
     fps = folder["attrib"]["fps"]
     res_x = folder["attrib"]["resolutionWidth"]
     res_y = folder["attrib"]["resolutionHeight"]

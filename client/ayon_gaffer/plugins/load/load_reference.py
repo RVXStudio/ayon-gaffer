@@ -1,4 +1,4 @@
-from openpype.pipeline import (
+from ayon_core.pipeline import (
     load,
     get_representation_path,
 )
@@ -11,7 +11,7 @@ import Gaffer
 class GafferLoadReference(load.LoaderPlugin):
     """Reference a gaffer scene"""
 
-    families = ["gafferNodes"]
+    product_types = ["gafferNodes"]
     representations = ["gfr"]
 
     label = "Reference Gaffer Scene"
@@ -53,7 +53,7 @@ class GafferLoadReference(load.LoaderPlugin):
         node.load(path)
 
         # Update the imprinted representation
-        node["user"]["representation"].setValue(str(representation["_id"]))
+        node["user"]["representation"].setValue(str(representation["id"]))
 
     def remove(self, container):
         node = container["_node"]

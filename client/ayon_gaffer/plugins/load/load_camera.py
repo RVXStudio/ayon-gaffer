@@ -1,4 +1,4 @@
-from openpype.pipeline import (
+from ayon_core.pipeline import (
     load,
     get_representation_path,
 )
@@ -18,7 +18,7 @@ import IECore
 class GafferLoadAlembicCamera(load.LoaderPlugin):
     """Load Alembic Camera"""
 
-    families = ["camera"]
+    product_types = ["camera"]
     representations = ["abc"]
 
     label = "Load camera"
@@ -92,7 +92,7 @@ class GafferLoadAlembicCamera(load.LoaderPlugin):
         node["fileName"].setValue(path)
 
         # Update the imprinted representation
-        node["user"]["representation"].setValue(str(representation["_id"]))
+        node["user"]["representation"].setValue(str(representation["id"]))
 
     def remove(self, container):
         node = container["_node"]

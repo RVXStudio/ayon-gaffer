@@ -1,7 +1,6 @@
 from pydantic import Field
 from ayon_server.settings import (
     BaseSettingsModel,
-    TemplateWorkfileBaseOptions,
 )
 
 
@@ -18,7 +17,13 @@ class GafferDeadlineEnvVarModel(BaseSettingsModel):
     )
 
 
-class GafferDeadlineExtraSettings(BaseSettingsModel):
+class GafferDeadlinePoolSettings(BaseSettingsModel):
+    primary_pool: str = Field(
+        title="Primary Pool"
+    )
+    secondary_pool: str = Field(
+        title="Secondary Pool"
+    )
     group: str = Field(
         title="Group"
     )
@@ -29,9 +34,9 @@ class GafferDeadlineSettings(BaseSettingsModel):
         title="Environment variables",
         default_factory=list
     )
-    extra: GafferDeadlineExtraSettings = Field(
-        default_factory=GafferDeadlineExtraSettings,
-        title="Extra"
+    pools: GafferDeadlinePoolSettings = Field(
+        default_factory=GafferDeadlinePoolSettings,
+        title="Pools"
     )
 
 
@@ -51,16 +56,21 @@ DEFAULT_VALUES = {
     "deadline": {
         "env_vars": [
             {"name": "ARNOLD_ROOT", "use_env_value": True, "value": ""},
-            {"name": "GAFFER_EXTENSION_PATHS", "use_env_value": True, "value": ""},
-            {"name": "AVALON_APP_NAME", "use_env_value": True, "value": ""},
-            {"name": "AVALON_TASK", "use_env_value": True, "value": ""},
-            {"name": "AVALON_PROJECT", "use_env_value": True, "value": ""},
-            {"name": "AVALON_ASSET", "use_env_value": True, "value": ""},
+            {
+                "name": "GAFFER_EXTENSION_PATHS",
+                "use_env_value": True, "value": ""
+            },
+            {"name": "AYON_APP_NAME", "use_env_value": True, "value": ""},
+            {"name": "AYON_TASK_NAME", "use_env_value": True, "value": ""},
+            {"name": "AYON_PROJECT_NAME", "use_env_value": True, "value": ""},
+            {"name": "AYON_FOLDER_PATH", "use_env_value": True, "value": ""},
             {"name": "AYON_BUNDLE_NAME", "use_env_value": True, "value": ""},
             {"name": "AYON_RENDER_JOB", "use_env_value": False, "value": "1"},
         ],
-        "extra": {
-            "group": "skjoldur"
+        "pools": {
+            "group": "",
+            "primary_pool": "",
+            "secondary_pool": "",
         }
     }
 }
