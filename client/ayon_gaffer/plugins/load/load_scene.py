@@ -24,7 +24,7 @@ class GafferLoadScene(load.LoaderPlugin):
         script = get_root()
         node = GafferScene.SceneReader()
 
-        folder = context["asset"]
+        folder = context["folder"]
         folder_name = folder["name"]
 
         node.setName(f"{folder_name}_{name}")
@@ -47,7 +47,7 @@ class GafferLoadScene(load.LoaderPlugin):
         self.update(container, representation)
 
     def update(self, container, representation):
-
+        representation = representation["representation"]
         path = get_representation_path(representation)
         path = path.replace("\\", "/")
 
