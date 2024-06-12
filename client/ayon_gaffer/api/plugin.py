@@ -73,6 +73,14 @@ class CreatorImprintReadMixin:
 
         ayon_data["instance_id"] = node.fullName()
 
+        if "creator_identifier" in ayon_data.keys():
+            # if we have an openpye creator identifier, let's temporarily
+            # make it an ayon one.
+            creator_id = ayon_data["creator_identifier"]
+            if ".openpype." in creator_id:
+                ayon_data["creator_identifier"] = creator_id.replace(
+                    ".openpype.", ".ayon.")
+
         return ayon_data
 
     def _imprint(self, node: Gaffer.Node, data: dict):
@@ -139,7 +147,7 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
         product_name = instance_data["productName"]
 
         folder_path = instance_data["folderPath"]
-        return f"{product_name} [{folder_path.split('/')[-1]}]"
+        return f"{product_name} [{folder_path}]"
 
     def create(self, product_name, instance_data, pre_create_data):
         instance_data.update({
@@ -185,9 +193,13 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
 
         script = get_root()
         assert script, "Must have a gaffer scene script as root"
+        if hasattr(self, "deprecated_identifiers"):
+            identifiers = [self.identifier] + self.deprecated_identifiers
+        else:
+            identifiers = [self.identifier]
         for node in script.children(Gaffer.Node):
             data = self._read(node)
-            if data.get("creator_identifier") != self.identifier:
+            if data.get("creator_identifier") not in identifiers:
                 continue
 
             # Add instance
