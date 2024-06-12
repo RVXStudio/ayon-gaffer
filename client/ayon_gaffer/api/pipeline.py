@@ -266,6 +266,9 @@ def imprint(node: Gaffer.Node,
         if key in node["user"]:
             # Set existing attribute
             try:
+                if value is None:
+                    value = ""
+                print(value)
                 node["user"][key].setValue(value)
                 continue
             except Exception:
