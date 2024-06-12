@@ -1,57 +1,66 @@
-from pydantic import Field
 from ayon_server.settings import (
     BaseSettingsModel,
+    SettingsField,
+)
+
+from .loader_plugins import (
+    LoaderPluginsModel,
+    DEFAULT_LOADER_PLUGINS_SETTINGS
 )
 
 
 class GafferDeadlineEnvVarModel(BaseSettingsModel):
     _layout = "expanded"
-    name: str = Field(
+    name: str = SettingsField(
         title="Variable name"
     )
-    use_env_value: bool = Field(
+    use_env_value: bool = SettingsField(
         title="Copy value from environment"
     )
-    value: str = Field(
+    value: str = SettingsField(
         title="Variable value"
     )
 
 
 class GafferDeadlinePoolSettings(BaseSettingsModel):
-    primary_pool: str = Field(
+    primary_pool: str = SettingsField(
         title="Primary Pool"
     )
-    secondary_pool: str = Field(
+    secondary_pool: str = SettingsField(
         title="Secondary Pool"
     )
-    group: str = Field(
+    group: str = SettingsField(
         title="Group"
     )
 
 
 class GafferDeadlineSettings(BaseSettingsModel):
-    env_vars: list[GafferDeadlineEnvVarModel] = Field(
+    env_vars: list[GafferDeadlineEnvVarModel] = SettingsField(
         title="Environment variables",
         default_factory=list
     )
-    pools: GafferDeadlinePoolSettings = Field(
+    pools: GafferDeadlinePoolSettings = SettingsField(
         default_factory=GafferDeadlinePoolSettings,
         title="Pools"
     )
 
 
 class GafferSettings(BaseSettingsModel):
-    node_preset_paths: list[str] = Field(
+    load: LoaderPluginsModel = SettingsField(
+        default_factory=LoaderPluginsModel,
+        title="Loader Plugins")
+    node_preset_paths: list[str] = SettingsField(
         default_factory=list,
         title="Node preset paths"
     )
-    deadline: GafferDeadlineSettings = Field(
+    deadline: GafferDeadlineSettings = SettingsField(
         default_factory=GafferDeadlineSettings,
         title="GafferDeadline"
     )
 
 
 DEFAULT_VALUES = {
+    "load": DEFAULT_LOADER_PLUGINS_SETTINGS,
     "node_preset_paths": [],
     "deadline": {
         "env_vars": [
