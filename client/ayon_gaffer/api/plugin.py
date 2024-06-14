@@ -202,6 +202,12 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
             if data.get("creator_identifier") not in identifiers:
                 continue
 
+            # TODO: I need to understand better how tasks work after the
+            # ayon_core move
+            # if there is not task, we need it to be None, instead of ""
+            task = data.get("task")
+            if task is not None and task == "":
+                data["task"] = None
             # Add instance
             created_instance = CreatedInstance.from_existing(data, self)
 
