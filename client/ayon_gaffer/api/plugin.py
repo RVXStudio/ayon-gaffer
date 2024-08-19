@@ -1,4 +1,5 @@
 import json
+import imath
 from abc import abstractmethod
 
 from ayon_core.pipeline import (
@@ -404,3 +405,48 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
             parent = node.parent()
             parent.removeChild(node)
             del node
+
+
+class PlugSettingsMixin:
+
+    def apply_plug_settings(self, node):
+        print("Applygin plug from settings")
+        for plug in self.plugs:
+            plug_name = plug["name"]
+            plug_type = plug["type"]
+            plug_value = plug[plug_type]
+
+            print(f"* {plug_name}")
+
+            # now let's find the actual plug
+            plug_path = plug_name.split(".")
+            try:
+                target_plug = node
+                for pp in plug_path:
+                    target_plug = target_plug[pp]
+            except KeyError:
+                print(f"No plug [{plug_path}] for node {node}")
+                continue
+
+            if plug_type in ["text", "boolean", "number", "decimal"]:
+                print(f"Setting [{target_plug}] to [{plug_value}]")
+                pass  # we just pass plug_value on as-is
+
+            elif plug_type == "v2f":
+                plug_value = imath.V2f(plug_value["x"], plug_value["y"])
+            elif plug_type == "v3f":
+                plug_value = imath.V2f(
+                        plug_value["x"], plug_value["y"], plug_value["z"])
+            elif plug_type == "color3f":
+                plug_value = imath.Color3f(
+                        plug_value["r"], plug_value["g"], plug_value["b"])
+            elif plug_type == "color4f":
+                plug_value = imath.Color4f(
+                        plug_value["r"],
+                        plug_value["g"],
+                        plug_value["b"],
+                        plug_value["a"])
+            try:
+                target_plug.setValue(plug_value)
+            except Exception as err:
+                print(f"ERROR: {err}")

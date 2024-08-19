@@ -24,8 +24,7 @@ class GafferLoadScene(load.LoaderPlugin):
 
     def load(self, context, name, namespace, data):
         # Create the Loader with the filename path set
-        import json
-        print(context)
+
         script = get_root()
         node = GafferScene.SceneReader()
 
