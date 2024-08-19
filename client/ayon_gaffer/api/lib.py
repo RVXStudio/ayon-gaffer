@@ -12,6 +12,7 @@ else:
     from typing import Iterator
 
 from ayon_core.lib import Logger
+import ayon_core.lib
 import ayon_api
 
 log = Logger.get_logger('ayon_gaffer.api.lib')
@@ -492,3 +493,47 @@ def create_multishot_context_vars(script_node):
     if "render:shot" not in existing_variables:
         render_shot_plug = create_render_shot_plug()
         context_vars.addChild(render_shot_plug)
+
+
+def node_name_from_template(template_string, context):
+    try:
+        from ayon_core.pipeline.template_data import (
+            construct_folder_full_name
+        )
+        use_full_name = True
+    except ModuleNotFoundError:
+        # couldn't load the rvx custom core function
+        use_full_name = False
+    folder_entity = context["folder"]
+    product_name = context["product"]["name"]
+    folder_entity = context["folder"]
+    hierarchy_parts = folder_entity["path"].split("/")
+    hierarchy_parts.pop(0)
+    hierarchy_parts.pop(-1)
+    if use_full_name:
+        full_name = construct_folder_full_name(
+            context["project"]["name"], folder_entity, hierarchy_parts)
+    else:
+        full_name = folder_entity["name"]
+    product_entity = context["product"]
+    product_name = product_entity["name"]
+    product_type = product_entity["productType"]
+    repre_entity = context["representation"]
+    repre_cont = repre_entity["context"]
+    formatting_data = {
+        "asset_name": folder_entity["name"],
+        "asset_type": "asset",
+        "folder": {
+            "name": folder_entity["name"],
+            "fullname": full_name,
+        },
+        "subset": product_name,
+        "product": {
+            "name": product_name,
+            "type": product_type,
+        },
+        "family": product_type,
+        "ext": repre_cont["representation"],
+    }
+    template = ayon_core.lib.StringTemplate(template_string)
+    return template.format(formatting_data)
