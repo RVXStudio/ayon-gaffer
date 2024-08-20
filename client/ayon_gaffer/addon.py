@@ -30,10 +30,17 @@ class GafferAddon(
     def add_implementation_envs(self, env, _app):
         # Add requirements to GAFFER_EXTENSION_PATHS
         startup_path = os.path.join(GAFFER_HOST_DIR, "deploy")
+        gaffer_deadline_path = os.path.join(startup_path, "GafferDeadline")
+        ext_path = startup_path + os.pathsep + gaffer_deadline_path
         if env.get("GAFFER_EXTENSION_PATHS"):
-            startup_path += os.pathsep + env["GAFFER_EXTENSION_PATHS"]
+            ext_path += os.pathsep + env["GAFFER_EXTENSION_PATHS"]
 
-        env["GAFFER_EXTENSION_PATHS"] = startup_path
+        env["GAFFER_EXTENSION_PATHS"] = ext_path
+
+        gaffer_deadline_dep_path = os.path.join(
+            gaffer_deadline_path, "gaffer_batch_dependency.py")
+
+        env["DEADLINE_DEPENDENCY_SCRIPT_PATH"] = gaffer_deadline_dep_path
 
     def get_launch_hook_paths(self, app):
         if app.host_name != self.host_name:
