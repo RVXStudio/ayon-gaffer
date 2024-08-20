@@ -5,18 +5,21 @@ from ayon_core.pipeline import (
     get_representation_path,
 )
 from ayon_gaffer.api import get_root, imprint_container
-from ayon_gaffer.api.lib import set_node_color
+import ayon_gaffer.api.lib
+import ayon_gaffer.api.utils
+import ayon_gaffer.api.plugin
 
 import GafferImage
 
 
-class GafferLoadImage(load.LoaderPlugin):
+class GafferLoadImageReader(load.LoaderPlugin,
+                            ayon_gaffer.api.plugin.PlugSettingsMixin):
     """Load Image or Image sequence"""
 
-    product_types = ["imagesequence", "review", "render", "plate"]
+    product_types = ["image", "imagesequence", "review", "render", "plate"]
     representations = ["*"]
 
-    label = "Load sequence"
+    label = "Load sequence (ImageReader)"
     order = -10
     icon = "code-fork"
     color = "orange"
@@ -25,7 +28,7 @@ class GafferLoadImage(load.LoaderPlugin):
         # Create the Loader with the filename path set
         script = get_root()
         node = GafferImage.ImageReader()
-        node.setName(name)
+        node.setName(self._get_node_name(context))
 
         path = self.filepath_from_context(context)
         path = self._convert_path(path)
@@ -34,7 +37,9 @@ class GafferLoadImage(load.LoaderPlugin):
 
         # Colorize based on family
         # TODO: Use settings instead
-        set_node_color(node, (1, 0.98, 0.353))
+        ayon_gaffer.api.lib.set_node_color(node, (1, 0.98, 0.353))
+
+        self.apply_plug_settings(node)
 
         imprint_container(node,
                           name=name,
@@ -63,10 +68,18 @@ class GafferLoadImage(load.LoaderPlugin):
         parent.removeChild(node)
 
     def _convert_path(self, path):
-        root = os.path.dirname(path)
-        fname = os.path.basename(path)
-
         # TODO: Actually detect whether it's a sequence. And support _ too.
-        prefix, padding, suffix = fname.rsplit(".", 2)
-        fname = ".".join([prefix, "#" * len(padding), suffix])
-        return os.path.join(root, fname).replace("\\", "/")
+        print('converting path', path)
+        seq = ayon_gaffer.api.utils.get_pyseq_sequence(path)
+        if len(seq) > 1:
+            print("use #")
+            padding = seq._get_padding()
+            hash_padding = int(padding[1:-1])*"#"  # convert %04d to ####
+            out_path = seq.format(f"%D%h{hash_padding}%t")
+        else:
+            out_path = seq.path()
+        return out_path.replace("\\", "/")
+
+    def _get_node_name(self, context):
+        return ayon_gaffer.api.lib.node_name_from_template(
+            self.node_name_template, context)
