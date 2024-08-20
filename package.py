@@ -1,7 +1,9 @@
 name = "gaffer"
 title = "Gaffer"
-version = "0.4.0"
+version = "0.4.1"
 
 client_dir = "ayon_gaffer"
 
-plugin_for = ["ayon_server"]
+ayon_required_addons = {
+    "core": ">0.4.0",
+}

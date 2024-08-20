@@ -8,6 +8,8 @@ from .loader_plugins import (
     DEFAULT_LOADER_PLUGINS_SETTINGS
 )
 
+from .imageio import ImageIOSettings, DEFAULT_IMAGEIO_SETTINGS
+
 
 class GafferDeadlineEnvVarModel(BaseSettingsModel):
     _layout = "expanded"
@@ -46,6 +48,8 @@ class GafferDeadlineSettings(BaseSettingsModel):
 
 
 class GafferSettings(BaseSettingsModel):
+    imageio: ImageIOSettings = SettingsField(
+        default_factory=ImageIOSettings, title="Color Management (imageio)")
     load: LoaderPluginsModel = SettingsField(
         default_factory=LoaderPluginsModel,
         title="Loader Plugins")
@@ -60,6 +64,7 @@ class GafferSettings(BaseSettingsModel):
 
 
 DEFAULT_VALUES = {
+    "imageio": DEFAULT_IMAGEIO_SETTINGS,
     "load": DEFAULT_LOADER_PLUGINS_SETTINGS,
     "node_preset_paths": [],
     "deadline": {
