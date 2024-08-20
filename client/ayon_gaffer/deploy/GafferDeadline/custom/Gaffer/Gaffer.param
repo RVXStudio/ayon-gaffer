@@ -1,0 +1,44 @@
+[About]
+Type=label
+Label=About
+Category=About Plugin
+CategoryOrder=-1
+Index=0
+Default=Gaffer for Deadline
+Description=Not configurable
+
+[ConcurrentTasks]
+Type=label
+Label=ConcurrentTasks
+Category=About Plugin
+CategoryOrder=-1
+Index=0
+Default=True
+Description=Not configurable.
+
+[Executable1_3_16_7]
+Type=multilinemultifilename
+Category=Gaffer 1.3.16.7 Executables
+CategoryOrder=0
+CategoryIndex=0
+Label=Gaffer 1.3.16.7 Render Executable
+Default=%HOME%/gaffer_1.3.16.7;~/gaffer_1.3.16.7
+Description=The path to the Gaffer 1.3.16.7 executable (gaffer.cmd on Windows) file used for executing. Enter alternative paths on separate lines.
+
+[Executable1_4_11_0]
+Type=multilinemultifilename
+Category=Gaffer 1.4.11.0 Executables
+CategoryOrder=0
+CategoryIndex=0
+Label=Gaffer 1.4.11.0 Render Executable
+Default=%HOME%/gaffer_1.4.11.0;~/gaffer_1.4.11.0
+Description=The path to the Gaffer 1.4.11.0 executable (gaffer.cmd on Windows) file used for executing. Enter alternative paths on separate lines.
+
+[EnablePathMapping]
+Type=boolean
+Category=Path Mapping (For Mixed Farms)
+CategoryOrder=70
+CategoryIndex=0
+Label=Enable Path Mapping
+Default=true
+Description=If enabled, environment variables will be set for the process running Gaffer. This feature can be turned off if there are no Path Mapping entries defined in the Repository Options.

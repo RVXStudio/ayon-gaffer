@@ -1,0 +1,10 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"python.pythonPath": "${env:GAFFER_ROOT}/bin/python.exe"
+	}
+}
