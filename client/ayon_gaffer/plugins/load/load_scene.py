@@ -46,11 +46,11 @@ class GafferLoadScene(load.LoaderPlugin):
                           context=context,
                           loader=self.__class__.__name__)
 
-    def switch(self, container, representation):
-        self.update(container, representation)
+    def switch(self, container, context):
+        self.update(container, context)
 
-    def update(self, container, representation):
-        representation = representation["representation"]
+    def update(self, container, context):
+        representation = context["representation"]
         path = get_representation_path(representation)
         path = path.replace("\\", "/")
 
