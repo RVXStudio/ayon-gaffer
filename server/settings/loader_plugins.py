@@ -8,6 +8,22 @@ from ayon_server.settings import (
 from .common import PlugModel
 
 
+class LoaderTemplateProfilemodel(BaseSettingsModel):
+    _layout = "expanded"
+    product_type: list[str] = SettingsField(
+        title="Imported product type",
+        default_factory=list
+    )
+    task_name: list[str] = SettingsField(
+        title="Current task",
+        default_factory=list
+    )
+    scenegraph_location_template: str = SettingsField(
+        default="",
+        title="scenegraph_location_template"
+    )
+
+
 class LoadSceneModel(BaseSettingsModel):
     enabled: bool = SettingsField(
         title="Enabled"

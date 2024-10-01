@@ -35,10 +35,11 @@ def set_node_color(node: Gaffer.Node, color: Tuple[float, float, float]):
 
 
 def make_box(name: str,
-             add_input: bool = True,
-             add_output: bool = True,
+             inputs: list = ["in"],
+             outputs: list = ["out"],
              description: Optional[str] = None,
-             hide_add_buttons: bool = True) -> Gaffer.Box:
+             hide_add_buttons: bool = True,
+             connect_passthrough: bool = False) -> Gaffer.Box:
     """Create a Box node with BoxIn and BoxOut nodes
 
     Note:
@@ -47,11 +48,15 @@ def make_box(name: str,
 
     Arguments:
         name (str): The name to give the box.
-        add_input (bool): Whether to add an input child plug.
-        add_output (bool): Whether to add an output child plug.
+        inputs (list): List of input child plugs to add, an empty list creates
+            no inputs
+        outputs (list): List of child output plugs to add, empty list
+            creates no output.
         description (Optional[str]): A description to register for the box.
         hide_add_buttons (bool): Whether the add buttons on the box
             node should be hidden or not. By default, this will hide them.
+        connect_passthrough (bool): Should the first input be connected to the
+            first outputs passthrough plug?
 
     Returns:
         Gaffer.Box: The created box
@@ -63,15 +68,19 @@ def make_box(name: str,
     if description:
         Gaffer.Metadata.registerValue(box, 'description', description)
 
-    if add_input:
-        box_in = Gaffer.BoxIn("BoxIn")
+    for inp in inputs:
+        box_in = Gaffer.BoxIn(f"BoxIn_{inp}")
         box.addChild(box_in)
-        box_in.setup(GafferScene.ScenePlug("out"))
+        box_in.setup(GafferScene.ScenePlug('out'))
+        # set the newest plug name to the input name
+        box.children()[-1].setName(inp)
 
-    if add_output:
-        box_out = Gaffer.BoxOut("BoxOut")
+    for outp in outputs:
+        box_out = Gaffer.BoxOut(f"BoxOut_{outp}")
+
         box.addChild(box_out)
         box_out.setup(GafferScene.ScenePlug("in",))
+        box.children()[-1].setName(outp)
 
     if hide_add_buttons:
         for key in [
@@ -81,6 +90,11 @@ def make_box(name: str,
             'noduleLayout:customGadget:addButtonRight:visible',
         ]:
             Gaffer.Metadata.registerValue(box, key, False)
+
+    if connect_passthrough and len(inputs) > 0 and len(outputs) > 0:
+        first_input = box.children(Gaffer.BoxIn)[0]
+        first_output = box.children(Gaffer.BoxOut)[0]
+        first_output["passThrough"].setInput(first_input["out"])
 
     return box
 

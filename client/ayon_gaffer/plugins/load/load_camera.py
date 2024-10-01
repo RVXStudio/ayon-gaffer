@@ -34,7 +34,7 @@ class GafferLoadAlembicCamera(load.LoaderPlugin):
         # manually assign the camera into Gaffer's '__cameras' set. So for
         # now we encapsulate what's needed in a Box node to resolve that.
         # See: https://github.com/GafferHQ/gaffer/issues/3954
-        box = make_box(name, add_input=False)
+        box = make_box(name, inputs=[])
         reader = GafferScene.SceneReader()
         box.addChild(reader)
 

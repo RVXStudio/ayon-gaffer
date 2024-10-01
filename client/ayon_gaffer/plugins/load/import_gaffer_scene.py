@@ -33,7 +33,7 @@ class GafferImportScene(load.LoaderPlugin):
 
         import_to_box = data.get("box", True)
         if import_to_box:
-            parent = make_box(name, add_input=False, add_output=False)
+            parent = make_box(name, inputs=[], outputs=[])
             script.addChild(parent)
         else:
             parent = script
