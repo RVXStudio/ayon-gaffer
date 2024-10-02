@@ -1,5 +1,6 @@
 import sys
 from queue import SimpleQueue
+import re
 from typing import Tuple, List, Optional
 
 import Gaffer
@@ -97,6 +98,148 @@ def make_box(name: str,
         first_output["passThrough"].setInput(first_input["out"])
 
     return box
+
+
+def make_scene_load_box(scene_root, name, scenegraph_template, auxiliary_scengraph_transforms=[]):
+    '''
+    import ayon_gaffer.api.lib
+import re
+from importlib import reload
+reload(ayon_gaffer.api.lib)
+node_name =     'folder_fullname_product_##'
+
+b = ayon_gaffer.api.lib.make_scene_load_box(
+    root,
+    node_name,
+    'folder_fullname_product_##/geo',
+    ['folder_fullname_product_##/mat'],
+)
+
+root.addChild(b)
+    '''
+    box = make_box('scene_load_box', inputs=auxiliary_scengraph_transforms)
+    box_name = get_next_valid_name(name, scene_root)
+    box.setName(box_name)
+
+    filename_plug = Gaffer.StringPlug(
+                "fileName",
+                defaultValue="",
+                flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic,
+            )
+    Gaffer.Metadata.registerValue(filename_plug, "nodule:type", "")
+    box.addChild(filename_plug)
+
+    # if the scenegraph template has subtransforms main/sub1/sub2 we want to
+    # add plugs to disable those groupins, since we _might_ get stuff in that
+    # already has thos groups.
+    if "/" in scenegraph_template:
+        scenegraph_template_parts = scenegraph_template.split("/")
+        sc_root_name = scenegraph_template_parts[0]
+        sub_groups = scenegraph_template_parts[1:]
+    else:
+        sc_root_name = scenegraph_template
+        sub_groups = []
+    print(f"scenegraph template root {sc_root_name}, sub groups: {sub_groups}")
+
+    group_nodes = create_sub_groups(box, sub_groups)
+    group_nodes.reverse()
+    scene_reader = GafferScene.SceneReader()
+
+    scene_reader["fileName"].setInput(filename_plug)
+    scene_reader.setName("Read")
+    box.addChild(scene_reader)
+
+    if len(group_nodes) > 0:
+        group_nodes[0]["in"][0].setInput(scene_reader["out"])
+        current_group = group_nodes[0]
+        for group in group_nodes[1:]:
+            group["in"][0].setInput(current_group["out"])
+            current_group = group
+
+    merge_scenes = GafferScene.MergeScenes()
+    box.addChild(merge_scenes)
+    merge_scenes["in"][0].setInput(current_group["out"])
+
+    main_group_name = sc_root_name.format(node=box_name)
+
+    main_group = GafferScene.Group(main_group_name)
+    main_group["name"].setValue(main_group_name)
+    box.addChild(main_group)
+    main_group["in"][0].setInput(merge_scenes["out"])
+    box_outs = box.children(Gaffer.BoxOut)
+    if len(box_outs) > 0:
+        # connect the merge to the output
+        box_outs[0]["in"].setInput(main_group["out"])
+
+    # now handle aux transforms
+    aux_groups = create_sub_groups(box, auxiliary_scengraph_transforms)
+    idx = 1
+    for grp, aux in zip(aux_groups, auxiliary_scengraph_transforms):
+        grp["in"][0].setInput(box[f"BoxIn_{aux}"]["out"])
+        merge_scenes["in"][idx].setInput(grp["out"])
+        idx += 1
+
+
+    return box
+
+
+def create_sub_groups(parent, sub_groups):
+    group_nodes = []
+    for idx, grp in enumerate(sub_groups):
+        print(f"** {grp} **")
+        subs = "/".join(sub_groups[0:idx])
+        if subs != "":
+            subs = f"/{subs}"
+        plug_label = f"Enable {subs}/{grp}"
+        plug_name = plug_label.replace(" ", "_").replace("/", "_")
+        plug = Gaffer.BoolPlug(
+                plug_name,
+                defaultValue=True,
+                flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic,
+            )
+        parent.addChild(plug)
+        Gaffer.Metadata.registerValue(plug, "nodule:type", "")
+        Gaffer.Metadata.registerValue(plug, "label", plug_label)
+
+        group_node = GafferScene.Group(f"Group_{grp}")
+        group_node["name"].setValue(grp)
+        group_node["enabled"].setInput(plug)
+        group_nodes.append(group_node)
+        parent.addChild(group_node)
+    return group_nodes
+
+
+def get_next_valid_name(template, script_node):
+    res = re.search(r'([a-zA-Z0-9_]*)(#+)([a-zA-Z0-9_]*)', template)
+    if res is not None:
+        print(res.group(1), res.group(2), res.group(3))
+        head = res.group(1)
+        padding = res.group(2)
+        tail = res.group(3)
+    else:
+        head = template
+        padding = ""
+        tail = ""
+        new_number = ""
+
+    if padding:
+        pad_len = len(padding)
+        ex_names = []
+        for child in script_node.children():
+            if re.match(f"{head}.*{tail}", child.getName()):
+                ex_names.append(child.getName())
+        ex_names.sort(reverse=True)
+        if len(ex_names) == 0:
+            next_number = 1
+        else:
+            last_name = ex_names[0]
+
+            res = re.search(r'(.*)_*(\d+)(.*)', last_name)
+            if res is not None:
+                next_number = int(res.group(2)) + 1
+        new_number = str(next_number).zfill(pad_len)
+
+    return f"{head}{new_number}{tail}"
 
 
 def arrange(nodes: List[Gaffer.Node], parent: Optional[Gaffer.Node] = None):

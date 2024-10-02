@@ -1,14 +1,16 @@
 from pydantic import validator
+from ayon_server.exceptions import BadRequestException
 from ayon_server.settings import (
     BaseSettingsModel,
     SettingsField,
     ensure_unique_names
 )
+import re
 
 from .common import PlugModel
 
 
-class LoaderTemplateProfilemodel(BaseSettingsModel):
+class LoaderTemplateProfileModel(BaseSettingsModel):
     _layout = "expanded"
     product_type: list[str] = SettingsField(
         title="Imported product type",
@@ -18,10 +20,28 @@ class LoaderTemplateProfilemodel(BaseSettingsModel):
         title="Current task",
         default_factory=list
     )
+    node_name_template: str = SettingsField(
+        default="",
+        title="Node name template"
+    )
     scenegraph_location_template: str = SettingsField(
         default="",
-        title="scenegraph_location_template"
+        title="Scenegraph location template"
     )
+    auxiliary_transforms: list[str] = SettingsField(
+        default_factory=list,
+        title="Auxiliary transforms"
+    )
+
+    @validator('node_name_template')
+    def only_one_hash_block(cls, value):
+        """Ensures only one list is used."""
+
+        res = re.findall(r'(#+)', value)
+        if res is not None and len(res) > 1:
+            raise BadRequestException(f"Only one set of # can be used.")
+
+        return value
 
 
 class LoadSceneModel(BaseSettingsModel):
@@ -29,8 +49,9 @@ class LoadSceneModel(BaseSettingsModel):
         title="Enabled"
     )
 
-    node_name_template: str = SettingsField(
-        title="SceneReader node name template"
+    template_profiles: list[LoaderTemplateProfileModel] = SettingsField(
+        title="SceneReader node name profiles",
+        default_factory=list
     )
 
 
@@ -75,7 +96,15 @@ class LoaderPluginsModel(BaseSettingsModel):
 DEFAULT_LOADER_PLUGINS_SETTINGS = {
     "GafferLoadScene": {
         "enabled": True,
-        "node_name_template": "{folder[name]}_{ext}"
+        "template_profiles": [
+            {
+                "product_type": ["model"],
+                "task_name": [],
+                "node_name_template": "{folder[fullname]}_{ext}",
+                "scenegraph_location_template": "{node}/geo",
+                "auxiliary_transforms": ["mat"]
+            }
+        ]
     },
     "GafferLoadImageReader": {
         "enabled": True,

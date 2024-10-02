@@ -1,18 +1,25 @@
 from ayon_core.pipeline import (
     load,
     get_representation_path,
+    get_current_context
 )
+from ayon_core.lib import filter_profiles
 
 from ayon_gaffer.api import get_root, imprint_container
 import ayon_gaffer.api.lib
-
-import GafferScene
 
 
 class GafferLoadScene(load.LoaderPlugin):
     """Load Scene"""
 
-    product_types = ["pointcache", "model", "usd", "look", "animation", "layout"]
+    product_types = [
+        "pointcache",
+        "model",
+        "usd",
+        "look",
+        "animation",
+        "layout"
+    ]
     representations = ["abc", "usd"]
 
     label = "Load scene"
@@ -26,11 +33,32 @@ class GafferLoadScene(load.LoaderPlugin):
         # Create the Loader with the filename path set
 
         script = get_root()
-        node = GafferScene.SceneReader()
+
+        product_type = context["product"]["productType"]
+        task_name = get_current_context()["task_name"]
+        selected_profile = filter_profiles(
+            self.template_profiles,  # these values come from the settings
+            {'product_type': product_type, 'task_name': task_name},
+            keys_order=['product_type', 'task_name'])
+
+        if selected_profile is None:
+            raise RuntimeError("No profile matches product_type: "
+                               f"{product_type} and task_name: {task_name}!")
+
+        node_name = selected_profile["node_name_template"]
+        resolved_node_name = self._get_node_name(node_name, context)
+        sg_location_template = selected_profile["scenegraph_location_template"]
+        aux_transforms = selected_profile["auxiliary_transforms"]
+        node = ayon_gaffer.api.lib.make_scene_load_box(
+            script,
+            resolved_node_name,
+            sg_location_template,
+            aux_transforms
+        )
 
         # folder = context["folder"]
 
-        node.setName(self._get_node_name(context))
+        # node.setName(self._get_node_name(context))
 
         path = self.filepath_from_context(context).replace("\\", "/")
         node["fileName"].setValue(path)
@@ -66,6 +94,6 @@ class GafferLoadScene(load.LoaderPlugin):
         parent = node.parent()
         parent.removeChild(node)
 
-    def _get_node_name(self, context):
+    def _get_node_name(self, node_name, context):
         return ayon_gaffer.api.lib.node_name_from_template(
-            self.node_name_template, context)
+            node_name, context)
