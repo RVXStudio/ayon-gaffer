@@ -23,6 +23,7 @@ import Gaffer
 import GafferDispatch
 
 import ayon_gaffer.api.lib
+import ayon_gaffer.api.pipeline
 
 log = Logger.get_logger("ayon_gaffer.plugins.publish.submit_gaffer_render_deadline")
 
@@ -75,7 +76,7 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
 
     @classmethod
     def get_attribute_defs(cls):
-        limit_groups = [""] + GafferDeadline.DeadlineTools.getLimitGroups()
+        limit_groups = [""] + ayon_gaffer.api.pipeline.DEADLINE_LIMIT_GROUPS
         return [
             NumberDef(
                 "priority",
