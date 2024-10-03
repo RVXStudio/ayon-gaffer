@@ -100,22 +100,39 @@ def make_box(name: str,
     return box
 
 
-def make_scene_load_box(scene_root, name, scenegraph_template, auxiliary_scengraph_transforms=[]):
+def make_scene_load_box(
+    scene_root,
+    name,
+    scenegraph_template,
+    auxiliary_scengraph_transforms=[]
+):
     '''
-    import ayon_gaffer.api.lib
-import re
-from importlib import reload
-reload(ayon_gaffer.api.lib)
-node_name =     'folder_fullname_product_##'
+    Create a Box node to load a scene through. This facilitates placing the
+    loaded geometry (or whatever) under certain groups in the scenegraph 
+    (the `scenegraph_template` parameter). This also supports creating plugs
+    for other groups you want underneath the root scenegraph template 
+    group.
 
-b = ayon_gaffer.api.lib.make_scene_load_box(
-    root,
-    node_name,
-    'folder_fullname_product_##/geo',
-    ['folder_fullname_product_##/mat'],
-)
+    Arguments:
+        scene_root (Gaffer.ScriptNode): The current scriptnode.
+        name (str): The name of the box node to be created.
+        scengraph_template (str): Where the imported geo will be placed in the
+            scenegraph, one template key is expanded, `{node}` which will be
+            replaced with the value from the `name` parameter.
+            Example: given the scenegraph_template value of '{node}/geo' and
+            a name of 'IMPORT_NODE', that will result in the imported geo being
+            placed at /IMPORT_NODE/geo/<imported geometry> in the scenegraph.
+        auxiliary_scenegraph_transforms (list[str]): a list of other groups
+            created under the top created transform, using the example above
+            and a parameter value of ['mat', 'fur'] this would result in this
+            scenegraph:
+                /IMPORT_NODE/geo
+                     |------/mat
+                     `------/fur
 
-root.addChild(b)
+    Returns:
+        Gaffer.Box: the created box.
+
     '''
     box = make_box('scene_load_box', inputs=auxiliary_scengraph_transforms)
     box_name = get_next_valid_name(name, scene_root)
@@ -179,11 +196,33 @@ root.addChild(b)
         merge_scenes["in"][idx].setInput(grp["out"])
         idx += 1
 
-
     return box
 
 
 def create_sub_groups(parent, sub_groups):
+    '''
+    Given a parent box node and a list of group names this function adds
+    GafferScene.Group nodes to the box, and returns them in the same order
+    the sub_groups were in.
+
+    This also adds bool plugs to the box where you can disable each group node
+    The labels are concatenated with their preceding groups. Example:
+        Given the sub_groups ['a','b','c']:
+        'Enable /a' would disable or enable the ['a'] group node
+        'Enable /a/b' would disable or enable the ['b'] group node
+        'Enable /a/b/c' would disable or enable the ['c'] group node
+    This function is mainly here to help make_scene_box function. But who knows
+    maybe one day we'll get some use out of it.
+
+    Arguments:
+        parent (Gaffer.Box): The parent box, currently there is nothing that
+            checks if this is actually a box node.
+        sub_groups: list[str]: a list of groups to create, typically the result
+            of "/a/b/c".split("/")
+
+    Returns:
+        list[GafferScene.Group]: The list of newly created gaffer group nodes.
+    '''
     group_nodes = []
     for idx, grp in enumerate(sub_groups):
         print(f"** {grp} **")
@@ -210,6 +249,22 @@ def create_sub_groups(parent, sub_groups):
 
 
 def get_next_valid_name(template, script_node):
+    """
+    Find the next number to replace a _##_ part of templates with.
+    Given a template containing a single block of ## this function
+    will traverse the nodegraph to find nodes with the same name (but a
+    diferent number) and construct a unique name with the next highest number.
+
+    Example:
+        given the template 'node_###' and we already have 'node_001' and
+            'node_002' in the scene, this function will return 'node_003'
+
+    If no node is found with the name pattern 1 will be used.
+
+    Arguments:
+        template (str): The template string to format.
+        script_node (Gaffer.ScriptNode): The script scriptNode
+    """
     res = re.search(r'([a-zA-Z0-9_]*)(#+)([a-zA-Z0-9_]*)', template)
     if res is not None:
         print(res.group(1), res.group(2), res.group(3))
@@ -451,7 +506,6 @@ def replace_node(old_node, new_node, ignore_plug_names=[], rename=True):
                     target_plug = None
                     break
 
-
             if target_plug is None:
                 # the target plug does not exist. we need to create it
                 copy_plug(plug, new_node)
@@ -510,11 +564,13 @@ def copy_plug(plug, destination_node):
 
 def get_all_plugs(in_node, thelist, include_non_serializable=True):
     for plug in in_node.children(Gaffer.Plug):
-        if not include_non_serializable and not bool(plug.getFlags() & Gaffer.Plug.Flags.Serialisable):
+        if (not include_non_serializable and
+                not bool(plug.getFlags() & Gaffer.Plug.Flags.Serialisable)):
             continue
         thelist.append(plug)
         if len(plug.children(Gaffer.Plug)) > 0:
             get_all_plugs(plug, thelist, include_non_serializable)
+
 
 def get_plug_tree(in_node, include_non_serializable=False):
     plugs = {}

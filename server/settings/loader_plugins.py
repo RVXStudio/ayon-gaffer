@@ -44,14 +44,37 @@ class LoaderTemplateProfileModel(BaseSettingsModel):
         return value
 
 
+class SimpleSceneLoadModel(BaseSettingsModel):
+    enabled: bool = SettingsField(
+        title="Enabled")
+
+    node_name_template: str = SettingsField(
+        title="Node name template"
+        )
+
+
+class AdvancedSceneLoadModel(BaseSettingsModel):
+    enabled: bool = SettingsField(
+        title="Enabled"
+    )
+    template_profiles: list[LoaderTemplateProfileModel] = SettingsField(
+        title="SceneReader node name profiles",
+        default_factory=list
+    )
+
+
 class LoadSceneModel(BaseSettingsModel):
     enabled: bool = SettingsField(
         title="Enabled"
     )
 
-    template_profiles: list[LoaderTemplateProfileModel] = SettingsField(
-        title="SceneReader node name profiles",
-        default_factory=list
+    simple_loading: SimpleSceneLoadModel = SettingsField(
+        title="Simple Loading",
+        default_factory=SimpleSceneLoadModel)
+
+    advanced_loading: AdvancedSceneLoadModel = SettingsField(
+        title="Advanced Loading",
+        default_factory=AdvancedSceneLoadModel
     )
 
 
@@ -92,19 +115,35 @@ class LoaderPluginsModel(BaseSettingsModel):
         title="Load Image (aiImage)"
     )
 
+    @validator("GafferLoadScene")
+    def ensure_only_one_model(cls, value):
+        adv = value.advanced_loading.enabled
+        simpl = value.simple_loading.enabled
+        if adv == simpl:
+            raise BadRequestException(f"You need to pick either advanced or "
+                                      "simple scene loading")
+        return value
+
 
 DEFAULT_LOADER_PLUGINS_SETTINGS = {
     "GafferLoadScene": {
         "enabled": True,
-        "template_profiles": [
-            {
-                "product_type": ["model"],
-                "task_name": [],
-                "node_name_template": "{folder[fullname]}_{ext}",
-                "scenegraph_location_template": "{node}/geo",
-                "auxiliary_transforms": ["mat"]
-            }
-        ]
+        "simple_loading": {
+            "enabled": False,
+            "node_name_template": "{folder[name]}"
+        },
+        "advanced_loading": {
+            "enabled": True,
+            "template_profiles": [
+                {
+                    "product_type": ["model"],
+                    "task_name": [],
+                    "node_name_template": "{folder[fullname]}_{ext}",
+                    "scenegraph_location_template": "{node}/geo",
+                    "auxiliary_transforms": ["mat"]
+                }
+            ]
+        }
     },
     "GafferLoadImageReader": {
         "enabled": True,
