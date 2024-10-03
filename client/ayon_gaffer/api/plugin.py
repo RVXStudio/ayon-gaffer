@@ -184,7 +184,8 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
         new_label = self.create_nice_label(instance.data)
         instance.data["label"] = new_label
 
-        node.setName(f"{product_name}_{instance.data['folderPath'].split('/')[-1]}")
+        node.setName(
+            f"{product_name}_{instance.data['folderPath'].split('/')[-1]}")
 
         self._add_instance_to_context(instance)
 
@@ -216,8 +217,8 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
             created_instance.transient_data["node"] = node
             new_label = self.create_nice_label(created_instance.data)
             created_instance.data["label"] = new_label
-            #new_label = f"{product_name} [{folder_path.split('/')[-1]}]"
-            #instance.data["label"] = new_label
+            # new_label = f"{product_name} [{folder_path.split('/')[-1]}]"
+            # instance.data["label"] = new_label
 
             self._add_instance_to_context(created_instance)
 
@@ -272,8 +273,8 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
         updating imprinted data on this node.
 
         Arguments:
-            product_name (str): The product name to be created. Usually used for
-                the node's name.
+            product_name (str): The product name to be created. Usually used
+                for the node's name.
             pre_create_data (dict): The `pre_create_data` of the `create` call
                 of this Creator.
 
@@ -337,7 +338,8 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
         for publish_node in script.children(AyonPublishTask):
             data = self._read(publish_node)
             if data.get("creator_identifier") not in identifiers:
-                self.log.info("{} - {}".format(data.get("creator_identifier"), self.identifier))
+                self.log.info("{} - {}".format(
+                    data.get("creator_identifier"), self.identifier))
                 self.log.debug(f'Skipping {publish_node}, wrong creator id')
                 continue
 
@@ -350,29 +352,50 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
                 layer_name = layer['layer_name'].getValue()
 
                 project_name = self.create_context.get_current_project_name()
-                folder_path = data["folderPath"]
-                instance_data = {
-                    "task": data["task"],
-                    "variant": layer_name,
-                }
-                instance_data["folderPath"] = folder_path
-                folder = ayon_api.get_folder_by_path(project_name, folder_path)
-                task_entity = ayon_api.get_task_by_name(
-                    project_name, folder["id"], instance_data["task"]
-                )
-                product_name = self.get_product_name(
-                    project_name,
-                    folder,
-                    task_entity,
-                    layer_name,
-                    )
+                layer_data = self._read(layer)
+                if layer_data.get("folderPath") is None:
+                    # we need to create the instance data for this layer
 
-                instance = CreatedInstance(
-                    product_type=self.product_type,
-                    product_name=product_name,
-                    data=instance_data,
-                    creator=self
-                )
+                    folder_path = data["folderPath"]
+                    instance_data = {
+                        "task": data["task"],
+                        "variant": layer_name,
+                    }
+                    instance_data["folderPath"] = folder_path
+                    folder = ayon_api.get_folder_by_path(
+                        project_name, folder_path)
+                    task_entity = ayon_api.get_task_by_name(
+                        project_name, folder["id"], instance_data["task"]
+                    )
+                    product_name = self.get_product_name(
+                        project_name,
+                        folder,
+                        task_entity,
+                        layer_name,
+                        )
+
+                    instance = CreatedInstance(
+                        product_type=self.product_type,
+                        product_name=product_name,
+                        data=instance_data,
+                        creator=self
+                    )
+                else:
+                    instance = CreatedInstance.from_existing(layer_data, self)
+                    # we want the folder path from the publish node, that the
+                    # renderlayer is connected into
+                    folder_path = data["folderPath"]
+                    folder = ayon_api.get_folder_by_path(
+                        project_name, folder_path)
+                    task_entity = ayon_api.get_task_by_name(
+                        project_name, folder["id"], layer_data["task"],)
+                    product_name = self.get_product_name(
+                        project_name,
+                        folder,
+                        task_entity,
+                        layer_name,
+                    )
+                    instance.data["variant"] = layer_name
                 instance.transient_data["node"] = layer
                 instance.transient_data["parent_publish_node"] = publish_node
 
@@ -385,6 +408,13 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
         for instance, _changes in update_list:
             the_node = instance.transient_data["node"]
             new_data = instance.data_to_store()
+
+            # we remove some data, since that is set on the publish node
+            # and it makes no sense to be able to change one shot for all
+            # layers 
+            for key in ["folderPath", "task"]:
+                del new_data[key]
+
             self._imprint(the_node, new_data)
 
     def remove_instances(self, instances):
