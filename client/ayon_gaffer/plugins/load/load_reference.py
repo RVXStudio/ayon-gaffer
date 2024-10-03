@@ -37,12 +37,11 @@ class GafferLoadReference(load.LoaderPlugin):
                           context=context,
                           loader=self.__class__.__name__)
 
-    def switch(self, container, representation):
-        self.update(container, representation)
+    def switch(self, container, context):
+        self.update(container, context)
 
-    def update(self, container, representation):
-
-        path = get_representation_path(representation)
+    def update(self, container, context):
+        path = get_representation_path(context["representation"])
         path = path.replace("\\", "/")
 
         # This is where things get tricky - do we just remove the node
@@ -53,7 +52,8 @@ class GafferLoadReference(load.LoaderPlugin):
         node.load(path)
 
         # Update the imprinted representation
-        node["user"]["representation"].setValue(str(representation["id"]))
+        node["user"]["representation"].setValue(
+            str(context["representation"]["id"]))
 
     def remove(self, container):
         node = container["_node"]

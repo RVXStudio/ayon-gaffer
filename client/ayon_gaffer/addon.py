@@ -1,15 +1,11 @@
 import os
 
-
 from ayon_core.addon import (
-    AYONAddon,IHostAddon
-)
-from ayon_core.modules import (
-    IPluginPaths,
-    
+    AYONAddon, IHostAddon
 )
 
-from ayon_core.modules.interfaces import ILaunchHookPaths
+
+from .version import __version__
 
 
 GAFFER_HOST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -21,6 +17,7 @@ class GafferAddon(
     IHostAddon,
 ):
     name = "gaffer"
+    version = __version__
     host_name = "gaffer"
     enabled = True
 

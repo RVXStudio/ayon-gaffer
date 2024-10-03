@@ -1,7 +1,11 @@
+import qargparse
+
 from ayon_core.pipeline import (
     load,
     get_representation_path,
+    get_current_context
 )
+from ayon_core.lib import filter_profiles
 
 from ayon_gaffer.api import get_root, imprint_container
 import ayon_gaffer.api.lib
@@ -12,7 +16,14 @@ import GafferScene
 class GafferLoadScene(load.LoaderPlugin):
     """Load Scene"""
 
-    product_types = ["pointcache", "model", "usd", "look", "animation", "layout"]
+    product_types = [
+        "pointcache",
+        "model",
+        "usd",
+        "look",
+        "animation",
+        "layout"
+    ]
     representations = ["abc", "usd"]
 
     label = "Load scene"
@@ -21,16 +32,73 @@ class GafferLoadScene(load.LoaderPlugin):
     color = "orange"
 
     node_name_template = "{folder[name]}"
+    template_profiles = []
+    simple_loading = {}
+    advanced_loading = {}
 
-    def load(self, context, name, namespace, data):
+    @classmethod
+    def get_options(cls, *args):
+        return [
+            qargparse.Enum(
+                "load_override",
+                help="Override simple/advanced loading",
+                items=["<use settings>", "simple", "advanced"],
+                default=0
+            )
+        ]
+
+    def load(self, context, name, namespace, options):
         # Create the Loader with the filename path set
 
         script = get_root()
-        node = GafferScene.SceneReader()
 
-        # folder = context["folder"]
+        load_override = options.get("load_override", "<use settings>")
 
-        node.setName(self._get_node_name(context))
+        # we need to check how we will load this thing, simple or advanced
+        # depending on the override - and then settings
+        if load_override != "<use settings>":
+            load_mode = load_override
+        else:
+            if self.advanced_loading.get("enabled", True):
+                load_mode = "advanced"
+            else:
+                load_mode = "simple"
+
+        self.log.info(f"Load mode {load_mode}")
+        if load_mode == "advanced":
+            template_profiles = self.advanced_loading["template_profiles"]
+            self.log.info("Using advanced loading")
+            product_type = context["product"]["productType"]
+            task_name = get_current_context().get("task_name", "")
+
+            selected_profile = filter_profiles(
+                template_profiles,
+                {'product_type': product_type, 'task_name': task_name},
+                keys_order=['product_type', 'task_name'])
+
+            if selected_profile is None:
+                raise RuntimeError(
+                    "No profile matches product_type: "
+                    f"{product_type} and task_name: {task_name}!")
+
+            node_name_template = selected_profile["node_name_template"]
+            resolved_node_name = self._get_node_name(
+                node_name_template, context)
+
+            sg_location_template = (selected_profile
+                                    ["scenegraph_location_template"])
+            aux_transforms = selected_profile["auxiliary_transforms"]
+            node = ayon_gaffer.api.lib.make_scene_load_box(
+                script,
+                resolved_node_name,
+                sg_location_template,
+                aux_transforms
+            )
+        else:
+            node = GafferScene.SceneReader()
+            node_name = self._get_node_name(
+                self.simple_loading["node_name_template"], context)
+            node.setName(node_name)
 
         path = self.filepath_from_context(context).replace("\\", "/")
         node["fileName"].setValue(path)
@@ -46,11 +114,11 @@ class GafferLoadScene(load.LoaderPlugin):
                           context=context,
                           loader=self.__class__.__name__)
 
-    def switch(self, container, representation):
-        self.update(container, representation)
+    def switch(self, container, context):
+        self.update(container, context)
 
-    def update(self, container, representation):
-        representation = representation["representation"]
+    def update(self, container, context):
+        representation = context["representation"]
         path = get_representation_path(representation)
         path = path.replace("\\", "/")
 
@@ -66,6 +134,6 @@ class GafferLoadScene(load.LoaderPlugin):
         parent = node.parent()
         parent.removeChild(node)
 
-    def _get_node_name(self, context):
+    def _get_node_name(self, node_name, context):
         return ayon_gaffer.api.lib.node_name_from_template(
-            self.node_name_template, context)
+            node_name, context)
