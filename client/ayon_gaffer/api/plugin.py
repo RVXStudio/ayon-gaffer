@@ -382,7 +382,9 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
                     )
                 else:
                     instance = CreatedInstance.from_existing(layer_data, self)
-                    folder_path = instance.data["folderPath"]
+                    # we want the folder path from the publish node, that the
+                    # renderlayer is connected into
+                    folder_path = data["folderPath"]
                     folder = ayon_api.get_folder_by_path(
                         project_name, folder_path)
                     task_entity = ayon_api.get_task_by_name(
@@ -406,6 +408,13 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
         for instance, _changes in update_list:
             the_node = instance.transient_data["node"]
             new_data = instance.data_to_store()
+
+            # we remove some data, since that is set on the publish node
+            # and it makes no sense to be able to change one shot for all
+            # layers 
+            for key in ["folderPath", "task"]:
+                del new_data[key]
+
             self._imprint(the_node, new_data)
 
     def remove_instances(self, instances):
