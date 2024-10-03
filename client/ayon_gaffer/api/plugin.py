@@ -349,7 +349,7 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
             )
 
             for layer in layers:
-                layer_name = layer['layer_name'].getValue()
+                layer_name = layer['layer_name'].getValue().strip()
 
                 project_name = self.create_context.get_current_project_name()
                 layer_data = self._read(layer)
