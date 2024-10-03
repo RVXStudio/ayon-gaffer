@@ -13,7 +13,9 @@ from ayon_core.pipeline import AYONPyblishPluginMixin
 from ayon_core.lib import (
     BoolDef,
     NumberDef,
-    Logger
+    Logger,
+    TextDef,
+    EnumDef
 )
 
 import GafferDeadline
@@ -54,6 +56,9 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
     env_search_replace_values = {}
     workfile_dependency = True
 
+    limits = ""
+    suspended = False
+
     env_vars_to_submit = {
         "ARNOLD_ROOT": "",
         "AYON_RENDER_JOB": "1",
@@ -70,6 +75,7 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
 
     @classmethod
     def get_attribute_defs(cls):
+        limit_groups = [""] + GafferDeadline.DeadlineTools.getLimitGroups()
         return [
             NumberDef(
                 "priority",
@@ -94,10 +100,18 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
                 maximum=10
             ),
             BoolDef(
-                "suspend_publish",
+                "suspended",
                 default=False,
-                label="Suspend publish"
+                label="Suspend Render"
+            ),
+            EnumDef(
+                "limits",
+                default="",
+                items=limit_groups,
+                multiselection=True,
+                label="Limits"
             )
+
         ]
 
     def process(self, instance):
@@ -106,10 +120,6 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
             return
         instance.data["attributeValues"] = self.get_attr_values_from_data(
             instance.data)
-
-        # add suspend_publish attributeValue to instance data
-        instance.data["suspend_publish"] = instance.data["attributeValues"][
-            "suspend_publish"]
 
         # families = instance.data["families"]
         frames = instance.data['frameList']
@@ -140,7 +150,6 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
             dispatcher['frameRange'].setValue(
                 ','.join([str(f) for f in frames])
             )
-
             self.log.info(
                 f"{dispatcher['framesMode'].getValue()}; "
                 "{dispatcher['frameRange'].getValue()}"
@@ -253,6 +262,12 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
             # set priority
             priority = instance.data["attributeValues"].get("priority", self.priority)
             deadline_settings["priority"].setValue(priority)
+            suspended = instance.data["attributeValues"]["suspended"]
+            deadline_settings["submitSuspended"].setValue(suspended)
+            limits = instance.data["attributeValues"]["limits"]
+            deadline_settings["limits"].setValue(",".join(limits))
+
+
         return saved_values
 
     def restore_submission_settings(self, root_node, old_settings):
