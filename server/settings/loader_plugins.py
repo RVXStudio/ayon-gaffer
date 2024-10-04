@@ -1,3 +1,5 @@
+import re
+
 from pydantic import validator
 from ayon_server.exceptions import BadRequestException
 from ayon_server.settings import (
@@ -5,9 +7,28 @@ from ayon_server.settings import (
     SettingsField,
     ensure_unique_names
 )
-import re
+from ayon_server.types import ColorRGBA_float
+
 
 from .common import PlugModel
+
+
+class ProductColorEntryModel(BaseSettingsModel):
+    _layout = "expanded"
+    name: str = SettingsField(
+        title="Product type"
+        )
+    color: ColorRGBA_float = SettingsField(
+        title="Color"
+    )
+
+
+class ColorSettings(BaseSettingsModel):
+    _isGroup: bool = False
+    color_list: list[ProductColorEntryModel] = SettingsField(
+        title="Colors",
+        default_factory=list
+    )
 
 
 class LoaderTemplateProfileModel(BaseSettingsModel):
@@ -100,6 +121,10 @@ class LoadImageModel(BaseSettingsModel):
 
 
 class LoaderPluginsModel(BaseSettingsModel):
+    product_colors: ColorSettings = SettingsField(
+        default_factory=ColorSettings,
+        tile="Loaded products node color"
+    )
     GafferLoadScene: LoadSceneModel = SettingsField(
         default_factory=LoadSceneModel,
         title="Load Scene"
@@ -126,6 +151,22 @@ class LoaderPluginsModel(BaseSettingsModel):
 
 
 DEFAULT_LOADER_PLUGINS_SETTINGS = {
+    "product_colors": {
+        "color_list": [
+            {
+                "name": "model",
+                "color": [0.82, 0.52, 0.12, 1.0],
+            },
+            {
+                "name": "camera",
+                "color": [0.53, 0.45, 0.96, 1.0],
+            },
+            {
+                "name": "gafferNodes",
+                "color": [0.2, 0.3, 0.4, 1.0],
+            },
+        ]
+    },
     "GafferLoadScene": {
         "enabled": True,
         "simple_loading": {

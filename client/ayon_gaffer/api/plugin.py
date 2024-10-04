@@ -6,6 +6,7 @@ from ayon_core.pipeline import (
     Creator as NewCreator,
     CreatedInstance,
     CreatorError,
+    load,
 )
 
 from ayon_core.lib import (
@@ -21,6 +22,7 @@ from ayon_gaffer.api.pipeline import (
     JSON_PREFIX
 )
 from ayon_core.pipeline import AYON_INSTANCE_ID
+import ayon_gaffer.api.lib
 
 from ayon_gaffer.api.nodes import (
     AyonPublishTask,
@@ -480,3 +482,9 @@ class PlugSettingsMixin:
                 target_plug.setValue(plug_value)
             except Exception as err:
                 print(f"ERROR: {err}")
+
+
+class GafferLoaderBase(load.LoaderPlugin):
+    def set_node_color(self, node, context):
+        product_type = context["product"].get("productType", "")
+        ayon_gaffer.api.lib.set_node_color_from_settings(node, product_type)

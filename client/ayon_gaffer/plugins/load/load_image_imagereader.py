@@ -1,7 +1,6 @@
 import os
 
 from ayon_core.pipeline import (
-    load,
     get_representation_path,
 )
 from ayon_gaffer.api import get_root, imprint_container
@@ -12,7 +11,7 @@ import ayon_gaffer.api.plugin
 import GafferImage
 
 
-class GafferLoadImageReader(load.LoaderPlugin,
+class GafferLoadImageReader(ayon_gaffer.api.plugin.GafferLoaderBase,
                             ayon_gaffer.api.plugin.PlugSettingsMixin):
     """Load Image or Image sequence"""
 
@@ -35,9 +34,7 @@ class GafferLoadImageReader(load.LoaderPlugin,
         node["fileName"].setValue(path)
         script.addChild(node)
 
-        # Colorize based on family
-        # TODO: Use settings instead
-        ayon_gaffer.api.lib.set_node_color(node, (1, 0.98, 0.353))
+        self.set_node_color(node, context)
 
         self.apply_plug_settings(node)
 

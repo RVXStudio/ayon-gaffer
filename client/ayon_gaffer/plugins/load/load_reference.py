@@ -1,14 +1,13 @@
 from ayon_core.pipeline import (
-    load,
     get_representation_path,
 )
 from ayon_gaffer.api import get_root, imprint_container
-from ayon_gaffer.api.lib import set_node_color
+import ayon_gaffer.api.plugin
 
 import Gaffer
 
 
-class GafferLoadReference(load.LoaderPlugin):
+class GafferLoadReference(ayon_gaffer.api.plugin.GafferLoaderBase):
     """Reference a gaffer scene"""
 
     product_types = ["gafferNodes"]
@@ -29,7 +28,7 @@ class GafferLoadReference(load.LoaderPlugin):
         script.addChild(reference)
         reference.load(path)
 
-        set_node_color(reference, (0.533, 0.447, 0.957))
+        self.set_node_color(reference, context)
 
         imprint_container(reference,
                           name=name,

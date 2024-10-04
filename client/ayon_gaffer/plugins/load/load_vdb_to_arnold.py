@@ -1,14 +1,13 @@
 import os
 
 from ayon_core.pipeline import (
-    load,
     get_representation_path,
 )
 from ayon_gaffer.api import get_root, imprint_container
-from ayon_gaffer.api.lib import set_node_color
+import ayon_gaffer.api.plugin
 
 
-class GafferLoadArnoldVDB(load.LoaderPlugin):
+class GafferLoadArnoldVDB(ayon_gaffer.api.plugin.GafferLoaderBase):
     """Load VDB to Arnold"""
 
     product_types = ["vdbcache"]
@@ -32,9 +31,7 @@ class GafferLoadArnoldVDB(load.LoaderPlugin):
         node["fileName"].setValue(path)
         script.addChild(node)
 
-        # Colorize based on family
-        # TODO: Use settings instead
-        set_node_color(node, (0.976, 0.212, 0))
+        self.set_node_color(node, context)
 
         imprint_container(node,
                           name=name,

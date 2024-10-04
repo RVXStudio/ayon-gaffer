@@ -1,13 +1,13 @@
 from ayon_core.lib import BoolDef
-from ayon_core.pipeline import load
 
 from ayon_gaffer.api import get_root
 from ayon_gaffer.api.lib import make_box
+import ayon_gaffer.api.plugin
 
 import Gaffer
 
 
-class GafferImportScene(load.LoaderPlugin):
+class GafferImportScene(ayon_gaffer.api.plugin.GafferLoaderBase):
     """Import a gaffer scene (unmanaged)"""
 
     product_types = ["gafferNodes", "workfile"]

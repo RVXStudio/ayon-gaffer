@@ -1,7 +1,6 @@
 import qargparse
 
 from ayon_core.pipeline import (
-    load,
     get_representation_path,
     get_current_context
 )
@@ -9,11 +8,12 @@ from ayon_core.lib import filter_profiles
 
 from ayon_gaffer.api import get_root, imprint_container
 import ayon_gaffer.api.lib
+import ayon_gaffer.api.plugin
 
 import GafferScene
 
 
-class GafferLoadScene(load.LoaderPlugin):
+class GafferLoadScene(ayon_gaffer.api.plugin.GafferLoaderBase):
     """Load Scene"""
 
     product_types = [
@@ -65,10 +65,11 @@ class GafferLoadScene(load.LoaderPlugin):
                 load_mode = "simple"
 
         self.log.info(f"Load mode {load_mode}")
+        product_type = context["product"]["productType"]
+
         if load_mode == "advanced":
             template_profiles = self.advanced_loading["template_profiles"]
             self.log.info("Using advanced loading")
-            product_type = context["product"]["productType"]
             task_name = get_current_context().get("task_name", "")
 
             selected_profile = filter_profiles(
@@ -104,9 +105,7 @@ class GafferLoadScene(load.LoaderPlugin):
         node["fileName"].setValue(path)
         script.addChild(node)
 
-        # Colorize based on family
-        # TODO: Use settings instead
-        ayon_gaffer.api.lib.set_node_color(node, (0.369, 0.82, 0.118))
+        self.set_node_color(node, context)
 
         imprint_container(node,
                           name=name,

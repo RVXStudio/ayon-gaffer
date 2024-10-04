@@ -13,6 +13,9 @@ else:
     from typing import Iterator
 
 from ayon_core.lib import Logger
+from ayon_core.settings import get_project_settings
+from ayon_core.pipeline import get_current_context
+
 import ayon_core.lib
 import ayon_api
 
@@ -33,6 +36,20 @@ def set_node_color(node: Gaffer.Node, color: Tuple[float, float, float]):
     assert len(color) == 3, "Color must be three float values"
     Gaffer.Metadata.registerValue(node, "nodeGadget:color",
                                   imath.Color3f(*color))
+
+
+def set_node_color_from_settings(node: Gaffer.Node, product_type: str):
+    project_name = get_current_context()["project_name"]
+    settings = get_project_settings(project_name)
+    load_settings = settings.get("gaffer", {}).get("load", {})
+    col_list = load_settings.get("product_colors", {}).get("color_list", [])
+
+    for entry in col_list:
+        print("!!!!", entry)
+        if product_type.lower() == entry["name"].lower():
+            set_node_color(node, entry["color"][:3])
+            return
+    log.warning(f"No color selected for product type: [{product_type}]")
 
 
 def make_box(name: str,
@@ -750,3 +767,4 @@ def node_name_from_template(template_string, context):
     }
     template = ayon_core.lib.StringTemplate(template_string)
     return template.format(formatting_data)
+

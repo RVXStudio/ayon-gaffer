@@ -1,21 +1,22 @@
 from ayon_core.pipeline import (
-    load,
     get_representation_path,
 )
 from ayon_gaffer.api import get_root, imprint_container
 from ayon_gaffer.api.lib import (
-    set_node_color,
+    set_node_color_from_settings,
     arrange,
     make_box,
     find_camera_paths
 )
+
+import ayon_gaffer.api.plugin
 
 import Gaffer
 import GafferScene
 import IECore
 
 
-class GafferLoadAlembicCamera(load.LoaderPlugin):
+class GafferLoadAlembicCamera(ayon_gaffer.api.plugin.GafferLoaderBase):
     """Load Alembic Camera"""
 
     product_types = ["camera"]
@@ -72,7 +73,7 @@ class GafferLoadAlembicCamera(load.LoaderPlugin):
 
         # Colorize based on family
         # TODO: Use settings instead
-        set_node_color(box, (0.533, 0.447, 0.957))
+        self.set_node_color(box, context)
 
         imprint_container(box,
                           name=name,
