@@ -1,4 +1,4 @@
-from ayon_gaffer.api.lib import make_box, set_node_color
+from ayon_gaffer.api.lib import make_box, set_node_color_from_settings
 from ayon_gaffer.api import plugin
 from ayon_gaffer.api.pipeline import AYON_CONTAINER_ID
 
@@ -38,7 +38,6 @@ class CreateGafferNodes(plugin.GafferCreatorBase):
             script.addChild(box_node)
 
         # colorise boxes to be published
-        # TODO: Use settings instead
-        set_node_color(box_node, (0.788, 0.39, 0.22))
+        set_node_color_from_settings(box_node, self.product_type)
 
         return box_node

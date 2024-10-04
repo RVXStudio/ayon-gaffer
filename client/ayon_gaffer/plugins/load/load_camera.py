@@ -71,8 +71,7 @@ class GafferLoadAlembicCamera(ayon_gaffer.api.plugin.GafferLoaderBase):
         # Layout the nodes within the box
         arrange(box.children(Gaffer.Node))
 
-        # Colorize based on family
-        # TODO: Use settings instead
+        # Colorize based on product type
         self.set_node_color(box, context)
 
         imprint_container(box,

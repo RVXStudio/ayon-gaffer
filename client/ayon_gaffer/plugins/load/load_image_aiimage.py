@@ -46,8 +46,7 @@ class GafferLoadImageAiImage(ayon_gaffer.api.plugin.GafferLoaderBase,
         node["parameters"]["filename"].setValue(path)
         script.addChild(node)
 
-        # Colorize based on family
-        # TODO: Use settings instead
+        # Colorize based on product_type
         self.set_node_color(node, context)
 
         self.apply_plug_settings(node)
