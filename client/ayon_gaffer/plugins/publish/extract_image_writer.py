@@ -8,7 +8,7 @@ from ayon_core.pipeline import publish
 
 class ExtractGafferImageWriter(
     publish.Extractor,
-    publish.OpenPypePyblishPluginMixin
+    publish.AYONPyblishPluginMixin
 ):
     """Export Gaffer Image Writer"""
 

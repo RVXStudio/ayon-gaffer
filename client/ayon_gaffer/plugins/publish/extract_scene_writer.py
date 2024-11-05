@@ -8,7 +8,7 @@ from ayon_core.pipeline import publish
 
 class ExtractGafferSceneWriter(
     publish.Extractor,
-    publish.OpenPypePyblishPluginMixin
+    publish.AYONPyblishPluginMixin
 ):
     """Export Gaffer Scene Writer"""
 

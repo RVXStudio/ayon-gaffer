@@ -6,7 +6,7 @@ from ayon_core.pipeline import publish
 
 class ExtractGafferNodes(
     publish.Extractor,
-    publish.OpenPypePyblishPluginMixin
+    publish.AYONPyblishPluginMixin
 ):
     """Export box nodes for reference."""
 
