@@ -768,3 +768,19 @@ def node_name_from_template(template_string, context):
     template = ayon_core.lib.StringTemplate(template_string)
     return template.format(formatting_data)
 
+
+def append_to_csv_plug(plug, value_to_add, allow_duplicates=False):
+    '''
+    csv in this case is comma-separated-value
+    some plugs, like deadline's limit parameter expects a comma separated list
+    of things. This utility function makes adding to such lists easier
+    '''
+
+    current_value = plug.getValue()
+    value_list = current_value.split(',')
+    if allow_duplicates:
+        value_list.append(value_to_add)
+    else:
+        if value_to_add not in value_list:
+            value_list.append(value_to_add)
+    plug.setValue(",".join(value_list))

@@ -156,6 +156,7 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
                 "{dispatcher['frameRange'].getValue()}"
             )
             self.populate_dispatcher_env_vars(node)
+            self.add_arnold_limits(node)
             saved_settings = self.apply_submission_settings(node, instance)
 
             saved_context_vars = self.set_render_context_vars(node, render_shot_name)
@@ -240,6 +241,23 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
                     deadline_env_plug.removeChild(plug)
         self.log.info('... done!')
 
+    def add_arnold_limits(self, root_node):
+        try:
+            import GafferArnold
+        except ModuleNotFoundError:
+            # no gaffer
+            return
+
+        for node in root_node.children(GafferArnold.ArnoldRender):
+            try:
+                limit_plug = node['dispatcher']['deadline']['limits']
+            except KeyError as err:
+                # something is wrong here, can't find either "deadline"
+                # or "limits"
+                log.error(f"Could not find deadline dispatcher plugs: {err}")
+                continue
+            ayon_gaffer.api.lib.append_to_csv_plug(limit_plug, "arnold")
+
     def apply_submission_settings(self, root_node, instance):
         self.log.info(
             f"Applying submission settings for"
@@ -261,13 +279,14 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
                 deadline_settings[key].setValue(value)
 
             # set priority
-            priority = instance.data["attributeValues"].get("priority", self.priority)
+            priority = instance.data["attributeValues"].get(
+                "priority", self.priority)
             deadline_settings["priority"].setValue(priority)
             suspended = instance.data["attributeValues"]["suspended"]
             deadline_settings["submitSuspended"].setValue(suspended)
             limits = instance.data["attributeValues"]["limits"]
-            deadline_settings["limits"].setValue(",".join(limits))
-
+            ayon_gaffer.api.lib.append_to_csv_plug(
+                deadline_settings["limits"], ",".join(limits))
 
         return saved_values
 
@@ -351,4 +370,3 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
             "secondaryPool": secondary_pool,
             "group": group
         }
-
