@@ -189,6 +189,9 @@ def make_scene_load_box(
         for group in group_nodes[1:]:
             group["in"][0].setInput(current_group["out"])
             current_group = group
+    else:
+        print("*****")
+        current_group = scene_reader
 
     merge_scenes = GafferScene.MergeScenes()
     box.addChild(merge_scenes)
