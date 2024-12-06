@@ -68,9 +68,12 @@ class GafferWorkfileCreator(AutoCreator, CreatorImprintReadMixin):
 
         project_name = self.create_context.get_current_project_name()
         folder_path = self.create_context.get_current_folder_path()
-        workfile_comment = self.create_context.get_current_workfile_comment()
-        workfile_comment = re.sub(
-            '([a-zA-Z])', lambda x: x.groups()[0].upper(), workfile_comment, 1)
+        if hasattr(self.create_context, 'get_current_workfile_comment'):
+            workfile_comment = self.create_context.get_current_workfile_comment()
+            workfile_comment = re.sub(
+                '([a-zA-Z])', lambda x: x.groups()[0].upper(), workfile_comment, 1)
+        else:
+            workfile_comment = "Main"  # we use this in place of variant for workfiles 
         task_name = self.create_context.get_current_task_name()
         host_name = self.create_context.host_name
 
