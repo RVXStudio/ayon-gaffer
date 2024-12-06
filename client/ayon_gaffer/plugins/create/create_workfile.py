@@ -110,7 +110,7 @@ class GafferWorkfileCreator(AutoCreator, CreatorImprintReadMixin):
         elif (
             existing_instance_folder != folder_path
             or existing_instance["task"] != task_name
-            or existing_instance["workfile_comment"] != workfile_comment
+            or existing_instance.get("workfile_comment", "") != workfile_comment
         ):
             folder_doc = ayon_api.get_folder_by_path(project_name, folder_path)
             task_entity = get_current_task_entity()
