@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 ##########################################################################
 #
 #  Copyright (c) 2019, Hypothetical Inc. All rights reserved.
@@ -70,7 +69,6 @@ class GafferPlugin(DeadlinePlugin):
     
     def __init__(self):
         super().__init__()
-
         self.InitializeProcessCallback += self.InitializeProcess
         # self.RenderTasksCallback += self.RenderTasks
         self.RenderExecutableCallback += self.GetRenderExecutable
@@ -129,7 +127,7 @@ class GafferPlugin(DeadlinePlugin):
         tempSceneDirectory = self.CreateTempDirectory("thread" + str(self.GetThreadNumber()))
         tempSceneFilename = Path.Combine(tempSceneDirectory, Path.GetFileName(localScript))
 
-        with open(localScript, "r", encoding="utf-8") as inFile, open(tempSceneFilename, "w", encoding="utf-8") as outFile:
+        with open(localScript, "r") as inFile, open(tempSceneFilename, "w") as outFile:
             for line in inFile:
                 newLine = RepositoryUtils.CheckPathMapping(line)
                 outFile.write(newLine)
