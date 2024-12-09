@@ -24,7 +24,10 @@ class GafferDeadlineEnvVarModel(BaseSettingsModel):
     )
 
 
-class GafferDeadlinePoolSettings(BaseSettingsModel):
+class GafferDeadlineSubmissionSettings(BaseSettingsModel):
+    priority: int = SettingsField(
+        title="Priority"
+    )
     primary_pool: str = SettingsField(
         title="Primary Pool"
     )
@@ -36,14 +39,29 @@ class GafferDeadlinePoolSettings(BaseSettingsModel):
     )
 
 
+class GafferDeadlineSettingsNodetypeProfiles(BaseSettingsModel):
+    _layout = "expanded"
+    node_type: list[str] = SettingsField(
+        title="Node types",
+        default_factory=list
+    )
+    submission_settings: GafferDeadlineSubmissionSettings = SettingsField(
+        title="Submission settings",
+        default_factory=GafferDeadlineSubmissionSettings)
+
+
 class GafferDeadlineSettings(BaseSettingsModel):
+    node_type_submission_settings: list[GafferDeadlineSettingsNodetypeProfiles] = SettingsField(  # noqa
+        title="Per Node type submission settings",
+        description=("The default value (with no node types) is the value that"
+                     " will be used and visible in the publisher and supports "
+                     "overriding by the user, the other values will _not_ be "
+                     "available to the user to be overridden."),
+        default_factory=list
+    )
     env_vars: list[GafferDeadlineEnvVarModel] = SettingsField(
         title="Environment variables",
         default_factory=list
-    )
-    pools: GafferDeadlinePoolSettings = SettingsField(
-        default_factory=GafferDeadlinePoolSettings,
-        title="Pools"
     )
 
 
@@ -68,6 +86,17 @@ DEFAULT_VALUES = {
     "load": DEFAULT_LOADER_PLUGINS_SETTINGS,
     "node_preset_paths": [],
     "deadline": {
+        "node_type_submission_settings": [
+            {
+                "node_type": [],
+                "submission_settings": {
+                    "priority": 50,
+                    "group": "",
+                    "primary_pool": "",
+                    "secondary_pool": "",
+                },
+            }
+        ],
         "env_vars": [
             {"name": "ARNOLD_ROOT", "use_env_value": True, "value": ""},
             {
@@ -81,10 +110,5 @@ DEFAULT_VALUES = {
             {"name": "AYON_BUNDLE_NAME", "use_env_value": True, "value": ""},
             {"name": "AYON_RENDER_JOB", "use_env_value": False, "value": "1"},
         ],
-        "pools": {
-            "group": "",
-            "primary_pool": "",
-            "secondary_pool": "",
-        }
     }
 }
