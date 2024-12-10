@@ -37,13 +37,53 @@
 import os
 import subprocess
 import re
+import json
 
 import IECore
+
+try:
+    from ayon_core.settings import get_project_settings
+    from ayon_core.pipeline import registered_host
+    from ayon_deadline.abstract_submit_deadline import requests_post
+    AYON_MODE = True
+except Exception as err:
+    print("Could not import ayon_core stuff", err)
+    AYON_MODE = False
+    raise RuntimeError(f"Could not import ayon modules.")
+
+
+DEADLINE_SETTINGS = None
+
+
+def needs_ayon_settings(func):
+    '''This decorator makes sure tht the DEADLINE_SETTINGS variable is set to
+    the correct value when running tool functions.
+
+    '''
+
+    def ayon_settings_check(self, *args, **kwargs):
+        if DEADLINE_SETTINGS is None:
+            fetch_ayon_settings()
+        return func(self, *args, **kwargs)
+
+    return ayon_settings_check
+
+
+def fetch_ayon_settings():
+    global DEADLINE_SETTINGS
+    host = registered_host()
+    ayon_settings = get_project_settings(
+        host.get_current_project_name())
+    try:
+        DEADLINE_SETTINGS = ayon_settings["deadline"]
+    except KeyError:
+        print(f"NO deadline settings found!")
 
 
 def runDeadlineCommand(arguments, hideWindow=True):
     if "DEADLINE_PATH" not in os.environ:
-        raise RuntimeError("DEADLINE_PATH must be set to the Deadline executable path")
+        raise RuntimeError(
+            "DEADLINE_PATH must be set to the Deadline executable path")
     executableSuffix = ".exe" if os.name == "nt" else ""
     deadlineCommand = os.path.join(
         os.environ['DEADLINE_PATH'],
@@ -52,7 +92,8 @@ def runDeadlineCommand(arguments, hideWindow=True):
 
     arguments = [deadlineCommand] + arguments
 
-    p = subprocess.Popen(arguments, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.Popen(
+        arguments, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     output, err = p.communicate()
 
@@ -67,18 +108,24 @@ def runDeadlineCommand(arguments, hideWindow=True):
     return output
 
 
-def submitJob(jobInfoFile, pluginInfoFile, auxFiles):
-    submissionResults = runDeadlineCommand(
-        [jobInfoFile, pluginInfoFile] + [str(f) for f in auxFiles]
-    )
+@needs_ayon_settings
+def submitJob(payload):
+    ws_settings = DEADLINE_SETTINGS["deadline_urls"][0]
+    auth = (ws_settings["default_username"],
+            ws_settings["default_password"])
+    verify = not ws_settings["not_verify_ssl"]
+    deadline_url = "{}/api/jobs".format(ws_settings["value"])
+    response = requests_post(deadline_url,
+                             json=payload,
+                             timeout=10,
+                             auth=auth,
+                             verify=verify)
 
-    for i in submissionResults.split():
-        line = i.decode()
-        if line.startswith("JobID="):
-            jobID = line.replace("JobID=", "").strip()
-            return (jobID, submissionResults)
+    if not response.ok:
+        return (None, response.json())
 
-    return (None, submissionResults)
+    results = response.json()
+    return (results["_id"], results)
 
 
 def getMachineList():
