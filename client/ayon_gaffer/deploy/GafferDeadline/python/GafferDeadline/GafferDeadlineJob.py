@@ -345,45 +345,35 @@ class GafferDeadlineJob(object):
             if not os.path.isfile(auxFile):
                 raise IOError("{} does not exist".format(auxFile))
 
-        jobFile = tempfile.NamedTemporaryFile(mode="w", suffix=".job", delete=False, dir=jobDirectory)
+
+        payload = {"JobInfo": {}, "PluginInfo": {}, "AuxFiles": []}
+
+        #jobFile = tempfile.NamedTemporaryFile(mode="w", suffix=".job", delete=False, dir=jobDirectory)
 
         self._jobProperties.update(self._deadlineSettings)
-        jobLines = [
-            "{}={}".format(k, self._jobProperties[k]) for k in self._jobProperties.keys()
-        ]
+
+        for k, v in self._jobProperties.items():
+            payload["JobInfo"][k] = v
+
         environmentVariableCounter = 0
         for v in self._environmentVariables.keys():
-            jobLines.append(
-                "EnvironmentKeyValue{}={}={}".format(
-                    environmentVariableCounter,
-                    v,
-                    self._environmentVariables[v]
-                )
-            )
+            env_key = f"EnvironmentKeyValue{environmentVariableCounter}"
+            env_value = f"{v}={self._environmentVariables[v]}"
+            payload["JobInfo"][env_key] = env_value
             environmentVariableCounter += 1
 
         outputCounter = 0
         for o in self.getOutputs():
-            jobLines.append(
-                "OutputFilename{}={}".format(outputCounter, o)
-            )
+            output_key = f"OutputFilename{outputCounter}"
+            payload["JobInfo"][output_key] = o
             outputCounter += 1
 
-        jobFile.write("\n".join(jobLines))
-        jobFile.close()
+        for k, v in self._pluginProperties.items():
+            payload["PluginInfo"][k] = v
 
-        pluginFile = tempfile.NamedTemporaryFile(mode="w", suffix=".plugin", delete=False, dir=jobDirectory)
-
-        pluginLines = [
-            "{}={}".format(
-                k,
-                self._pluginProperties[k]
-            ) for k in self._pluginProperties.keys()
-        ]
-        pluginFile.write("\n".join(pluginLines))
-        pluginFile.close()
-
-        result = DeadlineTools.submitJob(jobFile.name, pluginFile.name, self._auxFiles)
+        import json
+        print("!!", json.dumps(payload, indent=4))
+        result = DeadlineTools.submitJob(payload)
 
         IECore.Log.debug("Submission results:", result)
 
