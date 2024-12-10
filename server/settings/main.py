@@ -1,3 +1,6 @@
+from pydantic import validator
+from ayon_server.exceptions import BadRequestException
+
 from ayon_server.settings import (
     BaseSettingsModel,
     SettingsField,
@@ -26,16 +29,20 @@ class GafferDeadlineEnvVarModel(BaseSettingsModel):
 
 class GafferDeadlineSubmissionSettings(BaseSettingsModel):
     priority: int = SettingsField(
-        title="Priority"
+        title="Priority",
+        default_factory=int
     )
     primary_pool: str = SettingsField(
-        title="Primary Pool"
+        title="Primary Pool",
+        default_factory=str
     )
     secondary_pool: str = SettingsField(
-        title="Secondary Pool"
+        title="Secondary Pool",
+        default_factory=str
     )
     group: str = SettingsField(
-        title="Group"
+        title="Group",
+        default_factory=str
     )
 
 
@@ -53,7 +60,8 @@ class GafferDeadlineSettingsNodetypeProfiles(BaseSettingsModel):
 class GafferDeadlineSettings(BaseSettingsModel):
     node_type_submission_settings: list[GafferDeadlineSettingsNodetypeProfiles] = SettingsField(  # noqa
         title="Per Node type submission settings",
-        description=("The default value (with no node types) is the value that"
+        description=("There needs to be a default value (with no node types), "
+                     "that is the value that"
                      " will be used and visible in the publisher and supports "
                      "overriding by the user, the other values will _not_ be "
                      "available to the user to be overridden."),
@@ -63,6 +71,21 @@ class GafferDeadlineSettings(BaseSettingsModel):
         title="Environment variables",
         default_factory=list
     )
+
+    @validator('node_type_submission_settings')
+    def assert_default_entry(cls, value):
+        """Ensures that there is at least one entry with no node type
+        specified.
+        """
+
+        for entry in value:
+            if len(entry.node_type) == 0:
+                break
+        else:
+            raise BadRequestException(f"There needs to be one entry with no "
+                                      "node type specified")
+
+        return value
 
 
 class GafferSettings(BaseSettingsModel):
