@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 ##########################################################################
 #
 #  Copyright (c) 2019, Hypothetical Inc. All rights reserved.
@@ -70,7 +69,6 @@ class GafferPlugin(DeadlinePlugin):
     
     def __init__(self):
         super().__init__()
-
         self.InitializeProcessCallback += self.InitializeProcess
         # self.RenderTasksCallback += self.RenderTasks
         self.RenderExecutableCallback += self.GetRenderExecutable
@@ -119,22 +117,30 @@ class GafferPlugin(DeadlinePlugin):
 
     def PreRenderTasks(self):
         self.LogInfo("Performing path mapping")
-
+        network_script = RepositoryUtils.CheckPathMapping(self.GetPluginInfoEntryWithDefault("ScriptFile", ""))
+        network_script = self.replaceSlashesByOS(network_script)
         script = RepositoryUtils.CheckPathMapping(self.GetPluginInfoEntryWithDefault("Script", "").strip())
         script = self.replaceSlashesByOS(script)
-        localScript = os.path.join(self.GetJobsDataDirectory(), script)
-        if not os.path.isfile(localScript):
-            self.FailRender("Could not find Gaffer script {}".format(localScript))
 
-        tempSceneDirectory = self.CreateTempDirectory("thread" + str(self.GetThreadNumber()))
-        tempSceneFilename = Path.Combine(tempSceneDirectory, Path.GetFileName(localScript))
+        if not os.path.isfile(network_script):
+            self.LogInfo(f"Could not find network script [{network_script}] assume it's the old auxfile system")
+            localScript = os.path.join(self.GetJobsDataDirectory(), script)
+            if not os.path.isfile(localScript):
+                self.FailRender("Could not find Gaffer script {}".format(localScript))
 
-        with open(localScript, "r", encoding="utf-8") as inFile, open(tempSceneFilename, "w", encoding="utf-8") as outFile:
-            for line in inFile:
-                newLine = RepositoryUtils.CheckPathMapping(line)
-                outFile.write(newLine)
-        
-        self._gafferScript = tempSceneFilename
+            tempSceneDirectory = self.CreateTempDirectory("thread" + str(self.GetThreadNumber()))
+            tempSceneFilename = Path.Combine(tempSceneDirectory, Path.GetFileName(localScript))
+
+            with open(localScript, "r") as inFile, open(tempSceneFilename, "w") as outFile:
+                for line in inFile:
+                    newLine = RepositoryUtils.CheckPathMapping(line)
+                    outFile.write(newLine)
+            
+            self._gafferScript = tempSceneFilename
+        else:
+            self.LogInfo(f"Found network script [{network_script}]. Way better.")
+            self._gafferScript = network_script
+
 
     def GetRenderExecutable(self):
         self.Version = self.GetPluginInfoEntry("Version")
