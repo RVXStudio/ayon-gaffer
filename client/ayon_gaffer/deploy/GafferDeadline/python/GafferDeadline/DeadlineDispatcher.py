@@ -35,6 +35,7 @@
 ##########################################################################
 
 import os
+import getpass
 
 import IECore
 
@@ -205,14 +206,7 @@ class DeadlineDispatcher(GafferDispatch.Dispatcher):
             from ayon_core.settings import get_project_settings
         except Exception as err:
             print("Could not import ayon_core stuff", err)
-            try:
-                from openpype.pipeline import registered_host
-                from openpype.settings import get_project_settings
-                if registered_host() is None:
-                    raise RuntimeError("THIS IS ALL A LIE")
-            except Exception as err:
-                print("Could not import openpype stuff", err)
-                AYON_MODE = False
+            AYON_MODE = False
 
         print(f"AYON: {AYON_MODE}")
         if AYON_MODE:
@@ -269,6 +263,7 @@ class DeadlineDispatcher(GafferDispatch.Dispatcher):
                                     gafferNode.relativeName(dispatchData["scriptNode"]),
                                 )
                             ),
+                            "UserName": getpass.getuser(),
                             "Frames": frameString,
                             "ChunkSize": chunkSize,
                             "Plugin": "Gaffer" if not isinstance(
@@ -493,6 +488,7 @@ class DeadlineDispatcher(GafferDispatch.Dispatcher):
             if not isinstance(gafferNode, GafferDeadline.DeadlineTask):
                 pluginInfo = {
                     "Script": os.path.split(dispatchData["scriptFile"])[-1],
+                    "ScriptFile": dispatchData["scriptFile"],
                     "Version": Gaffer.About.versionString(),
                     "IgnoreScriptLoadErrors": False,
                     "Nodes": gafferNode.relativeName(dispatchData["scriptNode"]),
