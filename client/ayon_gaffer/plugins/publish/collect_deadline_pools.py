@@ -19,7 +19,7 @@ class CollectGafferDeadlinePools(pyblish.api.InstancePlugin,
     @classmethod
     def apply_settings(cls, project_settings):
         # deadline.publish.CollectDeadlinePools
-        settings = project_settings["gaffer"]["deadline"]["pools"]
+        settings = project_settings["gaffer"]["deadline"]["default_submission_settings"]
         try:
             default_settings = (project_settings["deadline"]
                                 ["publish"]

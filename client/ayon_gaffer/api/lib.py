@@ -787,3 +787,23 @@ def append_to_csv_plug(plug, value_to_add, allow_duplicates=False):
         if value_to_add not in value_list:
             value_list.append(value_to_add)
     plug.setValue(",".join(value_list))
+
+
+def traverse_nodegraph(root_node: Gaffer.Node, result: list):
+    children = root_node.children(Gaffer.Node)
+    if len(children) == 0:
+        return
+    for child in children:
+        result.append(child)
+        traverse_nodegraph(child, result)
+
+
+def get_all_children(root_node: Gaffer.Node):
+    """
+    Return a list of all the nodes that are children of `root_node` so if
+    the script node is passed return all nodes in the script.
+
+    """
+    all_nodes = []
+    traverse_nodegraph(root_node, all_nodes)
+    return all_nodes
