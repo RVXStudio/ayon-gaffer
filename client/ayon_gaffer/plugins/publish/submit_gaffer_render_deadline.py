@@ -79,6 +79,7 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
     def apply_settings(cls, project_settings):
         settings = project_settings["gaffer"]["deadline"]["default_submission_settings"]  # noqa
         cls.priority = settings["priority"]
+        cls.limit_groups = project_settings["gaffer"]["deadline"]["limit_groups"]
 
     @classmethod
     def get_attribute_defs(cls):
@@ -148,7 +149,10 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
             # clear the dispatcher limits plug, since we construct it with
             # the arnold limit, the calculated limit groups and user input
             self.clear_limits(node)
+            # these methods add their results to their respective task node
+            # limits knob for the deadline dispatcher.
             self.add_arnold_limits(node)
+            self.add_limit_groups(node)
             saved_settings = self.apply_submission_settings(node, instance)
 
             saved_context_vars = self.set_render_context_vars(
@@ -238,10 +242,9 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
         """
         Traverses the script for either ArnoldRender nodes or Render nodes set
         to "Arnold", if they are found add the "arnold" limit to the deadline
-        submission 
+        submission
         """
         try:
-            import GafferArnold
             import GafferScene
         except ModuleNotFoundError:
             # no arnold
@@ -266,6 +269,41 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
                 continue
             self.log.info("made it!")
             ayon_gaffer.api.lib.append_to_csv_plug(limit_plug, "arnold")
+
+    def add_limit_groups(self, root_node):
+        if len(self.limit_groups) == 0:
+            # no limit groups, nothing to check!
+            return
+
+        script_node = root_node.scriptNode()
+        all_nodes = ayon_gaffer.api.lib.get_all_children(script_node)
+
+        # first see if we have interesting nodes in here
+        active_node_types = set()
+        for node in all_nodes:
+            tn = node.typeName()
+            if tn in active_node_types:
+                continue
+            if "enabled" not in node.keys():
+                self.log.debug(f"No enabled on {node}")
+                continue
+            if node["enabled"].getValue():
+                active_node_types.add(tn)
+        limits_to_add = []
+        for limit_group in self.limit_groups:
+            limit_name = limit_group["name"]
+
+            for type_name in limit_group["value"]:
+                if type_name in active_node_types:
+                    limits_to_add.append(limit_name)
+                    break
+
+        if len(limits_to_add) > 0:
+            self.log.info(f"Adding limits {limits_to_add}")
+            for node in root_node.children(GafferDispatch.TaskNode):
+                limit_plug = node['dispatcher']['deadline']['limits']
+                ayon_gaffer.api.lib.append_to_csv_plug(
+                    limit_plug, ",".join(limits_to_add))
 
     def clear_limits(self, root_node):
         for node in root_node.children(GafferDispatch.TaskNode):
