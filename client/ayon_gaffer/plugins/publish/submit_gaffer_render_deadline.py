@@ -1,4 +1,5 @@
 import os
+import copy
 import re
 import json
 import getpass
@@ -75,6 +76,11 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
     }
 
     @classmethod
+    def apply_settings(cls, project_settings):
+        settings = project_settings["gaffer"]["deadline"]["default_submission_settings"]  # noqa
+        cls.priority = settings["priority"]
+
+    @classmethod
     def get_attribute_defs(cls):
         limit_groups = [""] + ayon_gaffer.api.pipeline.DEADLINE_LIMIT_GROUPS
         return [
@@ -83,22 +89,6 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
                 label="Priority",
                 default=cls.priority,
                 decimals=0
-            ),
-            NumberDef(
-                "chunk",
-                label="Frames Per Task",
-                default=cls.chunk_size,
-                decimals=0,
-                minimum=1,
-                maximum=1000
-            ),
-            NumberDef(
-                "concurrency",
-                label="Concurrency",
-                default=cls.concurrent_tasks,
-                decimals=0,
-                minimum=1,
-                maximum=10
             ),
             BoolDef(
                 "suspended",
@@ -131,8 +121,6 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
 
         node = instance.data["transientData"]["node"]
 
-        self.deadline_attrs = self.collect_deadline_attrs(instance)
-
         self.log.info(f"Submitting {node}")
         with node.scriptNode().context() as ctxt:
             render_shot_name = instance.data["folderPath"].split("/")[-1]
@@ -156,10 +144,15 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
                 "{dispatcher['frameRange'].getValue()}"
             )
             self.populate_dispatcher_env_vars(node)
+
+            # clear the dispatcher limits plug, since we construct it with
+            # the arnold limit, the calculated limit groups and user input
+            self.clear_limits(node)
             self.add_arnold_limits(node)
             saved_settings = self.apply_submission_settings(node, instance)
 
-            saved_context_vars = self.set_render_context_vars(node, render_shot_name)
+            saved_context_vars = self.set_render_context_vars(
+                node, render_shot_name)
 
             dispatcher.dispatch([node])
 
@@ -242,13 +235,28 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
         self.log.info('... done!')
 
     def add_arnold_limits(self, root_node):
+        """
+        Traverses the script for either ArnoldRender nodes or Render nodes set
+        to "Arnold", if they are found add the "arnold" limit to the deadline
+        submission 
+        """
         try:
             import GafferArnold
+            import GafferScene
         except ModuleNotFoundError:
-            # no gaffer
+            # no arnold
             return
 
-        for node in root_node.children(GafferArnold.ArnoldRender):
+        for node in root_node.children(GafferScene.Render):
+            self.log.info(f"Arnold limit search: {node}")
+            if node.typeName() == "GafferScene::Render":
+                try:
+                    if node["renderer"] != "Arnold":
+                        # this is not an arnold render node, ignore it
+                        continue
+                except KeyError:
+                    # there is no renderer plug, abort, abort!
+                    continue
             try:
                 limit_plug = node['dispatcher']['deadline']['limits']
             except KeyError as err:
@@ -256,7 +264,47 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
                 # or "limits"
                 log.error(f"Could not find deadline dispatcher plugs: {err}")
                 continue
+            self.log.info("made it!")
             ayon_gaffer.api.lib.append_to_csv_plug(limit_plug, "arnold")
+
+    def clear_limits(self, root_node):
+        for node in root_node.children(GafferDispatch.TaskNode):
+            deadline_settings_plug = node['dispatcher']['deadline']
+            self.log.debug(
+                f"Clearing dispatcher limits for [{node.getName()}]")
+            deadline_settings_plug["limits"].setValue("")
+
+    def get_submission_settings(self, node, instance, default_settings):
+        project_settings = instance.context.data["project_settings"]
+        task_node_settings = (project_settings["gaffer"]["deadline"]
+                              ["task_node_submission_settings"])
+
+        submission_settings = copy.copy(default_settings)
+        for entry in task_node_settings:
+            # first we check the node typeName
+            for task_entry in entry["task_node"]:
+                matching_node = False
+                for type_name in task_entry["type_names"]:
+                    if node.typeName() == type_name:
+                        matching_node = True
+                        # self.log.info(f"Found type {type_name}")
+                        # now we can check the other filters
+                        for plug in task_entry["plugs"]:
+                            pname = plug["name"]
+                            plug_type = plug["type"]
+                            if pname in node.keys():
+                                if node[pname].getValue() != plug[plug_type]:
+                                    matching_node = False
+                if matching_node:
+                    self.log.info(f"Insteresting node {node}")
+                    node_settings = entry["submission_settings"]
+                    submission_settings["priority"] = node_settings["priority"]
+                    submission_settings["pool"] = node_settings["primary_pool"]
+                    submission_settings["secondaryPool"] = node_settings["secondary_pool"]
+                    submission_settings["group"] = node_settings["group"]
+                    return submission_settings
+        return submission_settings
+
 
     def apply_submission_settings(self, root_node, instance):
         self.log.info(
@@ -264,29 +312,36 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
             f"[{root_node.getName()}]"
         )
 
+        # get the default settings, that _might_ be changed by per-node
+        # overrides in the settings
+        default_submission_settings = self.collect_submission_settings(
+            instance)
+
         saved_values = {}
         for node in root_node.children(GafferDispatch.TaskNode):
-            log.info(f" ** {node.getName()} **")
-            deadline_settings = node['dispatcher']['deadline']
+            self.log.info(f" ** {node.getName()} **")
+            # check if we have task node type specific submission settings
+            node_submission_settings = self.get_submission_settings(
+                node, instance, default_submission_settings)
+            self.log.info(json.dumps(node_submission_settings, indent=4))
+
+            # store the existing settings so we can reset them after submission
+            deadline_settings_plug = node['dispatcher']['deadline']
             current_settings = {}
-            for sett in deadline_settings.children():
-                if sett.typeName() == 'Gaffer::CompoundDataPlug':
+            for plug in deadline_settings_plug.children():
+                if plug.typeName() == 'Gaffer::CompoundDataPlug':
                     continue
-                current_settings[sett.getName()] = sett.getValue()
+                current_settings[plug.getName()] = plug.getValue()
             saved_values[node.getName()] = current_settings
 
-            for key, value in self.deadline_attrs.items():
-                deadline_settings[key].setValue(value)
-
-            # set priority
-            priority = instance.data["attributeValues"].get(
-                "priority", self.priority)
-            deadline_settings["priority"].setValue(priority)
-            suspended = instance.data["attributeValues"]["suspended"]
-            deadline_settings["submitSuspended"].setValue(suspended)
-            limits = instance.data["attributeValues"]["limits"]
-            ayon_gaffer.api.lib.append_to_csv_plug(
-                deadline_settings["limits"], ",".join(limits))
+            # now se set the values
+            for key, value in node_submission_settings.items():
+                log.debug(f"Setting [{key}] to [{value}]")
+                if key == "limits":
+                    ayon_gaffer.api.lib.append_to_csv_plug(
+                        deadline_settings_plug["limits"], value)
+                else:
+                    deadline_settings_plug[key].setValue(value)
 
         return saved_values
 
@@ -354,19 +409,28 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
                 for key, value in var_data.items():
                     var_plug[key].setValue(value)
 
-    def collect_deadline_attrs(self, instance):
+    def collect_submission_settings(self, instance):
         """
-        Construct a dictionary with dispatcher plug names mapped to submission
-        parameters from the publisher
+        Construct a dictionary of the default (selected) submission settings.
+        That means, pool, secondary pool, group, priority, submit suspended
+        and limits.
 
         """
 
+        # this stuff is gathered from the plugin `collect_deadline_pools`
         primary_pool = instance.data.get("primaryPool", "none")
         secondary_pool = instance.data.get("secondaryPool", "none")
         group = instance.data.get("group", "")
+        priority = instance.data["attributeValues"].get(
+                "priority", self.priority)
+        suspended = instance.data["attributeValues"].get("suspended", False)
+        limits = ",".join(instance.data["attributeValues"]["limits"])
 
         return {
             "pool": primary_pool,
             "secondaryPool": secondary_pool,
-            "group": group
+            "group": group,
+            "priority": priority,
+            "submitSuspended": suspended,
+            "limits": limits,
         }
