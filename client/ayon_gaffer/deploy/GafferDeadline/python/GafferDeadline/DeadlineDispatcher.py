@@ -254,23 +254,11 @@ class DeadlineDispatcher(GafferDispatch.Dispatcher):
 
             context = deadlineJob.getContext()
 
-            if AYON_MODE:
-                # we only get here if we are within Ayon AND have the neede settings
-                pool_settings = deadline_settings["publish"]["CollectDeadlinePools"]
-                gaffer_pool_settings = gaffer_settings["pools"]
-                primary_pool = gaffer_pool_settings.get("primary_pool", None)
-                if not primary_pool:
-                    primary_pool = pool_settings["primary_pool"]
-                secondary_pool = gaffer_pool_settings.get("secondary_pool", None)
-                if not secondary_pool:
-                    secondary_pool = pool_settings["secondary_pool"]
-                group = gaffer_pool_settings.get("group", "")
-            else:
-                primary_pool = context.substitute(deadlinePlug["pool"].getValue())
-                secondary_pool = context.substitute(
-                                deadlinePlug["secondaryPool"].getValue()
-                            )
-                group = context.substitute(deadlinePlug["group"].getValue())
+            primary_pool = context.substitute(deadlinePlug["pool"].getValue())
+            secondary_pool = context.substitute(
+                            deadlinePlug["secondaryPool"].getValue()
+                        )
+            group = context.substitute(deadlinePlug["group"].getValue())
 
             with Gaffer.Context(deadlineJob.getContext()) as c:
                 jobInfo = {
