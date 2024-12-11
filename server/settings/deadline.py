@@ -9,6 +9,15 @@ from ayon_server.settings import (
 from .common import PlugModel
 
 
+class LimitGroupsSubmodel(BaseSettingsModel):
+    _layout = "expanded"
+    name: str = SettingsField(title="Limit name")
+    value: list[str] = SettingsField(
+        default_factory=list,
+        title="Node type names that trigger limit"
+    )
+
+
 class GafferDeadlineEnvVarModel(BaseSettingsModel):
     _layout = "expanded"
     name: str = SettingsField(
@@ -82,6 +91,10 @@ class GafferDeadlineSettings(BaseSettingsModel):
         title="Environment variables",
         default_factory=list
     )
+    limit_groups: list[LimitGroupsSubmodel] = SettingsField(
+        default_factory=list,
+        title="Limit Groups",
+    )
 
 
 DEFAULT_DEADLINE_SETTINGS = {
@@ -106,4 +119,5 @@ DEFAULT_DEADLINE_SETTINGS = {
         {"name": "AYON_BUNDLE_NAME", "use_env_value": True, "value": ""},
         {"name": "AYON_RENDER_JOB", "use_env_value": False, "value": "1"},
     ],
+    "limit_groups": []
 }
