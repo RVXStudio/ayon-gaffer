@@ -85,8 +85,8 @@ class CollectRender(pyblish.api.InstancePlugin):
             colorspace_data = get_color_management_preferences(
                 layer.scriptNode())
             # add the cleanup dirs to the instance, if it is not already there
-            current_cleanupFullPaths = instance.data.get(
-                "explicit_cleanup_dirs", [])
+            current_cleanupFullPaths = context.data.get(
+                "cleanupFullPaths", [])
 
             cleanup_dirs = [os.path.normpath(ctxt.substitute(val)) for val
                             in layer["cleanup_paths"].getValue()]
@@ -94,12 +94,12 @@ class CollectRender(pyblish.api.InstancePlugin):
             for cleandir in cleanup_dirs:
                 if cleandir not in current_cleanupFullPaths:
                     self.log.info(f"Adding [{cleandir}] to"
-                                  "instance.data['explicit_cleanup_dirs']")
+                                  "context.data['cleanupFullPaths']")
                     current_cleanupFullPaths.append(cleandir)
                 else:
                     self.log.info(f"Not adding [{cleandir}] to"
                                   "farm_cleanupFullPaths, it is already there")
-            instance.data["explicit_cleanup_dirs"] = current_cleanupFullPaths
+            context.data["cleanupFullPaths"] = current_cleanupFullPaths
 
         output_dir = os.path.dirname(outputs[list(outputs.keys())[0]])
         data = {
