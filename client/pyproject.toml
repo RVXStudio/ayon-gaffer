@@ -1,3 +1,6 @@
 [project]
 name="ayon_gaffer"
 description="AYON gaffer addon."
+
+[tool.poetry.dependencies]
+pyseq = "^0.7.0"
