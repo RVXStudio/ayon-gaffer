@@ -135,6 +135,9 @@ class CollectRender(pyblish.api.InstancePlugin):
             "colorspaceDisplay": colorspace_data["display"],
             "colorspaceView": colorspace_data["view"],
             "outputDir": output_dir,
+            # this utilizes an RVX modification to the publishing process
+            # where we can enable/disable hardlinking when integrating
+            # for certain cases
             "do_hardlink": True
         }
         label = "{0} ({1})".format(layer_name, instance.data["folderPath"])
