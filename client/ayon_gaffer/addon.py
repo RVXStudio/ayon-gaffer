@@ -24,6 +24,14 @@ class GafferAddon(
     def initialize(self, module_settings):
         self.enabled = True
 
+    def get_plugin_paths(self):
+        self.log.info('=' * 60)
+        self.log.info(f'GETTING PLUGIN PATH os.path.join(GAFFER_HOST_DIR, "plugins", "farm")')
+        self.log.info('=' * 60)
+        return {
+            "publish": [os.path.join(GAFFER_HOST_DIR, "plugins", "farm")]
+        }
+
     def add_implementation_envs(self, env, _app):
         # Add requirements to GAFFER_EXTENSION_PATHS
         startup_path = os.path.join(GAFFER_HOST_DIR, "deploy")
@@ -48,9 +56,6 @@ class GafferAddon(
 
     def get_workfile_extensions(self):
         return [".gfr"]
-
-    def get_plugin_paths(self):
-        return {}
 
     def tray_init(self):
         # doing nothing in here for now
