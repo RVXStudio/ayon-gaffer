@@ -1,7 +1,7 @@
 import os
 
 from ayon_core.addon import (
-    AYONAddon, IHostAddon
+    AYONAddon, IHostAddon, IPluginPaths
 )
 
 
@@ -15,6 +15,7 @@ _URL_NOT_SET = object()
 class GafferAddon(
     AYONAddon,
     IHostAddon,
+    IPluginPaths,
 ):
     name = "gaffer"
     version = __version__
@@ -25,9 +26,6 @@ class GafferAddon(
         self.enabled = True
 
     def get_plugin_paths(self):
-        self.log.info('=' * 60)
-        self.log.info(f'GETTING PLUGIN PATH os.path.join(GAFFER_HOST_DIR, "plugins", "farm")')
-        self.log.info('=' * 60)
         return {
             "publish": [os.path.join(GAFFER_HOST_DIR, "plugins", "farm")]
         }
