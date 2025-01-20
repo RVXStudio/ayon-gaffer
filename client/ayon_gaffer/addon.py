@@ -1,7 +1,7 @@
 import os
 
 from ayon_core.addon import (
-    AYONAddon, IHostAddon
+    AYONAddon, IHostAddon, IPluginPaths
 )
 
 
@@ -15,6 +15,7 @@ _URL_NOT_SET = object()
 class GafferAddon(
     AYONAddon,
     IHostAddon,
+    IPluginPaths,
 ):
     name = "gaffer"
     version = __version__
@@ -23,6 +24,11 @@ class GafferAddon(
 
     def initialize(self, module_settings):
         self.enabled = True
+
+    def get_plugin_paths(self):
+        return {
+            "publish": [os.path.join(GAFFER_HOST_DIR, "plugins", "farm")]
+        }
 
     def add_implementation_envs(self, env, _app):
         # Add requirements to GAFFER_EXTENSION_PATHS
@@ -48,9 +54,6 @@ class GafferAddon(
 
     def get_workfile_extensions(self):
         return [".gfr"]
-
-    def get_plugin_paths(self):
-        return {}
 
     def tray_init(self):
         # doing nothing in here for now
