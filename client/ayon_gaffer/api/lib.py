@@ -418,10 +418,13 @@ def find_paths_by_type(scene_plug: GafferScene.ScenePlug,
 
 def get_color_management_preferences(script_node):
     """Get default OCIO preferences"""
+    display_view = script_node['openColorIO']['displayTransform'].getValue()
+    display, view = display_view.split("/")
     return {
         "config": script_node['openColorIO']['config'].getValue(),
-        "display": script_node['openColorIO']['displayTransform'].getValue(),
-        "view": script_node['openColorIO']['workingSpace'].getValue()
+        "colorspace": script_node['openColorIO']['workingSpace'].getValue(),
+        "display": display,
+        "view": view,
     }
 
 
