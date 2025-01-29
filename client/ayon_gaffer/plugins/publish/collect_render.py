@@ -137,8 +137,8 @@ class CollectRender(pyblish.api.InstancePlugin):
             "gaffer_cleanup_paths": cleanup_paths,
             "gaffer_cleanup_file_path": cleanup_file,
             # this utilizes an RVX modification to the publishing process
-            # where we can enable/disable hardlinking when integrating
-            # for certain cases
+            # where we can enable/disable hardlinking when instances
+            # request it
             "do_hardlink": True
         }
         label = "{0} ({1})".format(layer_name, instance.data["folderPath"])
