@@ -85,12 +85,6 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
     def get_attribute_defs(cls):
         limit_groups = [""] + ayon_gaffer.api.pipeline.DEADLINE_LIMIT_GROUPS
         return [
-            NumberDef(
-                "priority",
-                label="Priority",
-                default=cls.priority,
-                decimals=0
-            ),
             BoolDef(
                 "suspended",
                 default=False,

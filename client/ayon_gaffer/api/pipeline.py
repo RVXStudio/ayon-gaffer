@@ -240,7 +240,8 @@ def imprint_container(node: Gaffer.Node,
 
 def imprint(node: Gaffer.Node,
             data: dict,
-            section: str = "Ayon"):
+            section: str = "Ayon",
+            group: str = ""):
     """Store and persist data on a node as `user` data.
 
     Args:
@@ -258,19 +259,78 @@ def imprint(node: Gaffer.Node,
 
     FLAGS = Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic
 
+    parent_plug = node["user"]
+
+    if group:
+        # check for the group plug
+        if "ayon_attr_group" not in node["user"].keys():
+            # create it
+
+            print('creating group plug')
+            group_plug = Gaffer.CompoundDataPlug(
+                "ayon_attr_group", flags=FLAGS)
+
+            group_data_plug = Gaffer.CompoundDataPlug(
+                "group_data_plug", flags=FLAGS)
+            attr_plug = Gaffer.NameValuePlug(
+                group, group_data_plug, True, "groups", flags=FLAGS)
+            group_plug.addChild(attr_plug)
+            node["user"].addChild(group_plug)
+            if section:
+                Gaffer.Metadata.registerValue(
+                    group_plug, "layout:section", section)
+
+        for child in node["user"]["ayon_attr_group"].children():
+            if child["name"].getValue() == group:
+                parent_plug = child["value"]
+                break
+        else:
+            print('elsing', group)
+            group_data_plug = Gaffer.CompoundDataPlug(
+                "group_data_plug", flags=FLAGS)
+            attr_plug = Gaffer.NameValuePlug(
+                group, group_data_plug, True, "groups", flags=FLAGS)
+            print(attr_plug)
+            print(node["user"]["ayon_attr_group"])
+            node["user"]["ayon_attr_group"].addChild(attr_plug)
+            parent_plug = group_data_plug
+
+    def key_exists(parent_plug, key, group):
+        if group:
+            for child in parent_plug.children():
+                if child["name"].getValue() == key:
+                    # ok, found the plug
+                    return True
+        if key in parent_plug:
+            return True
+        return False
+
+    def set_exisinting_value(parent_plug, key, group):
+        for child in parent_plug.children():
+            if child["name"].getValue() == key:
+                # ok, found the plug
+                child["value"].setValue(value)
+
+    def add_new_key(parent_plug, plug, key, group):
+        nv_plug = Gaffer.NameValuePlug(key, plug, True, "value", flags=FLAGS)
+        parent_plug.addChild(nv_plug)
+
     for key, value in data.items():
         # Dict to JSON
         if isinstance(value, dict):
             value = json.dumps(value)
             value = f"{JSON_PREFIX}{value}"
 
-        if key in node["user"]:
+        if key_exists(parent_plug, key, group):
             # Set existing attribute
             try:
                 if value is None:
                     value = ""
                 print(value)
-                node["user"][key].setValue(value)
+                if group:
+                    set_exisinting_value(parent_plug, key, value)
+                else:
+                    node["user"][key].setValue(value)
                 continue
             except Exception:
                 # If an exception occurs then we'll just replace the key
@@ -302,7 +362,10 @@ def imprint(node: Gaffer.Node,
         if section:
             Gaffer.Metadata.registerValue(plug, "layout:section", section)
 
-        node["user"][key] = plug
+        if group:
+            add_new_key(parent_plug, plug, key, value)
+        else:
+            parent_plug[key] = plug
 
 
 def get_context_label():

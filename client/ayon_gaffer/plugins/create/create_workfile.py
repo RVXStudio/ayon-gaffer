@@ -64,7 +64,7 @@ class GafferWorkfileCreator(AutoCreator, CreatorImprintReadMixin):
                 existing_instance = instance
                 break
 
-        self.log.info(f"Existing {existing_instance}")
+        # self.log.info(f"Existing {existing_instance}")
 
         project_name = self.create_context.get_current_project_name()
         folder_path = self.create_context.get_current_folder_path()

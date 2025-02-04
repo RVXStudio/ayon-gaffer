@@ -38,9 +38,24 @@ def read(node):
     if "user" not in node:
         # No user attributes
         return {}
-    return {
-        plug.getName(): plug.getValue() for plug in node["user"]
-    }
+
+    data = {}
+    if "ayon_attr_group" in node["user"]:
+        data["_attr_groups_"] = True
+        # we have some groups
+        root_plug = node["user"]["ayon_attr_group"]
+        for child in root_plug.children():
+            group = child["name"].getValue()
+            group_data = {}
+            for key in child["value"].children():
+                group_data[key["name"].getValue()] = key["value"].getValue()
+            data[group] = group_data
+    for plug in node["user"]:
+        plug_name = plug.getName()
+        if plug_name == "ayon_attr_group":
+            continue
+        data[plug_name] = plug.getValue()
+    return data
 
 
 class CreatorImprintReadMixin:
@@ -55,34 +70,50 @@ class CreatorImprintReadMixin:
         # Consider only data with the special attribute prefix
         # and strip off the prefix as for the resulting data
 
-        ayon_data = {}
-        for key, value in all_user_data.items():
+        def read_data_dict(in_data, node):
+            ayon_data = {}
+            for key, value in in_data.items():
 
-            if key.startswith(self.attr_prefix):
-                prefix_len = len(self.attr_prefix)
-            elif key.startswith(self.op_attr_prefix):
-                prefix_len = len(self.op_attr_prefix)
-            else:
-                continue
+                if key.startswith(self.attr_prefix):
+                    prefix_len = len(self.attr_prefix)
+                elif key.startswith(self.op_attr_prefix):
+                    prefix_len = len(self.op_attr_prefix)
+                else:
+                    continue
 
-            if isinstance(value, str) and value.startswith(JSON_PREFIX):
-                value = value[len(JSON_PREFIX):]  # strip off JSON prefix
-                value = json.loads(value)
-            elif isinstance(value, str) and value == "<None>":
-                value = None
+                if isinstance(value, str) and value.startswith(JSON_PREFIX):
+                    value = value[len(JSON_PREFIX):]  # strip off JSON prefix
+                    value = json.loads(value)
+                elif isinstance(value, str) and value == "<None>":
+                    value = None
 
-            key = key[prefix_len:]      # strip off prefix
-            ayon_data[key] = value
+                key = key[prefix_len:]      # strip off prefix
+                ayon_data[key] = value
 
-        ayon_data["instance_id"] = node.fullName()
+            ayon_data["instance_id"] = node.fullName()
+            if "creator_identifier" in ayon_data.keys():
+                # if we have an openpye creator identifier, let's temporarily
+                # make it an ayon one.
+                creator_id = ayon_data["creator_identifier"]
+                if ".openpype." in creator_id:
+                    ayon_data["creator_identifier"] = creator_id.replace(
+                        ".openpype.", ".ayon.")
+            return ayon_data
 
-        if "creator_identifier" in ayon_data.keys():
-            # if we have an openpye creator identifier, let's temporarily
-            # make it an ayon one.
-            creator_id = ayon_data["creator_identifier"]
-            if ".openpype." in creator_id:
-                ayon_data["creator_identifier"] = creator_id.replace(
-                    ".openpype.", ".ayon.")
+        if all_user_data.get("_attr_groups_"):
+            # we have groups
+            ayon_data = {}
+            for k, v in all_user_data.items():
+                if k == "_attr_groups_":
+                    continue
+                if not isinstance(v, dict):
+                    continue
+                ayon_data[k] = read_data_dict(v, node)
+
+            ayon_data["_attr_groups_"] = True
+
+        else:
+            ayon_data = read_data_dict(all_user_data, node)
 
         return ayon_data
 
@@ -99,6 +130,23 @@ class CreatorImprintReadMixin:
             ayon_data[key] = value
 
         imprint(node, ayon_data)
+
+    def _layer_imprint(
+        self, node: Gaffer.Node, data: dict, publish_node: Gaffer.Node
+            ):
+        print("% LAYER Imprinting", node.getName())
+        # Instance id is the node's unique full name so we don't need to
+        # imprint as data. This makes it so that duplicating a node will
+        # correctly detect it as a new unique instance.
+        data.pop("instance_id", None)
+
+        # Prefix all keys
+        ayon_data = {}
+        for key, value in data.items():
+            key = f"{self.attr_prefix}{key}"
+            ayon_data[key] = value
+
+        imprint(node, ayon_data, group=publish_node.fullName())
 
 
 class GafferCreatorError(CreatorError):
@@ -355,6 +403,8 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
 
                 project_name = self.create_context.get_current_project_name()
                 layer_data = self._read(layer)
+                if layer_data.get("_attr_groups_"):
+                    layer_data = layer_data.get(publish_node.fullName(), {})
                 if layer_data.get("folderPath") is None:
                     # we need to create the instance data for this layer
 
@@ -376,6 +426,13 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
                         layer_name,
                         )
 
+                    if "layer" in layer_data.keys():
+                        del layer_data["label"]
+                    if "productName" in layer_data.keys():
+                        del layer_data["productName"]
+                    if "instance_id" in layer_data.keys():
+                        del layer_data["instance_id"]
+                    instance_data.update(layer_data)
                     instance = CreatedInstance(
                         product_type=self.product_type,
                         product_name=product_name,
@@ -408,16 +465,27 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
 
     def update_instances(self, update_list):
         for instance, _changes in update_list:
+            # we imprint the layer nodes, not the publish nodes,
             the_node = instance.transient_data["node"]
+            publish_node = instance.transient_data["parent_publish_node"]
             new_data = instance.data_to_store()
 
             # we remove some data, since that is set on the publish node
             # and it makes no sense to be able to change one shot for all
-            # layers 
+            # layers
+            publish_node_data = {}
             for key in ["folderPath", "task"]:
+                publish_node_data[key] = new_data[key]
                 del new_data[key]
 
-            self._imprint(the_node, new_data)
+            self._layer_imprint(the_node, new_data, publish_node)
+
+            self._imprint(publish_node, publish_node_data)
+            Gaffer.Metadata.registerValue(
+                publish_node,
+                "annotation:user:text",
+                publish_node_data["folderPath"]
+            )
 
     def remove_instances(self, instances):
         pub_nodes_to_remove = []

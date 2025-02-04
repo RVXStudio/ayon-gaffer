@@ -2,9 +2,6 @@
 import pyblish.api
 from ayon_core.lib import TextDef, UILabelDef, NumberDef, UISeparatorDef
 from ayon_core.pipeline.publish import AYONPyblishPluginMixin
-from ayon_core.lib.profiles_filtering import filter_profiles
-
-from ayon_deadline.lib import AYONDeadlineJobInfo
 
 
 class CollectGafferDeadlinePools(pyblish.api.InstancePlugin,
@@ -20,7 +17,7 @@ class CollectGafferDeadlinePools(pyblish.api.InstancePlugin,
     group = ""
 
     submission_defaults = {}
-    gaffer_deadline_profiles  = {}
+    gaffer_deadline_profiles = {}
 
     @classmethod
     def apply_settings(cls, project_settings):
@@ -36,8 +33,8 @@ class CollectGafferDeadlinePools(pyblish.api.InstancePlugin,
 
         cls.submission_defaults = settings_dict
 
-        cls.gaffer_deadline_profiles = project_settings["deadline"]["publish"]["CollectJobInfo"]["profiles"]
-
+        cls.gaffer_deadline_profiles = (project_settings["deadline"]["publish"]
+                                        ["CollectJobInfo"]["profiles"])
 
     def process(self, instance):
         attr_values = self.get_attr_values_from_data(instance.data)
@@ -56,46 +53,8 @@ class CollectGafferDeadlinePools(pyblish.api.InstancePlugin,
 
         instance.data["deadline_submission_settings"] = deadline_submission_settings
 
-
-    def _get_jobinfo_defaults(self, instance):
-        """Queries project setting for profile with default values
-
-        Args:
-            instance (pyblish.api.Instance): Source instance.
-
-        Returns:
-            (dict)
-        """
-        context_data = instance.context.data
-        host_name = context_data["hostName"]
-        task_entity = context_data.get("taskEntity")
-
-        task_name = task_type = None
-        if task_entity:
-            task_name = task_entity["name"]
-            task_type = task_entity["taskType"]
-
-        profile = filter_profiles(
-            self.gaffer_deadline_profiles,
-            {
-                "host_names": host_name,
-                "task_types": task_type,
-                "task_names": task_name,
-                # "product_type": product_type
-            }
-        )
-        return profile or {}
-
     @classmethod
     def get_attribute_defs(cls):
-        # TODO: Preferably this would be an enum for the user
-        #       but the Deadline server URL can be dynamic and
-        #       can be set per render instance. Since get_attribute_defs
-        #       can't be dynamic unfortunately EnumDef isn't possible (yet?)
-        # pool_names = self.deadline_module.get_deadline_pools(deadline_url,
-        #                                                      self.log)
-        # secondary_pool_names = ["-"] + pool_names
-
         defs = []
 
         for label, settings in cls.submission_defaults.items():
