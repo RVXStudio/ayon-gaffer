@@ -64,6 +64,11 @@ class GafferTaskNodeProfile(BaseSettingsModel):
 
 class GafferDeadlineSettingsNodetypeProfiles(BaseSettingsModel):
     _layout = "expanded"
+    label: str = SettingsField(
+        title="Label",
+        default_factory=str,
+        description="A nice python name for this group of task nodes"
+    )
     task_node: list[GafferTaskNodeProfile] = SettingsField(
         title="Task nodes",
         default_factory=list

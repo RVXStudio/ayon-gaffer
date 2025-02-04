@@ -334,12 +334,16 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
                                 if node[pname].getValue() != plug[plug_type]:
                                     matching_node = False
                 if matching_node:
+                    sett_grp = instance.data["deadline_submission_settings"].get(entry["label"])
+                    if sett_grp is None:
+                        self.log.error(f"Could not find submission settings group {entry['']}")
+                        return submission_settings
+
                     self.log.info(f"Insteresting node {node}")
-                    node_settings = entry["submission_settings"]
-                    submission_settings["priority"] = node_settings["priority"]
-                    submission_settings["pool"] = node_settings["primary_pool"]
-                    submission_settings["secondaryPool"] = node_settings["secondary_pool"]
-                    submission_settings["group"] = node_settings["group"]
+                    submission_settings["priority"] = sett_grp["priority"]
+                    submission_settings["pool"] = sett_grp["primary_pool"]
+                    submission_settings["secondaryPool"] = sett_grp["secondary_pool"]
+                    submission_settings["group"] = sett_grp["group"]
                     return submission_settings
         return submission_settings
 
@@ -456,10 +460,11 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
         """
 
         # this stuff is gathered from the plugin `collect_deadline_pools`
-        primary_pool = instance.data.get("primaryPool", "none")
-        secondary_pool = instance.data.get("secondaryPool", "none")
-        group = instance.data.get("group", "")
-        priority = instance.data["attributeValues"].get(
+        submission_settings = instance.data["deadline_submission_settings"]["default"]
+        primary_pool = submission_settings.get("primary_pool", "none")
+        secondary_pool = submission_settings.get("secondary_pool", "none")
+        group = submission_settings.get("group", "")
+        priority = submission_settings.get(
                 "priority", self.priority)
         suspended = instance.data["attributeValues"].get("suspended", False)
         limits = ",".join(instance.data["attributeValues"]["limits"])
