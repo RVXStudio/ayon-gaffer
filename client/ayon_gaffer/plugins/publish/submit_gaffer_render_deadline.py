@@ -71,6 +71,7 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
         "AYON_FOLDER_PATH": "",
         "AYON_TASK_NAME": "",
         "AYON_APP_NAME": "",
+        "AYON_USE_STAGING": "0",
         "AYON_BUNDLE_NAME": "",
         "DEADLINE_ENVIRONMENT_CACHE_DIR": "",
     }
