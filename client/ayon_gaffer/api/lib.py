@@ -6,6 +6,7 @@ from typing import Tuple, List, Optional
 import Gaffer
 import GafferScene
 import imath
+import PyOpenColorIO as OCIO
 
 if sys.version_info >= (3, 9, 0):
     from collections.abc import Iterator
@@ -419,7 +420,15 @@ def find_paths_by_type(scene_plug: GafferScene.ScenePlug,
 def get_color_management_preferences(script_node):
     """Get default OCIO preferences"""
     display_view = script_node['openColorIO']['displayTransform'].getValue()
-    display, view = display_view.split("/")
+    if display_view == "":
+        # the displayTransform is set to None until the user opens the settings
+        # so we just fetch the defaults
+        conf = OCIO.GetCurrentConfig()
+        display = conf.getDefaultDisplay()
+        view = conf.getDefaultView(display)
+    else:
+        display, view = display_view.split("/")
+
     return {
         "config": script_node['openColorIO']['config'].getValue(),
         "colorspace": script_node['openColorIO']['workingSpace'].getValue(),
