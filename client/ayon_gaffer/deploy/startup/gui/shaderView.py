@@ -6,8 +6,8 @@ import Gaffer
 import GafferOSL
 import imath
 
-class RVXShaderPlane(GafferScene.SceneNode):
-    def __init__(self, name="RVXShaderPlane"):
+class ShaderPlane(GafferScene.SceneNode):
+    def __init__(self, name="ShaderPlane"):
         GafferScene.SceneNode.__init__(self, name)
 
         self["resolution"] = Gaffer.IntPlug(
@@ -88,4 +88,4 @@ class RVXShaderPlane(GafferScene.SceneNode):
 
 
 #GafferSceneUI.ShaderView.registerScene( "ai", "second", "/net-home/sveinbjorn/Desktop/plane.gfr" )
-GafferSceneUI.ShaderView.registerScene( "ai", "RVXPlane", RVXShaderPlane )
+GafferSceneUI.ShaderView.registerScene( "ai", "Plane", ShaderPlane )
