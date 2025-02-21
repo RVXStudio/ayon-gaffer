@@ -42,7 +42,12 @@ class CollectGafferDeadlinePools(pyblish.api.InstancePlugin,
         deadline_submission_settings = {}
         # repackage the settings as a single dictionary
         for attr, value in attr_values.items():
-            grp, attribute = attr.split("_", 1)
+            if attr.count("_") == 0:
+                grp = "default"
+                attribute = attr
+                self.log.info("autodetecting grp/attribute!")
+            else:
+                grp, attribute = attr.split("_", 1)
 
             if grp not in deadline_submission_settings.keys():
                 deadline_submission_settings[grp] = {}
