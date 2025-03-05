@@ -14,6 +14,7 @@ import pyblish.api
 from ayon_core.pipeline import (
     register_creator_plugin_path,
     register_loader_plugin_path,
+    register_inventory_action_path,
     AVALON_CONTAINER_ID,
     AYON_CONTAINER_ID,
     get_current_folder_path,
@@ -63,6 +64,7 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         pyblish.api.register_plugin_path(PUBLISH_PATH)
         register_loader_plugin_path(LOAD_PATH)
         register_creator_plugin_path(CREATE_PATH)
+        register_inventory_action_path(INVENTORY_PATH)
         log.info("Registering paths")
         log.info(PUBLISH_PATH)
         log.info(LOAD_PATH)
@@ -135,6 +137,8 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
             }
             container["objectName"] = node.fullName()
             container["_node"] = node
+            if "version_freeze" in node["user"]:
+                container["version_freeze"] = user["version_freeze"].getValue()
 
             yield container
 
