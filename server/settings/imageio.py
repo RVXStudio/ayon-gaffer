@@ -41,7 +41,7 @@ class ImageIOSettings(BaseSettingsModel):
 
 DEFAULT_IMAGEIO_SETTINGS = {
     "activate_host_color_management": True,
-    "working_color_space": "ACES - ACEScg",
+    "working_color_space": "ACEScg",
     "file_rules": {
         "activate_host_rules": False,
         "rules": []
