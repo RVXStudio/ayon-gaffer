@@ -181,12 +181,15 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         )
 
     def update_ocio_settings(self, script_node):
-        color_space = get_current_project_settings().get("gaffer", {}).get("imageio", {}).get("working_color_space", None)
-        if not color_space:
-            self.log.info("Unable to set colorspace, not found in gaffer settings")
-            return
+        imageio_config = get_current_project_settings().get("gaffer", {}).get("imageio", {})
+        color_space = imageio_config.get("working_color_space", None)
+        colorspace_display_transform = imageio_config.get("colorspace_display_transform", None)
 
-        script_node['openColorIO']['workingSpace'].setValue(str(color_space))
+        if color_space:
+            script_node['openColorIO']['workingSpace'].setValue(str(color_space))
+
+        if colorspace_display_transform:
+            script_node['openColorIO']['displayTransform'].setValue(str(colorspace_display_transform))
 
     def _on_scene_new(self, script_container, script_node):
         # Update the projectRootDirectory variable for new workfile scripts
