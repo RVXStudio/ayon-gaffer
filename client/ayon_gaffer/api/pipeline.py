@@ -23,6 +23,7 @@ from ayon_core.pipeline import (
 from ayon_gaffer import GAFFER_HOST_DIR
 import ayon_gaffer.api.nodes
 import ayon_gaffer.api.lib
+from ayon_core.settings import get_current_project_settings
 from ayon_core.lib import Logger
 
 log = Logger.get_logger("ayon_gaffer.api.pipeline")
@@ -179,10 +180,22 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
             ctxt["folder_path"]
         )
 
+    def update_ocio_settings(self, script_node):
+        imageio_config = get_current_project_settings().get("gaffer", {}).get("imageio", {})
+        color_space = imageio_config.get("working_color_space", None)
+        colorspace_display_transform = imageio_config.get("colorspace_display_transform", None)
+
+        if color_space:
+            script_node['openColorIO']['workingSpace'].setValue(str(color_space))
+
+        if colorspace_display_transform:
+            script_node['openColorIO']['displayTransform'].setValue(str(colorspace_display_transform))
+
     def _on_scene_new(self, script_container, script_node):
         # Update the projectRootDirectory variable for new workfile scripts
         self.update_project_root_directory(script_node)
         self.update_root_context_variables(script_node)
+        self.update_ocio_settings(script_node)
         ayon_gaffer.api.lib.create_multishot_context_vars(script_node)
         ayon_gaffer.api.lib.set_framerate(script_node)
         log.debug(f'Adding childAddedSignal to {script_node}')

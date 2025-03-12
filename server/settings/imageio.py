@@ -37,10 +37,13 @@ class ImageIOSettings(BaseSettingsModel):
         default_factory=ImageIOFileRulesModel,
         title="File Rules"
     )
-
+    working_color_space: str = SettingsField(default_factory=str, title="Working Color Space")
+    colorspace_display_transform: str = SettingsField(default_factory=str, title="Color Space Display Transform")
 
 DEFAULT_IMAGEIO_SETTINGS = {
     "activate_host_color_management": True,
+    "working_color_space": "ACEScg",
+    "colorspace_display_transform": "sRGB - Display/ACES 1.0 - SDR Video",
     "file_rules": {
         "activate_host_rules": False,
         "rules": []
