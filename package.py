@@ -1,6 +1,6 @@
 name = "gaffer"
 title = "Gaffer"
-version = "0.4.6"
+version = "0.4.7-dev"
 
 client_dir = "ayon_gaffer"
 
