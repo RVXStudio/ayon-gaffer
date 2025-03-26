@@ -28,9 +28,14 @@ from ayon_gaffer.api.nodes import (
     AyonPublishTask,
     RenderLayerNode,
 )
+from ayon_gaffer.api.pipeline import AYON_ATTR_GROUP_KEY
 
 import Gaffer
 import imath
+
+from ayon_core.lib import Logger
+
+log = Logger.get_logger("ayon_gaffer.api.plugin")
 
 
 def read(node):
@@ -134,7 +139,7 @@ class CreatorImprintReadMixin:
     def _layer_imprint(
         self, node: Gaffer.Node, data: dict, publish_node: Gaffer.Node
             ):
-        print("% LAYER Imprinting", node.getName())
+        # print("% LAYER Imprinting", node.getName())
         # Instance id is the node's unique full name so we don't need to
         # imprint as data. This makes it so that duplicating a node will
         # correctly detect it as a new unique instance.
@@ -462,6 +467,7 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
 
                 instance.data["label"] = new_label
                 self._add_instance_to_context(instance)
+        self.clean_render_layer_imprints()
 
     def update_instances(self, update_list):
         for instance, _changes in update_list:
@@ -486,6 +492,7 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
                 "annotation:user:text",
                 publish_node_data["folderPath"]
             )
+        self.clean_render_layer_imprints()
 
     def remove_instances(self, instances):
         pub_nodes_to_remove = []
@@ -506,17 +513,40 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
             parent.removeChild(node)
             del node
 
+    def clean_render_layer_imprints(self):
+        log.info("CLEANING IMPRINT")
+        nodes_to_check = []
+        for instance in list(self.create_context.instances):
+            if instance.get('creator_identifier') == self.identifier:
+                instance_node = instance.transient_data['node']
+                if instance_node not in nodes_to_check:
+                    nodes_to_check.append(instance_node)
+
+        for inode in nodes_to_check:
+            to_delete = []
+            output_plugs = inode["out_render"].outputs()
+            outputs = [f.node().fullName() for f in output_plugs]
+            for child in inode["user"][AYON_ATTR_GROUP_KEY].children():
+                group_name = child["name"].getValue()
+                if group_name not in outputs:
+                    log.info(f"Cleaning out group [{group_name}]")
+                    to_delete.append(child)
+
+            for item in to_delete:
+                inode["user"][AYON_ATTR_GROUP_KEY].removeChild(item)
+
+
 
 class PlugSettingsMixin:
 
     def apply_plug_settings(self, node):
-        print("Applygin plug from settings")
+        # print("Applygin plug from settings")
         for plug in self.plugs:
             plug_name = plug["name"]
             plug_type = plug["type"]
             plug_value = plug[plug_type]
 
-            print(f"* {plug_name}")
+            # print(f"* {plug_name}")
 
             # now let's find the actual plug
             plug_path = plug_name.split(".")
@@ -525,11 +555,11 @@ class PlugSettingsMixin:
                 for pp in plug_path:
                     target_plug = target_plug[pp]
             except KeyError:
-                print(f"No plug [{plug_path}] for node {node}")
+                # print(f"No plug [{plug_path}] for node {node}")
                 continue
 
             if plug_type in ["text", "boolean", "number", "decimal"]:
-                print(f"Setting [{target_plug}] to [{plug_value}]")
+                # print(f"Setting [{target_plug}] to [{plug_value}]")
                 pass  # we just pass plug_value on as-is
 
             elif plug_type == "v2f":
@@ -549,7 +579,7 @@ class PlugSettingsMixin:
             try:
                 target_plug.setValue(plug_value)
             except Exception as err:
-                print(f"ERROR: {err}")
+                log.error(f"ERROR: {err}")
 
 
 class GafferLoaderBase(load.LoaderPlugin):
