@@ -417,6 +417,40 @@ def find_paths_by_type(scene_plug: GafferScene.ScenePlug,
     return result
 
 
+def find_leaf_paths(plug: GafferScene.ScenePlug, path="/", leaf_paths=None, leaf_count_max=2) -> List[str]:
+    """
+    Recursively finds leaf node scene graph locations.
+
+    :param path: Current path in the hierarchy.
+    :param plug: Gaffer scene plug to start the search
+    :param leaf_paths: List to store leaf paths.
+    :param leaf_count_max: Maximum number of leaf paths to find
+                        Use this parameter to avoid parsing the whole hierarchy
+
+    :return: List of found leaf paths.
+
+    Example:
+        >>>find_leaf_paths(root['node']['in'])
+        # ['/group/group/camera1', 'cube1']
+
+    """
+    if leaf_paths is None:
+        leaf_paths = []
+
+    if len(leaf_paths) >= leaf_count_max:
+        return leaf_paths
+
+    if plug.object(path).typeName() == "NullObject":
+        for child_name in plug.childNames(path):
+            child_path = f"{path.rstrip('/')}/{child_name}"
+            find_leaf_paths(plug, child_path, leaf_paths)
+
+    else:  # Leaf node found
+        leaf_paths.append(path)
+
+    return leaf_paths
+
+
 def get_color_management_preferences(script_node):
     """Get default OCIO preferences"""
     display_view = script_node['openColorIO']['displayTransform'].getValue()
