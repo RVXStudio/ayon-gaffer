@@ -34,6 +34,7 @@ LOAD_PATH = os.path.join(PLUGINS_DIR, "load")
 CREATE_PATH = os.path.join(PLUGINS_DIR, "create")
 INVENTORY_PATH = os.path.join(PLUGINS_DIR, "inventory")
 DEADLINE_LIMIT_GROUPS = []
+AYON_ATTR_GROUP_KEY = "ayon_attr_group"
 
 self = sys.modules[__name__]
 self.root = None
@@ -275,17 +276,16 @@ def imprint(node: Gaffer.Node,
     """
 
     FLAGS = Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic
-
+    log.info(f"Impringint ..")
     parent_plug = node["user"]
-
     if group:
         # check for the group plug
-        if "ayon_attr_group" not in node["user"].keys():
+        if AYON_ATTR_GROUP_KEY not in node["user"].keys():
             # create it
 
-            print('creating group plug')
+            log.info(f"Creating group plug")
             group_plug = Gaffer.CompoundDataPlug(
-                "ayon_attr_group", flags=FLAGS)
+                AYON_ATTR_GROUP_KEY, flags=FLAGS)
 
             group_data_plug = Gaffer.CompoundDataPlug(
                 "group_data_plug", flags=FLAGS)
@@ -297,19 +297,19 @@ def imprint(node: Gaffer.Node,
                 Gaffer.Metadata.registerValue(
                     group_plug, "layout:section", section)
 
-        for child in node["user"]["ayon_attr_group"].children():
+        for child in node["user"][AYON_ATTR_GROUP_KEY].children():
+            # searching for existing group plug
             if child["name"].getValue() == group:
                 parent_plug = child["value"]
+                log.info(f"Found parent plug for {group}")
                 break
         else:
-            print('elsing', group)
+            log.info(f"No parent plug group found, making it ...")
             group_data_plug = Gaffer.CompoundDataPlug(
                 "group_data_plug", flags=FLAGS)
             attr_plug = Gaffer.NameValuePlug(
                 group, group_data_plug, True, "groups", flags=FLAGS)
-            print(attr_plug)
-            print(node["user"]["ayon_attr_group"])
-            node["user"]["ayon_attr_group"].addChild(attr_plug)
+            node["user"][AYON_ATTR_GROUP_KEY].addChild(attr_plug)
             parent_plug = group_data_plug
 
     def key_exists(parent_plug, key, group):
@@ -343,7 +343,6 @@ def imprint(node: Gaffer.Node,
             try:
                 if value is None:
                     value = ""
-                print(value)
                 if group:
                     set_exisinting_value(parent_plug, key, value)
                 else:
