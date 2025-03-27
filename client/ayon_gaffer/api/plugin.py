@@ -555,11 +555,11 @@ class PlugSettingsMixin:
                 for pp in plug_path:
                     target_plug = target_plug[pp]
             except KeyError:
-                # print(f"No plug [{plug_path}] for node {node}")
+                log.debug(f"No plug [{plug_path}] for node {node}")
                 continue
 
             if plug_type in ["text", "boolean", "number", "decimal"]:
-                # print(f"Setting [{target_plug}] to [{plug_value}]")
+                log.debug(f"Setting [{target_plug}] to [{plug_value}]")
                 pass  # we just pass plug_value on as-is
 
             elif plug_type == "v2f":
