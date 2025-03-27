@@ -6,7 +6,7 @@ from ayon_core.pipeline import (
     Creator as NewCreator,
     CreatedInstance,
     CreatorError,
-    load,
+    load, publish,
 )
 
 from ayon_core.lib import (
@@ -556,3 +556,8 @@ class GafferLoaderBase(load.LoaderPlugin):
     def set_node_color(self, node, context):
         product_type = context["product"].get("productType", "")
         ayon_gaffer.api.lib.set_node_color_from_settings(node, product_type)
+
+class GafferExtractorPlugin(publish.Extractor):
+    """Base class for extract plugins."""
+    settings_category = "gaffer"
+    hosts = ["gaffer"]

@@ -20,7 +20,7 @@ class GafferLoadAlembicCamera(ayon_gaffer.api.plugin.GafferLoaderBase):
     """Load Alembic Camera"""
 
     product_types = ["camera"]
-    representations = ["abc"]
+    representations = ["abc", "usd"]
 
     label = "Load camera"
     order = -10
