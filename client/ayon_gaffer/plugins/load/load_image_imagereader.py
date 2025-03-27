@@ -48,7 +48,7 @@ class GafferLoadImageReader(ayon_gaffer.api.plugin.GafferLoaderBase,
         self.update(container, context)
 
     def update(self, container, context):
-        representation = context["representations"]
+        representation = context["representation"]
         path = get_representation_path(representation)
         path = self._convert_path(path)
 
