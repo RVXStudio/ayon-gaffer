@@ -1,7 +1,7 @@
 from pyblish.api import InstancePlugin, ValidatorOrder
 
 from ayon_core.pipeline import AYONPyblishPluginMixin, PublishValidationError
-from ayon_gaffer.api.lib import traverse_scene, find_camera_paths, find_leaf_paths
+from ayon_gaffer.api.lib import find_leaf_paths
 
 
 class ValidatePointCache(InstancePlugin, AYONPyblishPluginMixin):
