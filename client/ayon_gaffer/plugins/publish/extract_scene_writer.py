@@ -1,50 +1,61 @@
 import os
-import re
+import GafferDispatch
 
 import pyblish.api
-
 from ayon_core.pipeline import publish
+from ayon_gaffer.api import get_root
 
 
-class ExtractGafferSceneWriter(
-    publish.Extractor,
-    publish.AYONPyblishPluginMixin
-):
+class ExtractGafferSceneWriter(publish.Extractor, publish.AYONPyblishPluginMixin):
     """Export Gaffer Scene Writer"""
 
     order = pyblish.api.ExtractorOrder
     label = "Gaffer Scene Writer"
     hosts = ["gaffer"]
     families = ["pointcache"]
+    representations = ["abc", "usd"]
 
     def process(self, instance):
 
-        node = instance.data["transientData"]["node"]
+        scene_writer_node = instance.data["transientData"]["node"]
 
-        filepath = node["fileName"].getValue()
+        dir_path = self.staging_dir(instance)
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
 
-        if "#" in filepath:
-            # Replace hash tokens (#) with frame number
-            context = node.scriptNode().context()
-            frame = context.getFrame()
+        root = get_root()
+        attr = instance.data["creator_attributes"]
 
-            def fn(match):
-                padding = len(match.group(0))
-                return str(frame).zfill(padding)
+        start = attr.get("frameStart", root["frameRange"]["start"].getValue())
+        end = attr.get("frameEnd", root["frameRange"]["end"].getValue())
 
-            filepath = re.sub("(#+)", fn, filepath)
+        dispatcher = GafferDispatch.LocalDispatcher()
+        dispatcher["framesMode"].setValue(2)  # custom range
+        # Set to full range does not work, we need to manually set the frame range by hand
+        frange = f"{start}-{end}"
+        self.log.debug(f"Using frame range: {frange}")
+        dispatcher["frameRange"].setValue(frange)
 
-        # Export node
-        # TODO: Support `executeSequence(frames: List[int])` to render sequence
-        node.execute()
+        representation_results = []
+        for rep in self.representations:
 
-        # Add representation to instance
-        ext = os.path.splitext(filepath)[-1].strip(".")
-        representation = {
-            "name": ext,
-            "ext": ext,
-            "files": os.path.basename(filepath),
-            "stagingDir": os.path.dirname(filepath),
-        }
-        representations = instance.data.setdefault("representations", [])
-        representations.append(representation)
+            filename = "{}.{}".format(instance.name, rep)
+            path = os.path.join(dir_path, filename)
+            scene_writer_node["fileName"].setValue(path)
+            dispatcher.dispatch([scene_writer_node])
+
+            representation_results.append(
+                {
+                    "name": rep,
+                    "ext": rep,
+                    "files": filename,
+                    "stagingDir": dir_path,
+                }
+            )
+
+            self.log.debug("Extracted instance '{0}' to: {1}".format(instance.name, path))
+
+        if "representations" not in instance.data:
+            instance.data["representations"] = []
+
+        instance.data["representations"].extend(representation_results)
