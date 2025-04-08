@@ -3,15 +3,14 @@ from ayon_core.lib import (
     BoolDef
 )
 
-
 import Gaffer
-from ayon_gaffer.api.nodes import AyonPublishTask
+from ayon_gaffer.api.nodes.render_2d import RenderNode2D
 
 
-class CreateGafferRender(plugin.GafferRenderCreator):
-    identifier = "io.ayon.creators.gaffer.render"
-    deprecated_identifiers = ["io.openpype.creators.gaffer.render"]
-    label = "Render"
+class CreateGafferCGRender(plugin.GafferRenderCreator):
+    identifier = "io.ayon.creators.gaffer.2drender"
+    deprecated_identifiers = ["io.openpype.creators.gaffer.cgrender"]
+    label = "2DRender"
     product_type = "render"
     description = "Farm rendering"
     icon = "fa5.film"
@@ -29,6 +28,8 @@ class CreateGafferRender(plugin.GafferRenderCreator):
                      product_name: str,
                      pre_create_data: dict,
                      script: Gaffer.ScriptNode) -> Gaffer.Node:
-        node = AyonPublishTask(product_name)
+        # todo I need to load the box with the imagewriter inside here.
+        node = RenderNode2D(product_name)
+
         script.addChild(node)
         return node
