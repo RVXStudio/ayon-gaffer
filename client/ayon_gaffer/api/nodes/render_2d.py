@@ -31,15 +31,41 @@ class RenderNode2D(Gaffer.Box):
 
         self.addChild(Gaffer.StringPlug("localRender", defaultValue='',
                                                          flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic, ))
+
+        self.addChild(
+            Gaffer.IntPlug(
+                "startFrame", Gaffer.Plug.Direction.In,
+                defaultValue=0,
+                flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic
+            )
+        )
+
+        self.addChild(
+            Gaffer.IntPlug(
+                "endFrame", Gaffer.Plug.Direction.In,
+                defaultValue=100,
+                flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic
+            )
+        )
+
+        self.addChild(
+            Gaffer.StringPlug(
+                "fileName", Gaffer.Plug.Direction.In,
+                defaultValue="",
+                flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic
+            )
+        )
+        self.image_writer["fileName"].setInput(self["fileName"])
+
     def submit_local_render(self):
-        print("toto")
         dispatcher = GafferDispatch.LocalDispatcher()
+
         dispatcher["framesMode"].setValue(2)  # custom range
-        frange = f"1001-1003"
+        start_frame = self["startFrame"].getValue()
+        end_frame = self["endFrame"].getValue()
+        frange = f"{start_frame}-{end_frame}"
         dispatcher["frameRange"].setValue(frange)
 
-        filename = "/net-home/pierrer/Desktop/test_render_####.exr"
-        self.image_writer["fileName"].setValue(filename)
         dispatcher.dispatch([self.image_writer])
 
 
@@ -58,6 +84,22 @@ Gaffer.Metadata.registerNode(
             "plugValueWidget:type", "GafferUI.ButtonPlugValueWidget",
             'buttonPlugValueWidget:clicked', 'plug.node().submit_local_render()',
             'label', 'Submit Render Local',
-        ]
+        ],
+        "startFrame": [
+            "nodule:type", "",
+            "description", "The start frame for the render.",
+            "layout:section", "Settings",
+        ],
+        "endFrame": [
+            "nodule:type", "",
+            "description", "The end frame for the render.",
+            "layout:section", "Settings",
+        ],
+        "fileName": [
+            "nodule:type", "",
+            "description", "The output file name for the render.",
+            "layout:section", "Settings",
+        ],
     }
 )
+
