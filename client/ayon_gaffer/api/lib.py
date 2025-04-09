@@ -41,11 +41,7 @@ def get_work_default_directory(data, file_name):
 
     version = data.get("version")
     if version is None:
-        # file = script_name()
-        print("tata")
-        print(data)
         version = get_version_from_path(file_name)
-        print("version: ", version)
         data["version"] = get_version_from_path(file_name)
 
     folder_path = data["folderPath"]
