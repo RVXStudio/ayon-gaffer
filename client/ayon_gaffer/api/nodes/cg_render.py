@@ -4,8 +4,8 @@ import GafferDispatch
 import GafferUI
 import imath
 
-class RenderNode2D(Gaffer.Box):
-    def __init__(self, name="2DRender"):
+class CGRenderNode(Gaffer.Box):
+    def __init__(self, name="CGRender"):
         Gaffer.Box.__init__(self, name)
 
         self.addChild(
@@ -70,7 +70,7 @@ class RenderNode2D(Gaffer.Box):
 
 
 Gaffer.Metadata.registerNode(
-    RenderNode2D,
+    CGRenderNode,
     "description", "I designate a render layer.",
     "nodeGadget:color", imath.Color3f(0.3203125, 0.125, 0.0),
     'noduleLayout:customGadget:addButtonTop:visible', False,

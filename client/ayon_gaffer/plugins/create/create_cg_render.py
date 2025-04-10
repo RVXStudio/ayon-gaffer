@@ -10,15 +10,15 @@ from ayon_gaffer.api import plugin
 from ayon_core.lib import BoolDef, NumberDef, StringTemplate
 from ayon_gaffer.api.lib import get_work_default_directory
 
-from ayon_gaffer.api.nodes.render_2d import RenderNode2D
+from ayon_gaffer.api.nodes.cg_render import CGRenderNode
 
 
 class CreateGafferCGRender(plugin.GafferCreatorBase):
     identifier = "io.ayon.creators.gaffer.cgrender"
     deprecated_identifiers = ["io.openpype.creators.gaffer.cgrender"]
-    label = "2DRender"
+    label = "CGRender"
     product_type = "render"
-    description = "2D Render"
+    description = "CG Render"
     icon = "fa5.film"
 
     def _update_write_node_filepath(self, created_inst, script):
@@ -51,7 +51,7 @@ class CreateGafferCGRender(plugin.GafferCreatorBase):
                      pre_create_data: dict,
                      script: Gaffer.ScriptNode) -> Gaffer.Node:
 
-        node = RenderNode2D(product_name)
+        node = CGRenderNode(product_name)
         script.addChild(node)
 
         if pre_create_data.get("use_selection", False) and len(self.selected_nodes) >= 1:
