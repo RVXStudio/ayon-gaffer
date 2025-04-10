@@ -4,30 +4,30 @@ from ayon_core.pipeline import AYONPyblishPluginMixin, PublishValidationError
 from ayon_gaffer.api.utils import get_pyseq_sequence
 
 
-class ValidateCGRender(InstancePlugin, AYONPyblishPluginMixin):
+class Validate2DRender(InstancePlugin, AYONPyblishPluginMixin):
 
-    families = ["render"]
+    families = ["render2d"]
     hosts = ["gaffer"]
-    label = "Validate CGRender"
+    label = "Validate 2DRender"
     order = ValidatorOrder + 0.1
     optional = False
 
     def process(self, instance):
-        cg_render_node = instance.data.get("transientData", {}).get("node", None)
-        if not cg_render_node:
+        render_node = instance.data.get("transientData", {}).get("node", None)
+        if not render_node:
             raise RuntimeError("Unable to find the scene writer node")
 
-        plug = cg_render_node["in"]
+        plug = render_node["in"]
 
         if not plug.getInput():
             raise PublishValidationError(
-                f"The scene writer '{cg_render_node.getName()}'"
+                f"The scene writer '{render_node.getName()}'"
                 f"is not connected to any node.\n"
                 f" Please connect it to the source of the camera you want to publish"
             )
-        file_path = cg_render_node["fileName"].getValue()
-        start_frame = cg_render_node["startFrame"].getValue()
-        end_frame = cg_render_node["endFrame"].getValue()
+        file_path = render_node["fileName"].getValue()
+        start_frame = render_node["startFrame"].getValue()
+        end_frame = render_node["endFrame"].getValue()
         seq = get_pyseq_sequence(file_path)
         if not seq:
             raise PublishValidationError(
