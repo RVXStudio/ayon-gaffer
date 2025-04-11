@@ -1,9 +1,14 @@
+import os
+
 import Gaffer
 import GafferImage
 import GafferDispatch
 import GafferUI
 import imath
 
+from ayon_core.lib import Logger
+
+log = Logger.get_logger("ayon_gaffer.api.nodes.render_2d")
 
 class RenderNode2D(Gaffer.Box):
     def __init__(self, name="2DRender"):
@@ -62,8 +67,11 @@ class RenderNode2D(Gaffer.Box):
         read_node["fileName"].setValue(self["fileName"])
 
     def clear_renders(self):
-        # todo how it is done in nuke ?
-        raise NotImplementedError("Clear renders is not implemented yet")
+        dirpath = os.path.dirname(self["fileName"].getValue())
+        for f in os.listdir(dirpath):
+            path = os.path.join(dirpath, f)
+            log.info("Removing: `{}`".format(path))
+            os.remove(path)
 
 
 Gaffer.Metadata.registerNode(
@@ -115,7 +123,7 @@ Gaffer.Metadata.registerNode(
             "buttonPlugValueWidget:clicked",
             "plug.node().clear_renders()",
             "label",
-            "Read From Rendered",
+            "Clear Renders",
         ],
         "farmRender": [
             "nodule:type",
