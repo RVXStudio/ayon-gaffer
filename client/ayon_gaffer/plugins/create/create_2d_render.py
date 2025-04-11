@@ -6,7 +6,7 @@ import Gaffer
 
 from ayon_core.pipeline import CreatedInstance
 from ayon_gaffer.api import plugin
-from ayon_core.lib import BoolDef, NumberDef, StringTemplate
+from ayon_core.lib import BoolDef, NumberDef, StringTemplate, EnumDef
 from ayon_gaffer.api.lib import get_work_default_directory
 
 from ayon_gaffer.api.nodes.render_2d import RenderNode2D
@@ -17,7 +17,7 @@ class CreateGaffer2DRender(plugin.GafferCreatorBase):
     deprecated_identifiers = ["io.openpype.creators.gaffer.render2d"]
     label = "2DRender"
     product_type = "render2d"
-    description = "C2D Render"
+    description = "2D Render"
     icon = "fa5.film"
 
     def _update_write_node_filepath(self, created_inst, script):
@@ -85,7 +85,18 @@ class CreateGaffer2DRender(plugin.GafferCreatorBase):
     def get_instance_attr_defs(self):
         frame_start, frame_end = self._get_frame_range()
 
+        rendering_targets = {}
+        rendering_targets["frames"] = "Use existing frames"
+        rendering_targets["farm"] = "Farm rendering"
+        rendering_targets["frames_farm"] = "Use existing frames - farm"
+        rendering_targets["local"] = "Local machine rendering"
+
         return [
+            EnumDef(
+                "render_target",
+                items=rendering_targets,
+                label="Render target"
+            ),
             BoolDef(
                 "farm_rendering",
                 default=True,

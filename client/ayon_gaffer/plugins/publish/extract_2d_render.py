@@ -23,10 +23,6 @@ class Extract2DRender(GafferExtractorPlugin, publish.OptionalPyblishPluginMixin)
         start_frame = render_node["startFrame"].getValue()
         end_frame = render_node["endFrame"].getValue()
         files = [os.path.basename(file_path.replace("####", f"{x:04d}")) for x in range(start_frame, end_frame + 1)]
-        print("toto \n\n")
-        print(files)
-        print(dirname)
-        print("toto \n\n")
         if "representations" not in instance.data:
             instance.data["representations"] = []
 
@@ -35,5 +31,4 @@ class Extract2DRender(GafferExtractorPlugin, publish.OptionalPyblishPluginMixin)
             'ext': self.representations[0],
             'files': files,
             "stagingDir": dirname,
-            # "stagingDir_persistent": True
         })

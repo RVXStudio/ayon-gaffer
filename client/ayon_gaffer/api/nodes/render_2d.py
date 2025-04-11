@@ -30,7 +30,13 @@ class RenderNode2D(Gaffer.Box):
         self.image_writer['preTasks']['preTask0'].setInput(self["preTask0"])
 
         self.addChild(Gaffer.StringPlug("localRender", defaultValue='',
-                                                         flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic, ))
+                                                         flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic))
+        self.addChild(Gaffer.StringPlug("farmRender", defaultValue='',
+                                        flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic))
+        self.addChild(Gaffer.StringPlug("readFromRender", defaultValue='',
+                                        flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic))
+        self.addChild(Gaffer.StringPlug("clearRender", defaultValue='',
+                                        flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic))
 
         self.addChild(
             Gaffer.IntPlug(
@@ -68,9 +74,22 @@ class RenderNode2D(Gaffer.Box):
 
         dispatcher.dispatch([self.image_writer])
 
+    def submit_farm_render(self):
+        raise NotImplementedError("Farm render is not implemented yet")
+
+    def read_from_render(self):
+        read_node = GafferImage.ImageReader("ReadFromRender")
+        read_node["fileName"].setInput(self["fileName"])
+        read_node.loadSequence()
+        read_node["out"].setInput(self.image_writer["out"])
+
+    def clear_renders(self):
+        # todo how it is done in nuke ?
+        raise NotImplementedError("Clear renders is not implemented yet")
 
 Gaffer.Metadata.registerNode(
     RenderNode2D,
+    # todo
     "description", "I designate a render layer.",
     "nodeGadget:color", imath.Color3f(0.3203125, 0.125, 0.0),
     'noduleLayout:customGadget:addButtonTop:visible', False,
@@ -83,7 +102,28 @@ Gaffer.Metadata.registerNode(
             "layout:section", "Settings",
             "plugValueWidget:type", "GafferUI.ButtonPlugValueWidget",
             'buttonPlugValueWidget:clicked', 'plug.node().submit_local_render()',
-            'label', 'Submit Render Local',
+            'label', 'Render Local',
+        ],
+        "readFromRender": [
+            "nodule:type", "",
+            "layout:section", "Settings",
+            "plugValueWidget:type", "GafferUI.ButtonPlugValueWidget",
+            'buttonPlugValueWidget:clicked', 'plug.node().read_from_render()',
+            'label', 'Read From Rendered',
+        ],
+        "clearRender": [
+            "nodule:type", "",
+            "layout:section", "Settings",
+            "plugValueWidget:type", "GafferUI.ButtonPlugValueWidget",
+            'buttonPlugValueWidget:clicked', 'plug.node().clear_renders()',
+            'label', 'Read From Rendered',
+        ],
+        "farmRender": [
+            "nodule:type", "",
+            "layout:section", "Settings",
+            "plugValueWidget:type", "GafferUI.ButtonPlugValueWidget",
+            'buttonPlugValueWidget:clicked', 'plug.node().submit_farm_render()',
+            'label', 'Render Farm',
         ],
         "startFrame": [
             "nodule:type", "",
