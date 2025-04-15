@@ -8,6 +8,7 @@ from ayon_core.pipeline import CreatedInstance
 from ayon_gaffer.api import plugin
 from ayon_core.lib import BoolDef, NumberDef, StringTemplate, EnumDef
 from ayon_gaffer.api.lib import get_work_default_directory
+from ayon_gaffer.api.nodes.lib import BoxNodeManager
 
 from ayon_gaffer.api.nodes.render_2d import RenderNode2D
 
@@ -50,7 +51,10 @@ class CreateGaffer2DRender(plugin.GafferCreatorBase):
                      pre_create_data: dict,
                      script: Gaffer.ScriptNode) -> Gaffer.Node:
 
-        node = RenderNode2D(product_name)
+        bm = BoxNodeManager()
+        # todo I could not not put the version in there. why ?
+        node = bm.create(script, "RenderNode2D", "v1")
+
         script.addChild(node)
 
         if pre_create_data.get("use_selection", False) and len(self.selected_nodes) >= 1:
