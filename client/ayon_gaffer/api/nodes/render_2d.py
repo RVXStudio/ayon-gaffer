@@ -14,17 +14,6 @@ class RenderNode2D(Gaffer.Box):
     def __init__(self, name="2DRender"):
         Gaffer.Box.__init__(self, name)
 
-        self.image_writer = GafferImage.ImageWriter("ImageWriter")
-        self.addChild(self.image_writer)
-
-        self.addChild(
-            GafferDispatch.TaskNode.TaskPlug(
-                "preTask0", Gaffer.Plug.Direction.In, flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic
-            )
-        )
-
-        self.addChild(GafferImage.ImagePlug("in", Gaffer.Plug.Direction.In, flags=Gaffer.Plug.Flags.Default))
-
         self.addChild(Gaffer.StringPlug("localRender", defaultValue="localRender", flags=Gaffer.Plug.Flags.Default))
         self.addChild(Gaffer.StringPlug("farmRender", defaultValue="farmRender", flags=Gaffer.Plug.Flags.Default))
         self.addChild(
@@ -43,10 +32,6 @@ class RenderNode2D(Gaffer.Box):
         self.addChild(
             Gaffer.StringPlug("fileName", Gaffer.Plug.Direction.In, defaultValue="", flags=Gaffer.Plug.Flags.Default)
         )
-
-        self.image_writer["in"].setInput(self["in"])
-        self.image_writer["preTasks"]["preTask0"].setInput(self["preTask0"])
-        self.image_writer["fileName"].setInput(self["fileName"])
 
     def submit_local_render(self):
         dispatcher = GafferDispatch.LocalDispatcher()

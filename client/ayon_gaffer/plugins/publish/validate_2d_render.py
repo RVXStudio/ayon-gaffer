@@ -6,13 +6,14 @@ from ayon_gaffer.api.utils import get_pyseq_sequence
 
 class Validate2DRender(InstancePlugin, AYONPyblishPluginMixin):
 
-    families = ["render2d"]
+    families = ["render2d.local"]
     hosts = ["gaffer"]
     label = "Validate 2DRender"
     order = ValidatorOrder + 0.1
     optional = False
 
     def process(self, instance):
+
         render_node = instance.data.get("transientData", {}).get("node", None)
         if not render_node:
             raise RuntimeError("Unable to find the scene writer node")
@@ -25,6 +26,10 @@ class Validate2DRender(InstancePlugin, AYONPyblishPluginMixin):
                 f"is not connected to any node.\n"
                 f" Please connect it to the source of the camera you want to publish"
             )
+        # render_target = instance.data["render_target"]
+        # if render_target == "farm":
+        #     return
+
         file_path = render_node["fileName"].getValue()
         start_frame = render_node["startFrame"].getValue()
         end_frame = render_node["endFrame"].getValue()

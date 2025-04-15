@@ -6,7 +6,7 @@ from ayon_gaffer.api.plugin import GafferExtractorPlugin
 class Extract2DRender(GafferExtractorPlugin, publish.OptionalPyblishPluginMixin):
     label = "Extract 2D Render"
     hosts = ["gaffer"]
-    families = ["render2d"]
+    families = ["render2d.local"]
     representations = ["exr"]
 
     def process(self, instance):
@@ -32,3 +32,24 @@ class Extract2DRender(GafferExtractorPlugin, publish.OptionalPyblishPluginMixin)
             'files': files,
             "stagingDir": dirname,
         })
+        #
+        # render_target = instance.data["render_target"]
+        #
+        # # if render_target == "frames":
+        # #     self._set_existing_files_data(instance, colorspace)
+        #
+        # # elif render_target == "frames_farm":
+        # #     collected_frames = self._set_existing_files_data(
+        # #         instance, colorspace)
+        # #
+        # #     self._set_expected_files(instance, collected_frames)
+        # #
+        # #     self._add_farm_instance_data(instance)
+        #
+        # if render_target == "farm":
+        #     print("toto\n\n farm")
+        #     instance.data.update({
+        #         "transfer": False,
+        #         "farm": True  # to skip integrate
+        #     })
+        #     self.log.info("Farm rendering ON ...")

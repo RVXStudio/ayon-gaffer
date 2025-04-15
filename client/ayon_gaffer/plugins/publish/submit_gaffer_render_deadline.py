@@ -40,7 +40,7 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
     label = "Submit Gaffer to Deadline"
     order = pyblish.api.IntegratorOrder + 0.1
     hosts = ["gaffer"]
-    families = ["render"]
+    families = ["render", "render2d"]
     optional = True
     targets = ["local"]
 
@@ -102,6 +102,10 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
         ]
 
     def process(self, instance):
+        import sys;sys.path.append("/opt/pycharm-2024.3.4/debug-eggs/pydevd-pycharm.egg")
+        import pydevd_pycharm
+        pydevd_pycharm.settrace('localhost', port=3000, stdoutToServer=True, stderrToServer=True)
+
         if not instance.data.get("farm"):
             self.log.debug("Skipping local instance.")
             return
@@ -135,6 +139,9 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
             dispatcher['frameRange'].setValue(
                 ','.join([str(f) for f in frames])
             )
+            # print("toto\n\n", frames)
+            self.log.debug("tutu\n\n")
+            self.log.debug(frames)
             self.log.info(
                 f"{dispatcher['framesMode'].getValue()}; "
                 "{dispatcher['frameRange'].getValue()}"
@@ -410,8 +417,13 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
             raise RuntimeError(
                 f"Nothing inside {root_node} is connected to {task_out_plug}"
                 )
+        node = task_out_plug_input.node()
         context_var_nodes = Gaffer.NodeAlgo.upstreamNodes(
-            task_out_plug_input.node(), Gaffer.ContextVariables)
+            node, Gaffer.ContextVariables)
+
+        if node.typeName() == "Gaffer::ContextVariables":
+            return node
+
         if len(context_var_nodes) == 0:
             # for now we can't insert context variable nodes so we error
             raise RuntimeError(

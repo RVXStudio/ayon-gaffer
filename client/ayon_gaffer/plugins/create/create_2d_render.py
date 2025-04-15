@@ -97,11 +97,6 @@ class CreateGaffer2DRender(plugin.GafferCreatorBase):
                 items=rendering_targets,
                 label="Render target"
             ),
-            BoolDef(
-                "farm_rendering",
-                default=True,
-                label="Farm rendering"
-            ),
             NumberDef("frameStart",
                       label="Frame Start",
                       default=frame_start,
