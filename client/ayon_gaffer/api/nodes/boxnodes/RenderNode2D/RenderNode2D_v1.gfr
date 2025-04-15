@@ -26,6 +26,8 @@ __children["RenderNode2D"]["user"].addChild( Gaffer.StringPlug( "ayon_publish_at
 __children["RenderNode2D"]["user"].addChild( Gaffer.StringPlug( "ayon_label", defaultValue = 'render2dMain [/film/ep102/seq002/seq002_0010]', flags = Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic, ) )
 __children["RenderNode2D"].addChild( GafferImage.ImageWriter( "ImageWriter" ) )
 __children["RenderNode2D"].addChild( Gaffer.ContextVariables( "ContextVariables_render" ) )
+__children["RenderNode2D"]["ContextVariables_render"].addChild( GafferDispatch.TaskNode.TaskPlug( "in", Gaffer.Plug.Direction.In, flags = Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic, ) )
+__children["RenderNode2D"]["ContextVariables_render"].addChild( GafferDispatch.TaskNode.TaskPlug( "out", Gaffer.Plug.Direction.Out, flags = Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic, ) )
 __children["RenderNode2D"]["ImageWriter"]["preTasks"].addChild( GafferDispatch.TaskNode.TaskPlug( "preTask1", flags = Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic, ) )
 __children["RenderNode2D"]["ImageWriter"].addChild( Gaffer.V2fPlug( "__uiPosition", defaultValue = imath.V2f( 0, 0 ), flags = Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic, ) )
 __children["RenderNode2D"].addChild( GafferDispatch.TaskNode.TaskPlug( "preTask0", flags = Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic, ) )
@@ -48,6 +50,8 @@ Gaffer.Metadata.registerValue( __children["RenderNode2D"]["user"]["ayon_label"],
 __children["RenderNode2D"]["ImageWriter"]["preTasks"][0].setInput( __children["RenderNode2D"]["preTask0"] )
 __children["RenderNode2D"]["ImageWriter"]["in"].setInput( __children["RenderNode2D"]["in"] )
 __children["RenderNode2D"]["ImageWriter"]["fileName"].setInput( __children["RenderNode2D"]["fileName"] )
+__children["RenderNode2D"]["ContextVariables_render"]["in"].setInput( __children["RenderNode2D"]["ImageWriter"]["task"] )
+__children["RenderNode2D"]["task"].setInput( __children["RenderNode2D"]["ContextVariables_render"]["out"] )
 __children["RenderNode2D"]["__uiPosition"].setValue( imath.V2f( 172.532364, -28.2211342 ) )
 
 
