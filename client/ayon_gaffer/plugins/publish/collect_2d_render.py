@@ -20,10 +20,7 @@ class Collect2DRender(pyblish.api.InstancePlugin):
 
 
     def process(self, instance):
-        """Collect render outputs"""
         context = instance.context
-        print("tata\n\n")
-        self.log.debug("tata")
 
         render_node = instance.data.get("transientData", {}).get("node", None)
         if not render_node:
@@ -40,6 +37,8 @@ class Collect2DRender(pyblish.api.InstancePlugin):
         frames = list(range(start_frame, end_frame + 1))
         if "representations" not in instance.data:
             instance.data["representations"] = []
+
+        colorspace_data = get_color_management_preferences(render_node.scriptNode())
 
         data = {
             "farm": True,
@@ -58,9 +57,15 @@ class Collect2DRender(pyblish.api.InstancePlugin):
             "byFrameStep": 1,
             "expectedFiles": [{"beauty": files}],
 
+            "colorspaceConfig": colorspace_data["config"],
+            "colorspaceDisplay": colorspace_data["display"],
+            "colorspaceView": colorspace_data["view"],
+            "colorspace": colorspace_data["colorspace"],
+
             "time": get_formatted_current_time(),
             "author": context.data["user"],
 
+            "outputDir": dirname,
             "stagingDir": dirname,
             "source": scene_path,
             "renderProducts": ARenderProduct(render_node.scriptNode(), ["beauty"]),
@@ -76,8 +81,6 @@ class Collect2DRender(pyblish.api.InstancePlugin):
         label += "  [{0}-{1}]".format(start_frame, end_frame)
 
         data["label"] = label
-        from pprint import pprint
-        pprint(data)
         instance.data.update(data)
 
         instance.data["families"].append("render.farm")
