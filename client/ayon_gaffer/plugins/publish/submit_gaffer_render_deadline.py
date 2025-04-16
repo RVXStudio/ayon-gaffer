@@ -102,7 +102,10 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
         ]
 
     def process(self, instance):
-
+        # todo
+        # import sys;sys.path.append("/opt/pycharm-2024.3.4/debug-eggs/pydevd-pycharm.egg")
+        # import pydevd_pycharm
+        # pydevd_pycharm.settrace('localhost', port=3000, stdoutToServer=True, stderrToServer=True)
         if not instance.data.get("farm"):
             self.log.debug("Skipping local instance.")
             return

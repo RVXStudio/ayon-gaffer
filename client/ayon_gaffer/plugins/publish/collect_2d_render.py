@@ -56,9 +56,19 @@ class Collect2DRender(pyblish.api.InstancePlugin):
             "frameEndHandle": 0,
             "frameList": frames,
             "byFrameStep": 1,
+            "expectedFiles": [{"beauty": files}],
+
+            "time": get_formatted_current_time(),
+            "author": context.data["user"],
 
             "stagingDir": dirname,
             "source": scene_path,
+            "renderProducts": ARenderProduct(render_node.scriptNode(), ["beauty"]),
+
+            # this utilizes an RVX modification to the publishing process
+            # where we can enable/disable hardlinking when instances
+            # request it
+            "do_hardlink": True
         }
 
         # todo change label, is it the deadline job name?
