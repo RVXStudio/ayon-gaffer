@@ -6,19 +6,17 @@ import Gaffer
 
 from ayon_core.pipeline import CreatedInstance
 from ayon_gaffer.api import plugin
-from ayon_core.lib import BoolDef, NumberDef, StringTemplate, EnumDef
+from ayon_core.lib import NumberDef, StringTemplate, EnumDef
 from ayon_gaffer.api.lib import get_work_default_directory
 from ayon_gaffer.api.nodes.lib import BoxNodeManager
 
-from ayon_gaffer.api.nodes.render_2d import RenderNode2D
 
-
-class CreateGaffer2DRender(plugin.GafferCreatorBase):
+class CreateGafferRender2D(plugin.GafferCreatorBase):
     identifier = "io.ayon.creators.gaffer.render2d"
     deprecated_identifiers = ["io.openpype.creators.gaffer.render2d"]
-    label = "2DRender"
+    label = "Render2D"
     product_type = "render2d"
-    description = "2D Render"
+    description = "Render 2D"
     icon = "fa5.film"
 
     def _update_write_node_filepath(self, created_inst, script):
@@ -52,8 +50,7 @@ class CreateGaffer2DRender(plugin.GafferCreatorBase):
                      script: Gaffer.ScriptNode) -> Gaffer.Node:
 
         bm = BoxNodeManager()
-        # todo I could not not put the version in there. why ?
-        node = bm.create(script, "RenderNode2D", "v1")
+        node = bm.create(script, "Render2D", "v1")
 
         script.addChild(node)
 

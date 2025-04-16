@@ -1,6 +1,6 @@
 from .publish_node import AyonPublishTask
 from .render_layer import RenderLayerNode
-from .render_2d import RenderNode2D
+from .render_2d import Render2D
 from .lib import (
     registered_boxnodes,
     register_boxnode_path,
@@ -21,5 +21,5 @@ __all__ = [
     "update_boxnode_menu",
     "check_boxnode_versions",
     "RenderSettingsNode",
-    "RenderNode2D",
+    "Render2D",
 ]

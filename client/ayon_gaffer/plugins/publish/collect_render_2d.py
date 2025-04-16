@@ -1,16 +1,14 @@
-import re
 import pyblish.api
 import os
 import Gaffer
 import IECore
-from ayon_core.pipeline import publish
 
 from ayon_core.lib import get_formatted_current_time
 from ayon_gaffer.api.colorspace import ARenderProduct
 from ayon_gaffer.api.lib import get_color_management_preferences
 
 
-class Collect2DRender(pyblish.api.InstancePlugin):
+class CollectRender2D(pyblish.api.InstancePlugin):
     """Collect current Gaffer script"""
 
     order = pyblish.api.CollectorOrder

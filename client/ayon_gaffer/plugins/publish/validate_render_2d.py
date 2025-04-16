@@ -13,7 +13,7 @@ class Validate2DRender(InstancePlugin, AYONPyblishPluginMixin):
     optional = False
 
     def process(self, instance):
-
+        # todo I don't think that this node is needed anymore
         render_node = instance.data.get("transientData", {}).get("node", None)
         if not render_node:
             raise RuntimeError("Unable to find the scene writer node")

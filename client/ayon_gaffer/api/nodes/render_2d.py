@@ -10,8 +10,8 @@ from ayon_core.lib import Logger
 
 log = Logger.get_logger("ayon_gaffer.api.nodes.render_2d")
 
-class RenderNode2D(Gaffer.Box):
-    def __init__(self, name="2DRender"):
+class Render2D(Gaffer.Box):
+    def __init__(self, name="Render2D"):
         Gaffer.Box.__init__(self, name)
 
         self.addChild(Gaffer.StringPlug("localRender", defaultValue="localRender", flags=Gaffer.Plug.Flags.Default))
@@ -60,7 +60,7 @@ class RenderNode2D(Gaffer.Box):
 
 
 Gaffer.Metadata.registerNode(
-    RenderNode2D,
+    Render2D,
     "description",
     "Renders 2D images",
     "nodeGadget:color",
