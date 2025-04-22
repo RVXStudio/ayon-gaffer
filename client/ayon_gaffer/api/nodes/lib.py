@@ -11,6 +11,7 @@ from ayon_gaffer.api import lib
 
 log = Logger.get_logger(__name__)
 
+BOXNODE_TYPE_PLUG_NAME = "boxnode_type"
 BOXNODE_VERSION_PLUG_NAME = "boxnode_version"
 BOXNODE_MENU_PREFIX = "/AYON/boxnodes"
 
@@ -113,7 +114,7 @@ class BoxNodeManager():
                 continue
 
             # for node in nodes:
-            node_type = node.typeName().split("::")[-1]
+            node_type = get_boxnode_type(node)
             old_version = node[BOXNODE_VERSION_PLUG_NAME].getValue()
             try:
                 latest_version = cls.get_versions_for_node_type(node_type)[0]
@@ -167,12 +168,22 @@ class BoxNodeManager():
                 flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic,
                 defaultValue="")
             )
+            anode.addChild(Gaffer.StringPlug(
+                BOXNODE_TYPE_PLUG_NAME,
+                flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic,
+                defaultValue="")
+            )
             anode[BOXNODE_VERSION_PLUG_NAME].setValue(node_version or "")
+            anode[BOXNODE_TYPE_PLUG_NAME].setValue(node_type or "")
 
             Gaffer.Metadata.registerValue(
                 anode[BOXNODE_VERSION_PLUG_NAME], 'layout:section', 'Node')
             Gaffer.Metadata.registerValue(
                 anode[BOXNODE_VERSION_PLUG_NAME], 'nodule:type', '')
+            Gaffer.Metadata.registerValue(
+                anode[BOXNODE_TYPE_PLUG_NAME], 'layout:section', 'Node')
+            Gaffer.Metadata.registerValue(
+                anode[BOXNODE_TYPE_PLUG_NAME], 'nodule:type', '')
 
         # position the node
         graph_editor = GafferUI.GraphEditor.acquire(script_node)
@@ -212,7 +223,7 @@ class BoxNodeManager():
         to_update_count = 0
         ok_count = 0
         for box_node in script_node.children(Gaffer.Box):
-            node_type = box_node.typeName().split("::")[-1]
+            node_type = get_boxnode_type(box_node)
             if BOXNODE_VERSION_PLUG_NAME not in box_node.keys():
                 log.debug(f"[{box_node}] does not have version plug. Skipping")
                 continue
@@ -240,6 +251,14 @@ class BoxNodeManager():
         if node_type not in node_tree:
             raise RuntimeError(f"Boxnode type [{node_type}] not registered")
         return sorted(list(node_tree[node_type].keys()), reverse=True)
+
+
+def get_boxnode_type(box_node):
+    if BOXNODE_TYPE_PLUG_NAME in box_node.keys():
+        return box_node[BOXNODE_TYPE_PLUG_NAME].getValue()
+    else:
+        log.debug(f"Falling back to typeName splitting for type")
+        return box_node.typeName().split("::")[-1]
 
 
 def register_boxnode_path(path):
