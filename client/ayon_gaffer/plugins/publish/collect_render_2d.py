@@ -43,8 +43,8 @@ class CollectRender2D(pyblish.api.InstancePlugin):
 
             "handleStart": 0,
             "handleEnd": 0,
-            "frameStart": end_frame,
-            "frameEnd": start_frame,
+            "frameStart": start_frame,
+            "frameEnd": end_frame,
             "frameStartHandle": 0,
             "frameEndHandle": 0,
             "frameList": frames,
