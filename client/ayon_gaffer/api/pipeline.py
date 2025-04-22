@@ -24,7 +24,9 @@ from ayon_gaffer import GAFFER_HOST_DIR
 import ayon_gaffer.api.nodes
 import ayon_gaffer.api.lib
 from ayon_core.settings import get_current_project_settings
-from ayon_core.lib import Logger
+from ayon_core.lib import Logger, StringTemplate
+
+import ayon_gaffer.api.nodes
 
 log = Logger.get_logger("ayon_gaffer.api.pipeline")
 
@@ -389,3 +391,28 @@ def get_context_label():
         get_current_folder_path(),
         get_current_task_name()
     )
+
+
+def get_boxnode_paths_from_settings():
+    """
+    Fetch the current settings and resolve the node preset paths with the
+    current environment.
+
+    Returns: list
+    """
+    paths = get_current_project_settings()["gaffer"]["node_preset_paths"]
+    env = os.environ.copy()
+    boxnode_paths = []
+    for boxpath in paths:
+        log.debug(f"Adding boxnode path: {boxpath}")
+        template = StringTemplate(boxpath)
+        resolved_path = template.format(env)
+        boxnode_paths.append(resolved_path)
+    return boxnode_paths
+
+
+def register_boxnode_paths_from_settings():
+    boxnode_paths = get_boxnode_paths_from_settings()
+    for boxnode_path in boxnode_paths:
+        ayon_gaffer.api.nodes.register_boxnode_path(boxnode_path)
+        log.info(f"Added [{boxnode_path}] to boxnode paths")
