@@ -19,7 +19,6 @@ class CollectRender2D(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         context = instance.context
-
         render_node = instance.data.get("transientData", {}).get("node", None)
         if not render_node:
             raise RuntimeError("Unable to find the 2d render node")
@@ -33,13 +32,10 @@ class CollectRender2D(pyblish.api.InstancePlugin):
         end_frame = render_node["endFrame"].getValue()
         files = [os.path.basename(img_seq_filepath.replace("####", f"{x:04d}")) for x in range(start_frame, end_frame + 1)]
         frames = list(range(start_frame, end_frame + 1))
-        if "representations" not in instance.data:
-            instance.data["representations"] = []
 
         colorspace_data = get_color_management_preferences(render_node.scriptNode())
 
         data = {
-            "farm": True,
 
             "attachTo": [],
 
@@ -74,6 +70,23 @@ class CollectRender2D(pyblish.api.InstancePlugin):
             "do_hardlink": True
         }
 
+
+        render_target = instance.data["creator_attributes"]["render_target"]
+        if render_target == "frames":
+            instance.data["families"].append("render2d.local")
+
+        elif render_target == "frames_farm":
+            data["farm"] = True
+            # todo implement
+            pass
+
+        elif render_target == "farm":
+            data["farm"] = True
+            instance.data["families"].append("render2d.farm")
+
+        elif render_target == "local":
+            instance.data["families"] = ["render2d.local"]
+
         # todo change label, is it the deadline job name?
         label = "{0} ({1})".format("render2D", instance.data["folderPath"])
         label += "  [{0}-{1}]".format(start_frame, end_frame)
@@ -81,4 +94,3 @@ class CollectRender2D(pyblish.api.InstancePlugin):
         data["label"] = label
         instance.data.update(data)
 
-        instance.data["families"].append("render.farm")

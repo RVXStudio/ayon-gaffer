@@ -1,5 +1,6 @@
 import os
 
+import GafferDispatch
 from ayon_core.pipeline import publish
 from ayon_gaffer.api.plugin import GafferExtractorPlugin
 
@@ -15,14 +16,21 @@ class Extract2DRender(GafferExtractorPlugin, publish.OptionalPyblishPluginMixin)
             raise RuntimeError("Unable to find the 2d render node")
         self.log.debug(f"Using node: {render_node.getName()}")
 
-
-        # todo here is mode frame of the render_target
-        # todo do the others modes as well
         file_path = render_node["fileName"].getValue()
         dirname = os.path.dirname(file_path)
         start_frame = render_node["startFrame"].getValue()
         end_frame = render_node["endFrame"].getValue()
         files = [os.path.basename(file_path.replace("####", f"{x:04d}")) for x in range(start_frame, end_frame + 1)]
+
+        dispatcher = GafferDispatch.LocalDispatcher()
+        dispatcher["framesMode"].setValue(2)  # custom range
+        # Set to full range does not work, we need to manually set the frame range by hand
+        frange = f"{start_frame}-{end_frame}"
+        self.log.debug(f"Using frame range: {frange}")
+        dispatcher["frameRange"].setValue(frange)
+
+        dispatcher.dispatch([render_node])
+
         if "representations" not in instance.data:
             instance.data["representations"] = []
 
@@ -32,24 +40,8 @@ class Extract2DRender(GafferExtractorPlugin, publish.OptionalPyblishPluginMixin)
             'files': files,
             "stagingDir": dirname,
         })
-        #
-        # render_target = instance.data["render_target"]
-        #
-        # # if render_target == "frames":
-        # #     self._set_existing_files_data(instance, colorspace)
-        #
-        # # elif render_target == "frames_farm":
-        # #     collected_frames = self._set_existing_files_data(
-        # #         instance, colorspace)
-        # #
-        # #     self._set_expected_files(instance, collected_frames)
-        # #
-        # #     self._add_farm_instance_data(instance)
-        #
-        # if render_target == "farm":
-        #     print("toto\n\n farm")
-        #     instance.data.update({
-        #         "transfer": False,
-        #         "farm": True  # to skip integrate
-        #     })
-        #     self.log.info("Farm rendering ON ...")
+
+        families = instance.data["families"]
+        if "render2d.local" in families:
+            families.remove("render2d.local")
+            families.insert(0, "render2d")
