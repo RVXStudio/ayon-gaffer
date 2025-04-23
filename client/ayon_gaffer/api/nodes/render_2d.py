@@ -7,6 +7,11 @@ import GafferUI
 import imath
 
 from ayon_core.lib import Logger
+from ayon_core.pipeline import registered_host
+from ayon_core.pipeline.create import CreateContext
+import pyblish
+
+import ayon_gaffer
 
 log = Logger.get_logger("ayon_gaffer.api.nodes.render_2d")
 
@@ -42,10 +47,58 @@ class Render2D(Gaffer.Box):
         frange = f"{start_frame}-{end_frame}"
         dispatcher["frameRange"].setValue(frange)
 
-        dispatcher.dispatch([self.image_writer])
+        dispatcher.dispatch([self["ImageWriter"]])
 
     def submit_farm_render(self):
-        raise NotImplementedError("Farm render is not implemented yet")
+        ayon_gaffer.api.set_root(self.scriptNode())
+        host = registered_host()
+        create_context = CreateContext(host)
+
+        for instance in create_context.instances:
+            if self.getName() != instance.transient_data["node"].getName():
+                continue
+
+            instance.data["active"] = True
+
+        context = pyblish.api.Context()
+        context.data["create_context"] = create_context
+        context.data["node_name"] = self.getName()
+        context.data["render_on_farm"] = True
+
+        # Since we need to bypass version validation and incrementing, we need to
+        # remove the plugins from the list that are responsible for these tasks.
+        plugins = pyblish.api.discover()
+        blacklist = ["GafferIncrementCurrentFile", "ValidateVersion"]
+        plugins = [
+            plugin
+            for plugin in plugins
+            if plugin.__name__ not in blacklist
+        ]
+
+        context = pyblish.util.publish(context, plugins=plugins)
+
+        error_message = ""
+        success = True
+        for result in context.data["results"]:
+            if result["success"]:
+                continue
+
+            success = False
+
+            err = result["error"]
+            error_message += "\n"
+            error_message += err.formatted_traceback
+
+        if not success:
+            # log.error(error_message)
+            GafferUI.MessageDialogue(
+                title="Error Rendering!",
+                message=error_message,
+                messageType=GafferUI.MessageDialogue.MessageType.Info,
+            ).waitForButton()
+            return
+
+        log.info("Submission Successful: Submission to the farm was successfully")
 
     def read_from_render(self):
         read_node = GafferImage.ImageReader("ReadFromRender")
@@ -85,6 +138,8 @@ Gaffer.Metadata.registerNode(
             "plug.node().submit_local_render()",
             "label",
             "Render Local",
+            "description",
+            "Render Local (no publish)",
         ],
         "readFromRender": [
             "nodule:type",
@@ -97,6 +152,8 @@ Gaffer.Metadata.registerNode(
             "plug.node().read_from_render()",
             "label",
             "Read From Rendered",
+            "description",
+            "Create a Read node with the rendered images",
         ],
         "clearRender": [
             "nodule:type",
@@ -109,6 +166,8 @@ Gaffer.Metadata.registerNode(
             "plug.node().clear_renders()",
             "label",
             "Clear Renders",
+            "description",
+            "Delete all the rendered images on disk",
         ],
         "farmRender": [
             "nodule:type",
@@ -120,7 +179,9 @@ Gaffer.Metadata.registerNode(
             "buttonPlugValueWidget:clicked",
             "plug.node().submit_farm_render()",
             "label",
-            "Render Farm",
+            "Render on farm",
+            "description",
+            "Submit a farm job to render and a publish the images",
         ],
         "startFrame": [
             "nodule:type",
