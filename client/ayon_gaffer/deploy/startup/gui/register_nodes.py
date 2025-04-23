@@ -37,5 +37,4 @@ ayon_gaffer.api.pipeline.register_boxnode_paths_from_settings()
 ayon_gaffer.api.nodes.update_boxnode_menu(application)
 
 
-ayon_gaffer.api.pipeline.DEADLINE_LIMIT_GROUPS = GafferDeadline.DeadlineTools.getLimitGroups()
-
+ayon_gaffer.api.pipeline.DEADLINE_LIMIT_GROUPS = GafferDeadline.DeadlineTools.getLimitGroups()  # noqa
