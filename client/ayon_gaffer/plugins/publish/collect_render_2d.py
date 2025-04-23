@@ -18,6 +18,7 @@ class CollectRender2D(pyblish.api.InstancePlugin):
 
 
     def process(self, instance):
+        print("toto\n\n")
         context = instance.context
         render_node = instance.data.get("transientData", {}).get("node", None)
         if not render_node:
@@ -72,6 +73,7 @@ class CollectRender2D(pyblish.api.InstancePlugin):
 
 
         render_target = instance.data["creator_attributes"]["render_target"]
+        print("tata: render target", render_target)
         if render_target == "frames":
             instance.data["families"].append("render2d.local")
 

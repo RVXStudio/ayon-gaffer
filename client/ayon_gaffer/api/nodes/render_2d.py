@@ -59,12 +59,14 @@ class Render2D(Gaffer.Box):
                 continue
 
             instance.data["active"] = True
+            instance.data["publish"] = True
+            instance.data["render_on_farm"] = True
+            instance.data["creator_attributes"]["render_target"] = "farm"
+            instance.data["node_name"] = self.getName()
 
         context = pyblish.api.Context()
         context.data["create_context"] = create_context
-        context.data["node_name"] = self.getName()
-        context.data["render_on_farm"] = True
-
+        
         # Since we need to bypass version validation and incrementing, we need to
         # remove the plugins from the list that are responsible for these tasks.
         plugins = pyblish.api.discover()
@@ -94,11 +96,15 @@ class Render2D(Gaffer.Box):
             GafferUI.MessageDialogue(
                 title="Error Rendering!",
                 message=error_message,
-                messageType=GafferUI.MessageDialogue.MessageType.Info,
+                messageType=GafferUI.MessageDialogue.MessageType.Error,
             ).waitForButton()
             return
 
-        log.info("Submission Successful: Submission to the farm was successfully")
+        GafferUI.MessageDialogue(
+            title="Submission Successful!",
+            message="Submission to the farm was successful",
+            messageType=GafferUI.MessageDialogue.MessageType.Info,
+        ).waitForButton()
 
     def read_from_render(self):
         read_node = GafferImage.ImageReader("ReadFromRender")
