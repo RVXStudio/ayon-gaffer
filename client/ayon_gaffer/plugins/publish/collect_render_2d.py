@@ -31,7 +31,8 @@ class CollectRender2D(pyblish.api.InstancePlugin):
         dirname = os.path.dirname(img_seq_filepath)
         start_frame = render_node["startFrame"].getValue()
         end_frame = render_node["endFrame"].getValue()
-        files = [os.path.basename(img_seq_filepath.replace("####", f"{x:04d}")) for x in range(start_frame, end_frame + 1)]
+        file_paths = [img_seq_filepath.replace("####", f"{x:04d}") for x in range(start_frame, end_frame + 1)]
+        files = [os.path.basename(x) for x in file_paths]
         frames = list(range(start_frame, end_frame + 1))
 
         colorspace_data = get_color_management_preferences(render_node.scriptNode())
@@ -71,22 +72,49 @@ class CollectRender2D(pyblish.api.InstancePlugin):
             "do_hardlink": True
         }
 
-
         render_target = instance.data["creator_attributes"]["render_target"]
-        print("tata: render target", render_target)
-        if render_target == "frames":
-            instance.data["families"].append("render2d.local")
 
-        elif render_target == "frames_farm":
+        # todo does it work: yes
+        if render_target == "frames":  # use existing frames for local publish
+            self.log.debug("Using existing frames for local publish")
+            if "representations" not in data:
+                data["representations"] = []
+            data["representations"].append({
+                'name': "exr",
+                'ext': "exr",
+                'files': files,
+                "stagingDir": dirname,
+            })
+
+        # todo does it work: ?
+        elif render_target == "frames_farm": # use existing frames for publish on farm
+            self.log.debug("Using existing frames for farm publish")
+
+            if "representations" not in data:
+                data["representations"] = []
+
+            data["representations"].append({
+                'name': "exr",
+                'ext': "exr",
+                'files': files,
+                "stagingDir": dirname,
+            })
+
+            data["expectedFiles"] = file_paths
+            data["transfer"] = False
             data["farm"] = True
-            # todo implement
-            pass
 
-        elif render_target == "farm":
+            self.log.info("Farm rendering ON ...")
+
+        # todo does it work: ?
+        elif render_target == "farm":  # render and publish on farm
+            self.log.debug("Using farm for render and publish")
             data["farm"] = True
             instance.data["families"].append("render2d.farm")
 
-        elif render_target == "local":
+        # todo does it work: ?
+        elif render_target == "local":  # render and publish locally
+            self.log.debug("Using local for render and publish")
             instance.data["families"] = ["render2d.local"]
 
         # todo change label, is it the deadline job name?

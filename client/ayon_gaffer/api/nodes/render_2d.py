@@ -47,7 +47,13 @@ class Render2D(Gaffer.Box):
         frange = f"{start_frame}-{end_frame}"
         dispatcher["frameRange"].setValue(frange)
 
-        dispatcher.dispatch([self["ImageWriter"]])
+        confirm = GafferUI.ConfirmationDialogue(title="Dispatch",
+                                               message="Do you want to dispatch the job locally ?\n "
+                                                       "this can take up some time.\n "
+                                                       "You can track the job in the `Local Jobs` panel").waitForConfirmation()
+        if confirm:
+            dispatcher.dispatch([self["ImageWriter"]])
+            GafferUI.ConfirmationDialogue(title="Job done", message="Job done").waitForConfirmation()
 
     def submit_farm_render(self):
         ayon_gaffer.api.set_root(self.scriptNode())
@@ -92,19 +98,11 @@ class Render2D(Gaffer.Box):
             error_message += err.formatted_traceback
 
         if not success:
-            # log.error(error_message)
-            GafferUI.MessageDialogue(
-                title="Error Rendering!",
-                message=error_message,
-                messageType=GafferUI.MessageDialogue.MessageType.Error,
-            ).waitForButton()
+            GafferUI.ConfirmationDialogue(title="Error Rendering!", message=error_message).waitForButton()
             return
 
-        GafferUI.MessageDialogue(
-            title="Submission Successful!",
-            message="Submission to the farm was successful",
-            messageType=GafferUI.MessageDialogue.MessageType.Info,
-        ).waitForButton()
+        GafferUI.ConfirmationDialogue(title="Submission Successful!", message="Submission to the farm was successful").waitForButton()
+
 
     def read_from_render(self):
         read_node = GafferImage.ImageReader("ReadFromRender")
