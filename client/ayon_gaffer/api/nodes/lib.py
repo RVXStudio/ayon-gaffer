@@ -234,6 +234,13 @@ class BoxNodeManager():
 
 
 def get_boxnode_type(box_node):
+    """
+    The old way to get the boxnode type was just to inspect the typeName,
+    however we can handle boxnodes that are just that, boxes. So their type
+    will always be `Gaffer::Box` so to get a custom boxnode type, we add the
+    boxnode_type plug. This fetches the new way (the plug) or if that is not
+    on the node, just return the old nodeType way.
+    """
     if BOXNODE_TYPE_PLUG_NAME in box_node.keys():
         return box_node[BOXNODE_TYPE_PLUG_NAME].getValue()
     else:
@@ -242,6 +249,10 @@ def get_boxnode_type(box_node):
 
 
 def get_boxnode_version(box_node):
+    """
+    Return the current value of the boxnode version plug, with the v stripped.
+    Returns None if no version plug is on the node.
+    """
     if BOXNODE_VERSION_PLUG_NAME in box_node.keys():
         return box_node[BOXNODE_VERSION_PLUG_NAME].getValue().strip("v")
     else:
@@ -249,6 +260,11 @@ def get_boxnode_version(box_node):
 
 
 def add_boxnode_plugs(node, node_type, node_version):
+    """
+    Add the boxnode metadata plugs and set their value, you'll need to prefix
+    `v` to the version to get set proper.
+
+    """
     node.addChild(Gaffer.StringPlug(
         BOXNODE_VERSION_PLUG_NAME,
         flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic,
@@ -377,11 +393,12 @@ def export_selected_node_as_boxnode(node, graphEditor):
     certain boxnode path.
     (the ones defined in settings under `node_preset_paths`)
     '''
-    from Qt import QtGui, QtWidgets, QtCore
+    from Qt import QtWidgets
     import GafferUI
 
     class SaveBoxnodeDialog(QtWidgets.QDialog):
         destination_path = None
+        new_version = None
 
         def __init__(self, parent=None, name="", version=""):
             super(SaveBoxnodeDialog, self).__init__(parent)
@@ -430,6 +447,7 @@ def export_selected_node_as_boxnode(node, graphEditor):
                 self.previewLabel.setText("< Invalid >")
                 self.destination_path = None
                 self.save_btn.setEnabled(False)
+                self.new_version = None
                 return
 
             filename = f"{name}_v{version}.gfr"
@@ -441,17 +459,19 @@ def export_selected_node_as_boxnode(node, graphEditor):
                 self.previewLabel.setText(
                     f"!! {self.destination_path} exists!")
                 self.save_btn.setEnabled(False)
+                self.new_version = None
                 return
             self.previewLabel.setText(self.destination_path)
+            self.new_version = version
             self.save_btn.setEnabled(True)
 
     script_node = graphEditor.scriptNode()
     scriptWindow = GafferUI.ScriptWindow.acquire(script_node)
-    application = script_node.applicationRoot()
 
     node_type = get_boxnode_type(node)
     node_version = get_boxnode_version(node) or ""
 
+    # parent the dialog under the main scriptwindow.
     dlg = SaveBoxnodeDialog(scriptWindow._qtWidget(), node_type, node_version)
 
     res = dlg.exec_()
@@ -460,21 +480,23 @@ def export_selected_node_as_boxnode(node, graphEditor):
     # we can save
     destination = dlg.destination_path
     output_dir = os.path.dirname(destination)
+    new_version = dlg.new_version
     if not os.path.exists(output_dir):
         log.info(f"Creating boxnode directory [{output_dir}]")
         os.makedirs(output_dir)
 
     log.info(f"Saving boxnode to [{destination}]")
-    export_boxnode(script_node, node, destination)
+    export_boxnode(script_node, node, destination, new_version)
 
     BoxNodeManagerInstance.refresh()
+    application = script_node.applicationRoot()
     update_boxnode_menu(application)
 
 
-def export_boxnode(script_node, node, destination):
+def export_boxnode(script_node, node, destination, new_version):
     # we need trim out the boxnode attributes
     node_type = get_boxnode_type(node)
-    node_version = get_boxnode_version(node)
+    # node_version = get_boxnode_version(node)
 
     if BOXNODE_VERSION_PLUG_NAME in node.keys():
         node.removeChild(node[BOXNODE_VERSION_PLUG_NAME])
@@ -512,4 +534,4 @@ def export_boxnode(script_node, node, destination):
     for x in old:
         sel.add(x)
 
-    add_boxnode_plugs(node, node_type, node_version)
+    add_boxnode_plugs(node, node_type, f"v{new_version}")

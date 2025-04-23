@@ -90,7 +90,10 @@ def ayon_menu(menu):
 
 def _install_boxnode_context_menu():
     """
-    Add the Save boxnode context menu.
+    Add the Save boxnode context menu. It will only be added to Box nodes,
+    not subclasses (since they have maybe some custom logic in their node
+    definitions e.g. api/nodes/render_layer.py)
+
     """
     def __boxnode_context_menu(graphEditor, node, menuDefinition):
 

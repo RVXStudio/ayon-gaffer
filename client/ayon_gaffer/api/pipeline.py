@@ -412,6 +412,9 @@ def get_boxnode_paths_from_settings():
 
 
 def register_boxnode_paths_from_settings():
+    """
+    Get the extra boxnode paths from settings and register them.
+    """
     boxnode_paths = get_boxnode_paths_from_settings()
     for boxnode_path in boxnode_paths:
         ayon_gaffer.api.nodes.register_boxnode_path(boxnode_path)
