@@ -31,7 +31,7 @@ IECore.registerRunTimeTyped(
 )
 IECore.registerRunTimeTyped(
     Render2D,
-    typeName="AyonGaffer::RenderNode2D"
+    typeName="AyonGaffer::Render2D"
 )
 
 
