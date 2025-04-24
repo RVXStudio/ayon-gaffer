@@ -2,6 +2,7 @@ import os
 import GafferDispatch
 
 import pyblish.api
+from ayon_core.lib import BoolDef
 from ayon_core.pipeline import publish
 from ayon_gaffer.api import get_root
 
@@ -28,6 +29,16 @@ class ExtractGafferSceneWriter(publish.Extractor, publish.AYONPyblishPluginMixin
 
         start = attr.get("frameStart", root["frameRange"]["start"].getValue())
         end = attr.get("frameEnd", root["frameRange"]["end"].getValue())
+
+        include_handles = instance.data.get("publish_attributes", {}).get("ExtractGafferSceneWriter", {}).get(
+            "includeHandles", False)
+
+        if include_handles:
+            self.log.debug("Including handles")
+
+        if include_handles:
+            start -= 1
+            end += 1
 
         dispatcher = GafferDispatch.LocalDispatcher()
         dispatcher["framesMode"].setValue(2)  # custom range
@@ -59,3 +70,12 @@ class ExtractGafferSceneWriter(publish.Extractor, publish.AYONPyblishPluginMixin
             instance.data["representations"] = []
 
         instance.data["representations"].extend(representation_results)
+
+    @classmethod
+    def get_attribute_defs(cls):
+        return [
+            BoolDef("includeHandles",
+                    label="Include Handles",
+                    tooltip="This will add one frame before and after for the motion blur",
+                    default=True),
+        ]

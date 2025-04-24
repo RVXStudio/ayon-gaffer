@@ -18,6 +18,10 @@ class CreateGafferPointcache(plugin.GafferCreatorBase):
                      script: Gaffer.ScriptNode) -> Gaffer.Node:
         node = GafferScene.SceneWriter(product_name)
         script.addChild(node)
+
+        if len(self.selected_nodes) >= 1:
+            node["in"].setInput(self.selected_nodes[0]["out"])
+
         return node
 
     def get_instance_attr_defs(self):
