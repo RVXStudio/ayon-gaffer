@@ -75,7 +75,7 @@ class ExtractGafferSceneWriter(publish.Extractor, publish.AYONPyblishPluginMixin
     def get_attribute_defs(cls):
         return [
             BoolDef("includeHandles",
-                    label="Include Handles",
+                    label="Add Cache Handles",
                     tooltip="This will add one frame before and after for the motion blur",
                     default=True),
         ]
