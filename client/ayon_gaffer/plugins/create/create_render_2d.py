@@ -57,9 +57,11 @@ class CreateGafferRender2D(plugin.GafferCreatorBase):
         if pre_create_data.get("use_selection", False) and len(self.selected_nodes) >= 1:
             node["in"].setInput(self.selected_nodes[0]["out"])
 
-        frame_start, frame_end = self._get_frame_range()
+        frame_start, frame_end, handle_start, handle_end = self._get_frame_range()
         node["startFrame"].setValue(frame_start)
         node["endFrame"].setValue(frame_end)
+        node["startHandle"].setValue(handle_start)
+        node["endHandle"].setValue(handle_end)
 
         data = {}
         data["folderPath"] = self.create_context.host.get_current_folder_path()
@@ -70,7 +72,7 @@ class CreateGafferRender2D(plugin.GafferCreatorBase):
 
         instance = CreatedInstance(
             product_type=self.product_type,
-            product_name="renderLayoutMain",
+            product_name=product_name,
             data=data,
             creator=self
         )
@@ -81,10 +83,10 @@ class CreateGafferRender2D(plugin.GafferCreatorBase):
 
     def _get_frame_range(self):
         task_entity = self.create_context.get_current_folder_entity()
-        return task_entity["attrib"]["frameStart"], task_entity["attrib"]["frameEnd"]
+        return task_entity["attrib"]["frameStart"], task_entity["attrib"]["frameEnd"], task_entity["attrib"]["handleStart"], task_entity["attrib"]["handleEnd"]
 
     def get_instance_attr_defs(self):
-        frame_start, frame_end = self._get_frame_range()
+        frame_start, frame_end, handle_start, handle_end = self._get_frame_range()
 
         rendering_targets = {}
         rendering_targets["frames"] = "Use existing frames"
@@ -105,5 +107,13 @@ class CreateGafferRender2D(plugin.GafferCreatorBase):
             NumberDef("frameEnd",
                       label="Frame End",
                       default=frame_end,
+                      decimals=0),
+            NumberDef("handleStart",
+                      label="Handle Start",
+                      default=handle_start,
+                      decimals=0),
+            NumberDef("handleEnd",
+                      label="Handle End",
+                      default=handle_end,
                       decimals=0),
         ]

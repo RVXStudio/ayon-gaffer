@@ -33,6 +33,11 @@ class CollectRender2D(pyblish.api.InstancePlugin):
         dirname = os.path.dirname(img_seq_filepath)
         start_frame = render_node["startFrame"].getValue()
         end_frame = render_node["endFrame"].getValue()
+        start_handle = render_node["startHandle"].getValue()
+        end_handle = render_node["endHandle"].getValue()
+        start_frame -= start_handle
+        end_frame += end_handle
+
         file_paths = [img_seq_filepath.replace("####", f"{x:04d}") for x in range(start_frame, end_frame + 1)]
         files = [os.path.basename(x) for x in file_paths]
         frames = list(range(start_frame, end_frame + 1))
@@ -45,6 +50,7 @@ class CollectRender2D(pyblish.api.InstancePlugin):
 
             "multipartExr": True,
 
+            # the handles are already included in the frame range
             "handleStart": 0,
             "handleEnd": 0,
             "frameStart": start_frame,
