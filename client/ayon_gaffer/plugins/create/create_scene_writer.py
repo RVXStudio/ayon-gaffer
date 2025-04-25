@@ -1,3 +1,4 @@
+from ayon_core.lib import NumberDef
 from ayon_gaffer.api import plugin
 
 import Gaffer
@@ -17,4 +18,24 @@ class CreateGafferPointcache(plugin.GafferCreatorBase):
                      script: Gaffer.ScriptNode) -> Gaffer.Node:
         node = GafferScene.SceneWriter(product_name)
         script.addChild(node)
+
+        if len(self.selected_nodes) >= 1:
+            node["in"].setInput(self.selected_nodes[0]["out"])
+
         return node
+
+    def get_instance_attr_defs(self):
+        task_entity = self.create_context.get_current_folder_entity()
+        frame_start = task_entity["attrib"]["frameStart"]
+        frame_end = task_entity["attrib"]["frameEnd"]
+
+        return [
+            NumberDef("frameStart",
+                      label="Frame Start",
+                      default=frame_start,
+                      decimals=0),
+            NumberDef("frameEnd",
+                      label="Frame End",
+                      default=frame_end,
+                      decimals=0),
+        ]
