@@ -18,7 +18,6 @@ class CollectRender2D(pyblish.api.InstancePlugin):
 
 
     def process(self, instance):
-        print("toto\n\n")
         context = instance.context
         render_node = instance.data.get("transientData", {}).get("node", None)
         if not render_node:
@@ -103,8 +102,7 @@ class CollectRender2D(pyblish.api.InstancePlugin):
             data["expectedFiles"] = file_paths
             data["transfer"] = False
             data["farm"] = True
-
-            self.log.info("Farm rendering ON ...")
+            instance.data["families"].append("render2d.frames_farm")
 
         # todo does it work: yes (not yet tested to run on the farm)
         elif render_target == "farm":  # render and publish on farm

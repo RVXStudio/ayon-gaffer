@@ -135,9 +135,6 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
             dispatcher['frameRange'].setValue(
                 ','.join([str(f) for f in frames])
             )
-            # print("toto\n\n", frames)
-            self.log.debug("tutu\n\n")
-            self.log.debug(frames)
             self.log.info(
                 f"{dispatcher['framesMode'].getValue()}; "
                 "{dispatcher['frameRange'].getValue()}"
