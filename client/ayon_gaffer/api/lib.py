@@ -844,6 +844,21 @@ def traverse_nodegraph(root_node: Gaffer.Node, result: list):
         traverse_nodegraph(child, result)
 
 
+def traverse_nodegraph_skipping_nested_references(root_node: Gaffer.Node, result: list):
+    if root_node.typeName() == "Gaffer::Reference":
+        if root_node not in result:
+            result.append(root_node)
+        return
+
+    children = root_node.children(Gaffer.Node)
+    if len(children) == 0:
+        return
+
+    for child in children:
+        result.append(child)
+        traverse_nodegraph_skipping_nested_references(child, result)
+
+
 def get_all_children(root_node: Gaffer.Node):
     """
     Return a list of all the nodes that are children of `root_node` so if

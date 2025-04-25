@@ -122,8 +122,9 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         required = [
             "schema", "id", "name", "namespace", "representation", "loader"
         ]
-
-        for node in script.children(Gaffer.Node):
+        nodes = []
+        ayon_gaffer.api.lib.traverse_nodegraph_skipping_nested_references(script, nodes)
+        for node in nodes:
             if "user" not in node:
                 # No user attributes
                 continue
