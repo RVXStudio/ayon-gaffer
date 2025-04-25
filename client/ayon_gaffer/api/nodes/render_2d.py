@@ -3,7 +3,6 @@ import os
 import Gaffer
 import GafferImage
 import GafferDispatch
-import GafferUI
 import imath
 
 from ayon_core.lib import Logger
@@ -39,6 +38,7 @@ class Render2D(Gaffer.Box):
         )
 
     def submit_local_render(self):
+        import GafferUI
         dispatcher = GafferDispatch.LocalDispatcher()
 
         dispatcher["framesMode"].setValue(2)  # custom range
@@ -56,6 +56,7 @@ class Render2D(Gaffer.Box):
             GafferUI.ConfirmationDialogue(title="Job done", message="Job done").waitForConfirmation()
 
     def submit_farm_render(self):
+        import GafferUI
         ayon_gaffer.api.set_root(self.scriptNode())
         host = registered_host()
         create_context = CreateContext(host)
