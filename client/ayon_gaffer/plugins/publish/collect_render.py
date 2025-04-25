@@ -29,6 +29,10 @@ class CollectRender(pyblish.api.InstancePlugin):
 
         layer = instance.data["transientData"]["node"]
 
+        if layer.typeName() != "RVXAyon::RVXRenderLayer":
+            self.log.debug(f"Skip collecting node, not a RVXRenderLayer node")
+            return
+
         layer.update_outputs()
 
         with Gaffer.Context(layer.scriptNode().context()) as ctxt:

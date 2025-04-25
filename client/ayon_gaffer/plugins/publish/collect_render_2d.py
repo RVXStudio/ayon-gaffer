@@ -14,7 +14,7 @@ class CollectRender2D(pyblish.api.InstancePlugin):
     order = pyblish.api.CollectorOrder
     label = "Collect render 2d"
     hosts = ["gaffer"]
-    families = ["render2d"]
+    families = ["render"]
 
 
     def process(self, instance):
@@ -22,6 +22,9 @@ class CollectRender2D(pyblish.api.InstancePlugin):
         render_node = instance.data.get("transientData", {}).get("node", None)
         if not render_node:
             raise RuntimeError("Unable to find the 2d render node")
+        if render_node.typeName() != "AyonGaffer::Render2D":
+            self.log.debug(f"Skip collecting node, not a Render2D node, type is {render_node.typeName()}")
+            return
         self.log.debug(f"Using node: {render_node.getName()}")
 
         scene_path = context.data["currentFile"].replace("\\", "/")
@@ -73,7 +76,6 @@ class CollectRender2D(pyblish.api.InstancePlugin):
 
         render_target = instance.data["creator_attributes"]["render_target"]
 
-        # todo does it work: yes
         if render_target == "frames":  # use existing frames for local publish
             self.log.debug("Using existing frames for local publish")
             if "representations" not in data:
@@ -85,7 +87,6 @@ class CollectRender2D(pyblish.api.InstancePlugin):
                 "stagingDir": dirname,
             })
 
-        # todo does it work: ? (there should be only a publish job on the farm)
         elif render_target == "frames_farm": # use existing frames for publish on farm
             self.log.debug("Using existing frames for farm publish")
 
@@ -102,21 +103,19 @@ class CollectRender2D(pyblish.api.InstancePlugin):
             data["expectedFiles"] = file_paths
             data["transfer"] = False
             data["farm"] = True
-            instance.data["families"].append("render2d.frames_farm")
+            instance.data["families"].append("render.frames_farm")
 
-        # todo does it work: yes (not yet tested to run on the farm)
         elif render_target == "farm":  # render and publish on farm
             self.log.debug("Using farm for render and publish")
             data["farm"] = True
-            instance.data["families"].append("render2d.farm")
+            instance.data["families"].append("render.farm")
 
-        # todo does it work: yes
         elif render_target == "local":  # render and publish locally
             self.log.debug("Using local for render and publish")
-            instance.data["families"] = ["render2d.local"]
+            instance.data["families"] = ["render.local"]
 
         # todo change label, is it the deadline job name?
-        label = "{0} ({1})".format("render2D", instance.data["folderPath"])
+        label = "{0} ({1})".format("render", instance.data["folderPath"])
         label += "  [{0}-{1}]".format(start_frame, end_frame)
 
         data["label"] = label

@@ -40,7 +40,7 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
     label = "Submit Gaffer to Deadline"
     order = pyblish.api.IntegratorOrder + 0.1
     hosts = ["gaffer"]
-    families = ["render", "render2d"]
+    families = ["render"]
     optional = True
     targets = ["local"]
 

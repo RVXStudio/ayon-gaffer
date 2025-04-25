@@ -7,7 +7,7 @@ from ayon_gaffer.api.plugin import GafferExtractorPlugin
 class Extract2DRender(GafferExtractorPlugin, publish.OptionalPyblishPluginMixin):
     label = "Extract 2D Render"
     hosts = ["gaffer"]
-    families = ["render2d.local"]
+    families = ["render.local"]
     representations = ["exr"]
 
     def process(self, instance):
@@ -42,6 +42,6 @@ class Extract2DRender(GafferExtractorPlugin, publish.OptionalPyblishPluginMixin)
         })
 
         families = instance.data["families"]
-        if "render2d.local" in families:
-            families.remove("render2d.local")
-            families.insert(0, "render2d")
+        if "render.local" in families:
+            families.remove("render.local")
+            families.insert(0, "render")

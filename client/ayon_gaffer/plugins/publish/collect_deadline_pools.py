@@ -10,7 +10,7 @@ class CollectGafferDeadlinePools(pyblish.api.InstancePlugin,
     label = "Collect Gaffer Deadline Pools"
     hosts = ["gaffer"]
 
-    families = ["render", "render2d"]
+    families = ["render"]
 
     primary_pool = None
     secondary_pool = None

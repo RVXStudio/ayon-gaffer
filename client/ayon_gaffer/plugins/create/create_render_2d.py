@@ -15,7 +15,7 @@ class CreateGafferRender2D(plugin.GafferCreatorBase):
     identifier = "io.ayon.creators.gaffer.render2d"
     deprecated_identifiers = ["io.openpype.creators.gaffer.render2d"]
     label = "Render2D"
-    product_type = "render2d"
+    product_type = "render"
     description = "Render 2D"
     icon = "fa5.film"
 
