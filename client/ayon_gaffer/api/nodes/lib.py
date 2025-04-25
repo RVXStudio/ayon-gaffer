@@ -8,9 +8,11 @@ import IECore
 
 from ayon_core.lib import Logger
 from ayon_gaffer.api import lib
+import ayon_gaffer.api.pipeline
 
 log = Logger.get_logger(__name__)
 
+BOXNODE_TYPE_PLUG_NAME = "boxnode_type"
 BOXNODE_VERSION_PLUG_NAME = "boxnode_version"
 BOXNODE_MENU_PREFIX = "/AYON/boxnodes"
 
@@ -113,7 +115,7 @@ class BoxNodeManager():
                 continue
 
             # for node in nodes:
-            node_type = node.typeName().split("::")[-1]
+            node_type = get_boxnode_type(node)
             old_version = node[BOXNODE_VERSION_PLUG_NAME].getValue()
             try:
                 latest_version = cls.get_versions_for_node_type(node_type)[0]
@@ -162,18 +164,7 @@ class BoxNodeManager():
             added_nodes = list(post_inventory - script_inventory)
 
         for anode in added_nodes:
-            anode.addChild(Gaffer.StringPlug(
-                BOXNODE_VERSION_PLUG_NAME,
-                flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic,
-                defaultValue="")
-            )
-            anode[BOXNODE_VERSION_PLUG_NAME].setValue(node_version or "")
-
-            Gaffer.Metadata.registerValue(
-                anode[BOXNODE_VERSION_PLUG_NAME], 'layout:section', 'Node')
-            Gaffer.Metadata.registerValue(
-                anode[BOXNODE_VERSION_PLUG_NAME], 'nodule:type', '')
-
+            add_boxnode_plugs(anode, node_type, node_version)
         # position the node
         graph_editor = GafferUI.GraphEditor.acquire(script_node)
         bound = graph_editor.bound()
@@ -212,7 +203,7 @@ class BoxNodeManager():
         to_update_count = 0
         ok_count = 0
         for box_node in script_node.children(Gaffer.Box):
-            node_type = box_node.typeName().split("::")[-1]
+            node_type = get_boxnode_type(box_node)
             if BOXNODE_VERSION_PLUG_NAME not in box_node.keys():
                 log.debug(f"[{box_node}] does not have version plug. Skipping")
                 continue
@@ -240,6 +231,61 @@ class BoxNodeManager():
         if node_type not in node_tree:
             raise RuntimeError(f"Boxnode type [{node_type}] not registered")
         return sorted(list(node_tree[node_type].keys()), reverse=True)
+
+
+def get_boxnode_type(box_node):
+    """
+    The old way to get the boxnode type was just to inspect the typeName,
+    however we can handle boxnodes that are just that, boxes. So their type
+    will always be `Gaffer::Box` so to get a custom boxnode type, we add the
+    boxnode_type plug. This fetches the new way (the plug) or if that is not
+    on the node, just return the old nodeType way.
+    """
+    if BOXNODE_TYPE_PLUG_NAME in box_node.keys():
+        return box_node[BOXNODE_TYPE_PLUG_NAME].getValue()
+    else:
+        log.debug(f"Falling back to typeName splitting for type")
+        return box_node.typeName().split("::")[-1]
+
+
+def get_boxnode_version(box_node):
+    """
+    Return the current value of the boxnode version plug, with the v stripped.
+    Returns None if no version plug is on the node.
+    """
+    if BOXNODE_VERSION_PLUG_NAME in box_node.keys():
+        return box_node[BOXNODE_VERSION_PLUG_NAME].getValue().strip("v")
+    else:
+        return None
+
+
+def add_boxnode_plugs(node, node_type, node_version):
+    """
+    Add the boxnode metadata plugs and set their value, you'll need to prefix
+    `v` to the version to get set proper.
+
+    """
+    node.addChild(Gaffer.StringPlug(
+        BOXNODE_VERSION_PLUG_NAME,
+        flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic,
+        defaultValue="")
+    )
+    node.addChild(Gaffer.StringPlug(
+        BOXNODE_TYPE_PLUG_NAME,
+        flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic,
+        defaultValue="")
+    )
+    node[BOXNODE_VERSION_PLUG_NAME].setValue(node_version or "")
+    node[BOXNODE_TYPE_PLUG_NAME].setValue(node_type or "")
+
+    Gaffer.Metadata.registerValue(
+        node[BOXNODE_VERSION_PLUG_NAME], 'layout:section', 'Node')
+    Gaffer.Metadata.registerValue(
+        node[BOXNODE_VERSION_PLUG_NAME], 'nodule:type', '')
+    Gaffer.Metadata.registerValue(
+        node[BOXNODE_TYPE_PLUG_NAME], 'layout:section', 'Node')
+    Gaffer.Metadata.registerValue(
+        node[BOXNODE_TYPE_PLUG_NAME], 'nodule:type', '')
 
 
 def register_boxnode_path(path):
@@ -339,3 +385,153 @@ def update_selected_boxnodes(menu=None, script_node=None):
         scriptWindow = menu.ancestor(GafferUI.ScriptWindow)
         script_node = scriptWindow.scriptNode()
     BoxNodeManagerInstance.update(script_node.selection())
+
+
+def export_selected_node_as_boxnode(node, graphEditor):
+    '''
+    This opens a dialog and prompts the user to save the boxnode under a
+    certain boxnode path.
+    (the ones defined in settings under `node_preset_paths`)
+    '''
+    from Qt import QtWidgets
+    import GafferUI
+
+    class SaveBoxnodeDialog(QtWidgets.QDialog):
+        destination_path = None
+        new_version = None
+
+        def __init__(self, parent=None, name="", version=""):
+            super(SaveBoxnodeDialog, self).__init__(parent)
+
+            layout = QtWidgets.QFormLayout()
+            self.pathBox = QtWidgets.QComboBox()
+            self.pathBox.addItems(
+                ayon_gaffer.api.pipeline.get_boxnode_paths_from_settings()
+            )
+            layout.addRow("Boxnode root", self.pathBox)
+
+            self.nameBox = QtWidgets.QLineEdit(name)
+            self.versionBox = QtWidgets.QLineEdit(version)
+
+            layout.addRow("Name", self.nameBox)
+            layout.addRow("Version", self.versionBox)
+
+            self.previewLabel = QtWidgets.QLabel("")
+            layout.addRow(self.previewLabel)
+
+            btnlayout = QtWidgets.QHBoxLayout()
+            cancel_btn = QtWidgets.QPushButton('Cancel', self)
+            btnlayout.addWidget(cancel_btn)
+            self.save_btn = QtWidgets.QPushButton('Save', self)
+            btnlayout.addWidget(self.save_btn)
+            layout.addRow(btnlayout)
+            self.setLayout(layout)
+
+            self.resize(450, 140)
+            self.setWindowTitle('Save node as boxnode')
+            self.update_destination()
+
+            self.nameBox.textEdited.connect(self.update_destination)
+            self.versionBox.textEdited.connect(self.update_destination)
+            self.pathBox.currentTextChanged.connect(self.update_destination)
+
+            self.save_btn.clicked.connect(self.accept)
+            cancel_btn.clicked.connect(self.reject)
+
+        def update_destination(self):
+            base_path = self.pathBox.currentText()
+            name = self.nameBox.text().strip()
+            version = self.versionBox.text().strip()
+
+            if name == "" or version == "":
+                self.previewLabel.setText("< Invalid >")
+                self.destination_path = None
+                self.save_btn.setEnabled(False)
+                self.new_version = None
+                return
+
+            filename = f"{name}_v{version}.gfr"
+
+            self.destination_path = os.path.join(base_path, name, filename)
+
+            if os.path.exists(self.destination_path):
+                # we won't allow overwriting!
+                self.previewLabel.setText(
+                    f"!! {self.destination_path} exists!")
+                self.save_btn.setEnabled(False)
+                self.new_version = None
+                return
+            self.previewLabel.setText(self.destination_path)
+            self.new_version = version
+            self.save_btn.setEnabled(True)
+
+    script_node = graphEditor.scriptNode()
+    scriptWindow = GafferUI.ScriptWindow.acquire(script_node)
+
+    node_type = get_boxnode_type(node)
+    node_version = get_boxnode_version(node) or ""
+
+    # parent the dialog under the main scriptwindow.
+    dlg = SaveBoxnodeDialog(scriptWindow._qtWidget(), node_type, node_version)
+
+    res = dlg.exec_()
+    if not res:
+        return
+    # we can save
+    destination = dlg.destination_path
+    output_dir = os.path.dirname(destination)
+    new_version = dlg.new_version
+    if not os.path.exists(output_dir):
+        log.info(f"Creating boxnode directory [{output_dir}]")
+        os.makedirs(output_dir)
+
+    log.info(f"Saving boxnode to [{destination}]")
+    export_boxnode(script_node, node, destination, new_version)
+
+    BoxNodeManagerInstance.refresh()
+    application = script_node.applicationRoot()
+    update_boxnode_menu(application)
+
+
+def export_boxnode(script_node, node, destination, new_version):
+    # we need trim out the boxnode attributes
+    node_type = get_boxnode_type(node)
+    # node_version = get_boxnode_version(node)
+
+    if BOXNODE_VERSION_PLUG_NAME in node.keys():
+        node.removeChild(node[BOXNODE_VERSION_PLUG_NAME])
+    if BOXNODE_TYPE_PLUG_NAME in node.keys():
+        node.removeChild(node[BOXNODE_TYPE_PLUG_NAME])
+
+    Gaffer.Metadata.registerValue(
+        node,
+        "noduleLayout:customGadget:addButtonTop:visible",
+        False
+    )
+    Gaffer.Metadata.registerValue(
+        node,
+        "noduleLayout:customGadget:addButtonBottom:visible",
+        False
+    )
+    Gaffer.Metadata.registerValue(
+        node,
+        "noduleLayout:customGadget:addButtonLeft:visible",
+        False
+    )
+    Gaffer.Metadata.registerValue(
+        node,
+        "noduleLayout:customGadget:addButtonRight:visible",
+        False
+    )
+
+    parent = node.parent()
+    sel = script_node.selection()
+    old = sel[:]
+    sel.clear()
+    sel.add(node)
+    script_node.serialiseToFile(destination, parent, sel)
+    sel.clear()
+    for x in old:
+        sel.add(x)
+
+    add_boxnode_plugs(node, node_type, f"v{new_version}")

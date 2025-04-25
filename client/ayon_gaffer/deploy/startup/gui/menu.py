@@ -9,9 +9,12 @@ from ayon_core.pipeline import install_host, registered_host
 from ayon_gaffer.api import GafferHost, set_root, lib
 from ayon_gaffer.api.pipeline import get_context_label
 from ayon_core.lib import Logger
+import ayon_gaffer.api.nodes.lib
 
 import GafferUI
+import Gaffer
 import IECore
+import functools
 
 log = Logger.get_logger("ayon_gaffer.startup.gui.menu")
 
@@ -85,6 +88,39 @@ def ayon_menu(menu):
     return definition
 
 
+def _install_boxnode_context_menu():
+    """
+    Add the Save boxnode context menu. It will only be added to Box nodes,
+    not subclasses (since they have maybe some custom logic in their node
+    definitions e.g. api/nodes/render_layer.py)
+
+    """
+    def __boxnode_context_menu(graphEditor, node, menuDefinition):
+
+        if node.typeName() != "Gaffer::Box":
+            return
+
+        menuDefinition.append(
+            "/boxnodedivider",
+            {
+                "divider": True
+            }
+        )
+
+        menuDefinition.append(
+            "/Save boxnode",
+            {
+                "command": functools.partial(
+                    ayon_gaffer.api.nodes.lib.export_selected_node_as_boxnode,
+                    node,
+                    graphEditor)
+            }
+        )
+
+    GafferUI.GraphEditor.nodeContextMenuSignal().connect(
+        __boxnode_context_menu, scoped=False)
+
+
 def _install_ayon_menu():
     definition = GafferUI.ScriptWindow.menuDefinition(application)
     definition.append(menu_label, {"subMenu": ayon_menu})
@@ -116,3 +152,5 @@ def _install_ayon():
 
 _install_ayon()
 _install_ayon_menu()
+
+_install_boxnode_context_menu()
