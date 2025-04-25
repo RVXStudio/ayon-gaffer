@@ -86,7 +86,7 @@ class CollectRender2D(pyblish.api.InstancePlugin):
                 "stagingDir": dirname,
             })
 
-        # todo does it work: ?
+        # todo does it work: ? (there should be only a publish job on the farm)
         elif render_target == "frames_farm": # use existing frames for publish on farm
             self.log.debug("Using existing frames for farm publish")
 
@@ -106,13 +106,13 @@ class CollectRender2D(pyblish.api.InstancePlugin):
 
             self.log.info("Farm rendering ON ...")
 
-        # todo does it work: ?
+        # todo does it work: yes (not yet tested to run on the farm)
         elif render_target == "farm":  # render and publish on farm
             self.log.debug("Using farm for render and publish")
             data["farm"] = True
             instance.data["families"].append("render2d.farm")
 
-        # todo does it work: ?
+        # todo does it work: yes
         elif render_target == "local":  # render and publish locally
             self.log.debug("Using local for render and publish")
             instance.data["families"] = ["render2d.local"]
