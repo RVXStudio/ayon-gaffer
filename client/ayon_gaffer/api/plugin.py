@@ -589,6 +589,36 @@ class GafferLoaderBase(load.LoaderPlugin):
         product_type = context["product"].get("productType", "")
         ayon_gaffer.api.lib.set_node_color_from_settings(node, product_type)
 
+    def add_node_to_graph(self, node):
+        """
+        Add the given node to the newest visible graph editor, if there is no
+        visible graph editor use the newest hidden; if there is no grapheditor
+        whatsoever just add it to the scriptroot
+        """
+        import GafferUI
+        script = get_root()
+        sw = GafferUI.ScriptWindow.acquire(script)
+
+        layout = sw.getLayout()
+        graphEditors = [e for e in layout.editors() if isinstance(
+            e, GafferUI.GraphEditor)]
+        visibleGraphEditors = [e for e in graphEditors if e.visible()]
+
+        if len(visibleGraphEditors) == 0:
+            if len(graphEditors) == 0:
+                graph_editor = None
+            else:
+                # use all
+                graph_editor = graphEditors[0]
+        else:
+            graph_editor = visibleGraphEditors[0]
+
+        if graph_editor is None:
+            viewedNode = script
+        else:
+            viewedNode = graph_editor.graphGadget().getRoot()
+        viewedNode.addChild(node)
+
 
 class GafferExtractorPlugin(publish.Extractor):
     """Base class for extract plugins."""
@@ -632,9 +662,9 @@ class GafferImageLoaderBase(GafferLoaderBase, PlugSettingsMixin):
         Set up the node - add it to the script node, set it's name and color
         and apply plug settings
         '''
-        script = get_root()
         node.setName(self._get_node_name(context))
-        script.addChild(node)
+
+        self.add_node_to_graph(node)
         self.set_node_color(node, context)
 
         self.apply_plug_settings(node)
