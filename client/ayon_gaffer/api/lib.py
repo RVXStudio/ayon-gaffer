@@ -46,7 +46,6 @@ def set_node_color_from_settings(node: Gaffer.Node, product_type: str):
     col_list = load_settings.get("product_colors", {}).get("color_list", [])
 
     for entry in col_list:
-        print("!!!!", entry)
         if product_type.lower() == entry["name"].lower():
             set_node_color(node, entry["color"][:3])
             return
