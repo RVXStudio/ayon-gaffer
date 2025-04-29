@@ -212,11 +212,7 @@ DEFAULT_LOADER_PLUGINS_SETTINGS = {
         "enabled": True,
         "node_name_template": "{folder[name]}_{ext}",
         "plugs": [],
-        "udim_profiles": [{
-            "product_type": ["image"],
-            "product_name": ["^texture\."],
-            "use_udims": True
-        }]
+        "udim_profiles": []
     },
     "GafferLoadImageAiImage": {
         "enabled": True,
