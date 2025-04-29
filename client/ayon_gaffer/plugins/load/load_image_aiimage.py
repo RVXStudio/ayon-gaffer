@@ -11,7 +11,7 @@ import ayon_gaffer.api.pipeline
 class GafferLoadImageAiImage(ayon_gaffer.api.plugin.GafferImageLoaderBase):
     """Load an AiImage"""
 
-    product_types = ["image"]
+    product_types = ["image", "render"]
     representations = ["*"]
 
     label = "Load sequence (AiImage)"
@@ -31,14 +31,15 @@ class GafferLoadImageAiImage(ayon_gaffer.api.plugin.GafferImageLoaderBase):
             print("GafferArnold not available; disable GafferLoadImageAiImage")
             cls.enabled = False
 
-    def load(self, context, name, namespace, data):
+    def load(self, context, name, namespace, options):
         import GafferArnold  # we need to load it here to avoid erroring
         # Create the Loader with the filename path set
         node = GafferArnold.ArnoldShader("image")
         node.loadShader("image")
 
-        path = self.filepath_from_context(context)
-        path = self._convert_path(path)
+        # path = self.filepath_from_context(context)
+        # path = self._convert_path(path, options)
+        path = self.prepare_image_path(context, options)
         node["parameters"]["filename"].setValue(path)
 
         self.set_up_node(name, namespace, node, context)
@@ -50,11 +51,10 @@ class GafferLoadImageAiImage(ayon_gaffer.api.plugin.GafferImageLoaderBase):
 
     def update(self, container, context):
         representation = context["representation"]
-
-        path = get_representation_path(representation)
-        path = self._convert_path(path)
-
         node = container["_node"]
+
+        path = self.prepare_image_path(context, node=node)
+
         node["parameters"]["filename"]  .setValue(path)
 
         # Update the imprinted representation

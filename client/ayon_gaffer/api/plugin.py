@@ -1,5 +1,6 @@
 import json
 import imath
+import qargparse
 from abc import abstractmethod
 
 from ayon_core.pipeline import (
@@ -23,6 +24,8 @@ from ayon_gaffer.api.pipeline import (
     JSON_PREFIX
 )
 from ayon_core.pipeline import AYON_INSTANCE_ID
+from ayon_core.lib import filter_profiles
+
 import ayon_gaffer.api.lib
 
 from ayon_gaffer.api.nodes import (
@@ -594,6 +597,36 @@ class GafferExtractorPlugin(publish.Extractor):
 
 
 class GafferImageLoaderBase(GafferLoaderBase, PlugSettingsMixin):
+
+    node_name_template = None  # will be populated by settings
+    use_udims = False
+
+    @classmethod
+    def get_options(cls, *args):
+        return [
+            qargparse.Enum(
+                "udim_mode",
+                label="UDIMs?",
+                help=("When loading sequences, by default udims are used for"
+                      " certain productType/productName profiles, this allows"
+                      " to override that behaviour"),
+                items=["<use settings>", "Load with UDIMs", "No UDIMs"],
+                default=0
+            )
+        ]
+
+    @classmethod
+    def apply_settings(cls, project_settings):
+        super(GafferImageLoaderBase, cls).apply_settings(project_settings)
+
+        try:
+            # check if we can import GafferArnold -> is Arnold loaded?
+            import GafferArnold  # noqa
+        except ModuleNotFoundError:
+            # if not we just disable this loader quietly
+            print("GafferArnold not available; disable GafferLoadImageAiImage")
+            cls.enabled = False
+
     def set_up_node(self, name, namespace, node, context):
         '''
         Set up the node - add it to the script node, set it's name and color
@@ -612,17 +645,76 @@ class GafferImageLoaderBase(GafferLoaderBase, PlugSettingsMixin):
                           context=context,
                           loader=self.__class__.__name__)
 
+        # store the use_udims value on the node so we can use it when we update
+        # the node
+        imprint(node, {"use_udims": self.use_udims})
+
     def _get_node_name(self, context):
         return ayon_gaffer.api.lib.node_name_from_template(
             self.node_name_template, context)
 
-    def _convert_path(self, path):
+    def prepare_image_path(self, context, options=None, node=None):
+        """
+        Since the paths from the representations are just the first frame
+        we need to check if this is a sequence we are loading and if so
+        we need to format it with hash padding for gaffer.
+
+        However if UDIM loading is set to true (profiles in settings or
+        override in options) we don't use padding, but use "<UDIM>"instead.
+        """
+        path = self.filepath_from_context(context)
+        # first check the options
+        if options is None:
+            # we don't have any options, so this is coming from an update!
+            if node is None:
+                raise RuntimeError(f"No node given and no options! What should"
+                                   " I do with that?")
+
+            if "use_udims" in node["user"]:
+                self.use_udims = node["user"]["use_udims"].getValue()
+            else:
+                self.log.warning(f"I can't find 'use_udims' on the node, "
+                                 "assuming False")
+                self.use_udims = False
+        else:
+            # the options are a dictionary, so we are loading!
+            udim_mode = options.get("udim_mode", "<use settings>")
+            self.log.warning(f"um: {udim_mode}")
+            if udim_mode == "<use settings>":
+                product_type = context["product"]["productType"]
+                product_name = context["product"]["name"]
+                selected_profile = filter_profiles(
+                    self.udim_profiles,
+                    {
+                        'product_type': product_type,
+                        'product_name': product_name
+                    },
+                )
+                if selected_profile is None:
+                    # no profile
+                    self.use_udims = False
+                else:
+                    self.use_udims = selected_profile["use_udims"]
+            elif udim_mode == "Load with UDIMs":
+                self.use_udims = True
+            elif udim_mode == "No UDIMs":
+                self.use_udims = False
+            else:
+                raise RuntimeError(
+                    f"Encoutered a weird udim mode: [{udim_mode}]")
+        self.log.info(f"use_udims: {self.use_udims}")
+
         seq = ayon_gaffer.api.utils.get_pyseq_sequence(path)
         if len(seq) > 1:
-            print("use #")
             padding = seq._get_padding()
             hash_padding = int(padding[1:-1])*"#"  # convert %04d to ####
-            out_path = seq.format(f"%D%h{hash_padding}%t")
+            if self.use_udims:
+                self.log.info("Sequence, replacing padding with '<UDIM>'")
+                out_path = "{}<UDIM>{}".format(
+                    seq.format(f"%D%h"), seq.format("%t"))
+            else:
+                self.log.info("Sequence, replacing padding with '#'")
+                out_path = seq.format(f"%D%h{hash_padding}%t")
         else:
             out_path = seq.path()
         return out_path.replace("\\", "/")
@@ -638,7 +730,7 @@ class GafferImageLoaderBase(GafferLoaderBase, PlugSettingsMixin):
 
     def set_node_colorspace(self, colorspace_plug, context, filepath):
         from GafferImageUI import OpenColorIOTransformUI
-        import GafferUI
+        # import GafferUI
 
         project_name = context["project"]["name"]
         representation = context["representation"]
@@ -657,11 +749,11 @@ class GafferImageLoaderBase(GafferLoaderBase, PlugSettingsMixin):
                          f"[{colorspace_plug.node().getName()}."
                          f"{colorspace_plug.getName()}]")
                 self.log.error(error)
-                dlg = GafferUI.ErrorDialogue(
-                    "Load image error",
-                    error)
-                dlg.waitForButton()
-                dlg.close()
+                # dlg = GafferUI.ErrorDialogue(
+                #     "Load image error",
+                #     error)
+                # dlg.waitForButton()
+                # dlg.close()
                 return
             self.log.info(f"Setting colorspace to {colorspace}")
             colorspace_plug.setValue(colorspace)

@@ -19,13 +19,14 @@ class GafferLoadImageReader(ayon_gaffer.api.plugin.GafferImageLoaderBase):
     icon = "code-fork"
     color = "orange"
 
-    def load(self, context, name, namespace, data):
+    def load(self, context, name, namespace, options):
         # Create the Loader with the filename path set
 
         node = GafferImage.ImageReader()
 
-        path = self.filepath_from_context(context)
-        path = self._convert_path(path)
+        # path = self.filepath_from_context(context)
+        # path = self._convert_path(path, options)
+        path = self.prepare_image_path(context, options)
         node["fileName"].setValue(path)
 
         self.set_up_node(name, namespace, node, context)
@@ -36,10 +37,9 @@ class GafferLoadImageReader(ayon_gaffer.api.plugin.GafferImageLoaderBase):
 
     def update(self, container, context):
         representation = context["representation"]
-        path = get_representation_path(representation)
-        path = self._convert_path(path)
-
         node = container["_node"]
+        path = self.prepare_image_path(context, node=node)
+
         node["fileName"].setValue(path)
 
         # Update the imprinted representation
