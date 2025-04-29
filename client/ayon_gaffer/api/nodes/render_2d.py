@@ -19,7 +19,6 @@ class Render2D(Gaffer.Box):
         Gaffer.Box.__init__(self, name)
 
         self.addChild(Gaffer.StringPlug("localRender", defaultValue="localRender", flags=Gaffer.Plug.Flags.Default))
-        self.addChild(Gaffer.StringPlug("farmRender", defaultValue="farmRender", flags=Gaffer.Plug.Flags.Default))
         self.addChild(
             Gaffer.StringPlug("readFromRender", defaultValue="readFromRender", flags=Gaffer.Plug.Flags.Default)
         )
@@ -62,54 +61,6 @@ class Render2D(Gaffer.Box):
             dispatcher.dispatch([self["ImageWriter"]])
             GafferUI.ConfirmationDialogue(title="Job done", message="Job done").waitForConfirmation()
 
-    def submit_farm_render(self):
-        import GafferUI
-        ayon_gaffer.api.set_root(self.scriptNode())
-        host = registered_host()
-        create_context = CreateContext(host)
-
-        for instance in create_context.instances:
-            if self.getName() != instance.transient_data["node"].getName():
-                continue
-
-            instance.data["active"] = True
-            instance.data["publish"] = True
-            instance.data["render_on_farm"] = True
-            instance.data["creator_attributes"]["render_target"] = "farm"
-            instance.data["node_name"] = self.getName()
-
-        context = pyblish.api.Context()
-        context.data["create_context"] = create_context
-        
-        # Since we need to bypass version validation and incrementing, we need to
-        # remove the plugins from the list that are responsible for these tasks.
-        plugins = pyblish.api.discover()
-        blacklist = ["GafferIncrementCurrentFile", "ValidateVersion"]
-        plugins = [
-            plugin
-            for plugin in plugins
-            if plugin.__name__ not in blacklist
-        ]
-
-        context = pyblish.util.publish(context, plugins=plugins)
-
-        error_message = ""
-        success = True
-        for result in context.data["results"]:
-            if result["success"]:
-                continue
-
-            success = False
-
-            err = result["error"]
-            error_message += "\n"
-            error_message += err.formatted_traceback
-
-        if not success:
-            GafferUI.ConfirmationDialogue(title="Error Rendering!", message=error_message).waitForButton()
-            return
-
-        GafferUI.ConfirmationDialogue(title="Submission Successful!", message="Submission to the farm was successful").waitForButton()
 
 
     def read_from_render(self):
@@ -180,20 +131,6 @@ Gaffer.Metadata.registerNode(
             "Clear Renders",
             "description",
             "Delete all the rendered images on disk",
-        ],
-        "farmRender": [
-            "nodule:type",
-            "",
-            "layout:section",
-            "Settings",
-            "plugValueWidget:type",
-            "GafferUI.ButtonPlugValueWidget",
-            "buttonPlugValueWidget:clicked",
-            "plug.node().submit_farm_render()",
-            "label",
-            "Render on farm",
-            "description",
-            "Submit a farm job to render and a publish the images",
         ],
         "startFrame": [
             "nodule:type",

@@ -672,6 +672,25 @@ def copy_plug(plug, destination_node):
                   f"{destination_node}: {err}")
 
 
+def insert_plug(node, plug, position):
+    connections = {}
+    for child in node.children():
+        if not hasattr(child, "getInput"):
+            continue
+        connections[child] = child.getInput()
+
+    # Reorder children to place farmRender after clearRender
+    children = list(node.children())
+    children.insert(position, plug)
+    node.clearChildren()
+    for child in children:
+        node.addChild(child)
+
+    # Restore the original connections
+    for child, source in connections.items():
+        child.setInput(source)
+
+
 def get_all_plugs(in_node, thelist, include_non_serializable=True):
     for plug in in_node.children(Gaffer.Plug):
         if (not include_non_serializable and
