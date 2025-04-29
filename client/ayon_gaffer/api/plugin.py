@@ -635,3 +635,39 @@ class GafferImageLoaderBase(GafferLoaderBase, PlugSettingsMixin):
 
     def switch(self, container, context):
         self.update(container, context)
+
+    def set_node_colorspace(self, colorspace_plug, context, filepath):
+        from GafferImageUI import OpenColorIOTransformUI
+        import GafferUI
+
+        project_name = context["project"]["name"]
+        representation = context["representation"]
+
+        colorspace = (ayon_gaffer.api.
+                      colorspace.get_representation_colorspace_data(
+                        project_name, representation, filepath
+                      ))
+
+        if colorspace:
+            # check if the selected colorspace exists!
+            available = OpenColorIOTransformUI.colorSpacePresetValues(
+                    colorspace_plug)
+            if colorspace not in available:
+                error = (f"Colorspace [{colorspace}] does not exist on plug "
+                         f"[{colorspace_plug.node().getName()}."
+                         f"{colorspace_plug.getName()}]")
+                self.log.error(error)
+                dlg = GafferUI.ErrorDialogue(
+                    "Load image error",
+                    error)
+                dlg.waitForButton()
+                dlg.close()
+                return
+            self.log.info(f"Setting colorspace to {colorspace}")
+            colorspace_plug.setValue(colorspace)
+            ayon_gaffer.api.pipeline.imprint(
+                colorspace_plug.node(),
+                {"db_colorspace": colorspace})
+        else:
+            self.log.warning(
+                f"No colorspace for {colorspace_plug.node().getName()}")

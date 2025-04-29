@@ -5,6 +5,7 @@ import ayon_gaffer.api.lib
 import ayon_gaffer.api.utils
 import ayon_gaffer.api.plugin
 import ayon_gaffer.api.colorspace
+import ayon_gaffer.api.pipeline
 
 
 class GafferLoadImageAiImage(ayon_gaffer.api.plugin.GafferImageLoaderBase):
@@ -42,6 +43,11 @@ class GafferLoadImageAiImage(ayon_gaffer.api.plugin.GafferImageLoaderBase):
 
         self.set_up_node(name, namespace, node, context)
 
+        self.set_node_colorspace(
+            node["parameters"]["color_space"],
+            context,
+            path)
+
     def update(self, container, context):
         representation = context["representation"]
 
@@ -53,3 +59,8 @@ class GafferLoadImageAiImage(ayon_gaffer.api.plugin.GafferImageLoaderBase):
 
         # Update the imprinted representation
         node["user"]["representation"].setValue(str(representation["id"]))
+
+        self.set_node_colorspace(
+            node["parameters"]["color_space"],
+            context,
+            path)

@@ -29,6 +29,10 @@ class GafferLoadImageReader(ayon_gaffer.api.plugin.GafferImageLoaderBase):
         node["fileName"].setValue(path)
 
         self.set_up_node(name, namespace, node, context)
+        self.set_node_colorspace(
+            node["colorSpace"],
+            context,
+            path)
 
     def update(self, container, context):
         representation = context["representation"]
@@ -40,3 +44,8 @@ class GafferLoadImageReader(ayon_gaffer.api.plugin.GafferImageLoaderBase):
 
         # Update the imprinted representation
         node["user"]["representation"].setValue(str(representation["id"]))
+
+        self.set_node_colorspace(
+            node["colorSpace"],
+            context,
+            path)

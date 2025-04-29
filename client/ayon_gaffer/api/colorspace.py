@@ -1,7 +1,12 @@
 import attr
-import Gaffer
+
 from ayon_gaffer.api.lib import get_color_management_preferences
-from ayon_core.pipeline.colorspace import get_display_view_colorspace_name
+from ayon_core.pipeline.colorspace import (
+    get_imageio_file_rules_colorspace_from_filepath,
+    get_current_context_imageio_config_preset,
+)
+from ayon_core.lib import Logger
+log = Logger.get_logger('ayon_gaffer.api.colorspace')
 
 
 @attr.s
@@ -66,3 +71,36 @@ class ARenderProduct(object):
                 print(f"replacing {colorspace_name} with {v}")
                 return v
         return colorspace_name
+
+
+def get_representation_colorspace_data(
+        project_name, repre_entity, filepath
+        ):
+    """Get colorspace data from representation documents or filepath
+
+    Args:
+        project_name (str): Project name.
+        repre_entity (dict): Representation entity.
+        filepath (str): File path.
+
+    Returns:
+        Any[str,None]: colorspace name or None
+    """
+
+    colorspace = repre_entity["data"].get("colorspaceData", {}).get(
+        "colorspace")
+    log.debug(
+        f"Colorspace from representation colorspaceData: {colorspace}"
+    )
+
+    config_data = get_current_context_imageio_config_preset()
+    # check if any filerules are not applicable
+    new_parsed_colorspace = get_imageio_file_rules_colorspace_from_filepath( # noqa
+        filepath, "gaffer", project_name, config_data=config_data
+    )
+    log.debug(f"Colorspace new filerules: {new_parsed_colorspace}")
+
+    return (
+        new_parsed_colorspace
+        or colorspace
+    )
