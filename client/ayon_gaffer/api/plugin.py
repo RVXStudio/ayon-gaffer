@@ -16,6 +16,7 @@ import ayon_api
 
 from ayon_gaffer.api import (
     get_root,
+    imprint_container,
 )
 from ayon_gaffer.api.pipeline import (
     imprint,
@@ -536,9 +537,7 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
                 inode["user"][AYON_ATTR_GROUP_KEY].removeChild(item)
 
 
-
 class PlugSettingsMixin:
-
     def apply_plug_settings(self, node):
         # print("Applygin plug from settings")
         for plug in self.plugs:
@@ -587,7 +586,52 @@ class GafferLoaderBase(load.LoaderPlugin):
         product_type = context["product"].get("productType", "")
         ayon_gaffer.api.lib.set_node_color_from_settings(node, product_type)
 
+
 class GafferExtractorPlugin(publish.Extractor):
     """Base class for extract plugins."""
     settings_category = "gaffer"
     hosts = ["gaffer"]
+
+
+class GafferImageLoaderBase(GafferLoaderBase, PlugSettingsMixin):
+    def set_up_node(self, name, namespace, node, context):
+        '''
+        Set up the node - add it to the script node, set it's name and color
+        and apply plug settings
+        '''
+        script = get_root()
+        node.setName(self._get_node_name(context))
+        script.addChild(node)
+        self.set_node_color(node, context)
+
+        self.apply_plug_settings(node)
+
+        imprint_container(node,
+                          name=name,
+                          namespace=namespace,
+                          context=context,
+                          loader=self.__class__.__name__)
+
+    def _get_node_name(self, context):
+        return ayon_gaffer.api.lib.node_name_from_template(
+            self.node_name_template, context)
+
+    def _convert_path(self, path):
+        seq = ayon_gaffer.api.utils.get_pyseq_sequence(path)
+        if len(seq) > 1:
+            print("use #")
+            padding = seq._get_padding()
+            hash_padding = int(padding[1:-1])*"#"  # convert %04d to ####
+            out_path = seq.format(f"%D%h{hash_padding}%t")
+        else:
+            out_path = seq.path()
+        return out_path.replace("\\", "/")
+
+    def remove(self, container):
+        node = container["_node"]
+
+        parent = node.parent()
+        parent.removeChild(node)
+
+    def switch(self, container, context):
+        self.update(container, context)

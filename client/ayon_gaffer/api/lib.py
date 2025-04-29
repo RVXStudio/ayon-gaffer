@@ -815,7 +815,9 @@ def node_name_from_template(template_string, context):
         "ext": repre_cont["representation"],
     }
     template = ayon_core.lib.StringTemplate(template_string)
-    return template.format(formatting_data)
+    name = template.format(formatting_data)
+    name = name.replace(".", "_")
+    return name
 
 
 def append_to_csv_plug(plug, value_to_add, allow_duplicates=False):
