@@ -89,10 +89,10 @@ class CreateGafferRender2D(plugin.GafferCreatorBase):
         frame_start, frame_end, handle_start, handle_end = self._get_frame_range()
 
         rendering_targets = {}
+        rendering_targets["local"] = "Local machine rendering"
         rendering_targets["frames"] = "Use existing frames"
         rendering_targets["farm"] = "Farm rendering"
         rendering_targets["frames_farm"] = "Use existing frames - farm"
-        rendering_targets["local"] = "Local machine rendering"
 
         return [
             EnumDef(
