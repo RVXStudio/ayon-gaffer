@@ -673,22 +673,25 @@ def copy_plug(plug, destination_node):
 
 
 def insert_plug(node, plug, position):
-    connections = {}
+    """
+    `This is based on the layout:index.
+    If it is not present on the plugs, the plug will be inserted at the end regardless of the position given
+    """
+    indices_map = {}
     for child in node.children():
-        if not hasattr(child, "getInput"):
-            continue
-        connections[child] = child.getInput()
+        index = Gaffer.Metadata.value(child, "layout:index" )
+        if index:
+            indices_map[index] = child
 
-    # Reorder children to place farmRender after clearRender
-    children = list(node.children())
-    children.insert(position, plug)
-    node.clearChildren()
-    for child in children:
-        node.addChild(child)
+    for key in sorted(indices_map.keys(), reverse=True):
+        if key >= position:
+            indices_map[key + 1] = indices_map[key]
 
-    # Restore the original connections
-    for child, source in connections.items():
-        child.setInput(source)
+    indices_map[position] = plug
+
+    node.addChild(plug)
+    for index, plug in indices_map.items():
+        Gaffer.Metadata.registerValue(plug, "layout:index", index)
 
 
 def get_all_plugs(in_node, thelist, include_non_serializable=True):
