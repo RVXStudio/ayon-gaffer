@@ -31,10 +31,12 @@ class CollectRender2D(pyblish.api.InstancePlugin):
 
         img_seq_filepath = render_node["fileName"].getValue()
         dirname = os.path.dirname(img_seq_filepath)
-        start_frame = render_node["startFrame"].getValue()
-        end_frame = render_node["endFrame"].getValue()
-        start_handle = render_node["startHandle"].getValue()
-        end_handle = render_node["endHandle"].getValue()
+        creator_attributes = instance.data["creator_attributes"]
+        start_frame = creator_attributes["frameStart"]
+        end_frame = creator_attributes["frameEnd"]
+        start_handle = creator_attributes["handleStart"]
+        end_handle = creator_attributes["handleEnd"]
+
         start_frame -= start_handle
         end_frame += end_handle
 
@@ -106,7 +108,6 @@ class CollectRender2D(pyblish.api.InstancePlugin):
                 "stagingDir": dirname,
             })
 
-            data["expectedFiles"] = file_paths
             data["transfer"] = False
             data["farm"] = True
             instance.data["families"].append("render.frames_farm")

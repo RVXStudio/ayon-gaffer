@@ -18,8 +18,15 @@ class Extract2DRender(GafferExtractorPlugin, publish.OptionalPyblishPluginMixin)
 
         file_path = render_node["fileName"].getValue()
         dirname = os.path.dirname(file_path)
-        start_frame = render_node["startFrame"].getValue()
-        end_frame = render_node["endFrame"].getValue()
+
+        creator_attributes = instance.data["creator_attributes"]
+        start_frame = creator_attributes["frameStart"]
+        end_frame = creator_attributes["frameEnd"]
+        start_handle = creator_attributes["handleStart"]
+        end_handle = creator_attributes["handleEnd"]
+        start_frame -= start_handle
+        end_frame += end_handle
+
         files = [os.path.basename(file_path.replace("####", f"{x:04d}")) for x in range(start_frame, end_frame + 1)]
 
         dispatcher = GafferDispatch.LocalDispatcher()
