@@ -6,15 +6,12 @@ import GafferDispatch
 import imath
 
 from ayon_core.lib import Logger
-from ayon_core.pipeline import registered_host
-from ayon_core.pipeline.create import CreateContext
-import pyblish
-
-import ayon_gaffer
 
 log = Logger.get_logger("ayon_gaffer.api.nodes.render_2d")
 
+
 class Render2D(Gaffer.Box):
+
     def __init__(self, name="Render2D"):
         Gaffer.Box.__init__(self, name)
 
@@ -45,6 +42,7 @@ class Render2D(Gaffer.Box):
 
     def submit_local_render(self):
         import GafferUI
+
         dispatcher = GafferDispatch.LocalDispatcher()
 
         dispatcher["framesMode"].setValue(2)  # custom range
@@ -53,19 +51,21 @@ class Render2D(Gaffer.Box):
         frange = f"{start_frame}-{end_frame}"
         dispatcher["frameRange"].setValue(frange)
 
-        confirm = GafferUI.ConfirmationDialogue(title="Dispatch",
-                                               message="Do you want to dispatch the job locally ?\n "
-                                                       "this can take up some time.\n "
-                                                       "You can track the job in the `Local Jobs` panel").waitForConfirmation()
+        confirm = GafferUI.ConfirmationDialogue(
+            title="Dispatch",
+            message="Do you want to dispatch the job locally ?\n "
+            "It freezes Gaffer and this can take up some time.\n "
+            "You can check if the job status in the `Local Jobs` panel",
+        ).waitForConfirmation()
         if confirm:
             dispatcher.dispatch([self["ImageWriter"]])
             GafferUI.ConfirmationDialogue(title="Job done", message="Job done").waitForConfirmation()
 
-
-
     def read_from_render(self):
         read_node = GafferImage.ImageReader("ReadFromRender")
-        read_node["fileName"].setValue(self["fileName"])
+        self.parent().addChild(read_node)
+        read_node["fileName"].setInput(self["fileName"])
+
 
     def clear_renders(self):
         dirpath = os.path.dirname(self["fileName"].getValue())
@@ -73,6 +73,7 @@ class Render2D(Gaffer.Box):
             path = os.path.join(dirpath, f)
             log.info("Removing: `{}`".format(path))
             os.remove(path)
+
 
 plugs = {
     "localRender": [
@@ -162,9 +163,6 @@ plugs = {
 for i, (_, v) in enumerate(plugs.items()):
     v.append("layout:index")
     v.append(i)
-from pprint import pprint
-print('toutou')
-pprint(plugs)
 
 Gaffer.Metadata.registerNode(
     Render2D,
@@ -180,5 +178,5 @@ Gaffer.Metadata.registerNode(
     False,
     "noduleLayout:customGadget:addButtonRight:visible",
     False,
-    plugs=plugs
+    plugs=plugs,
 )
