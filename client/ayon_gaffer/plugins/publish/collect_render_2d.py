@@ -41,7 +41,7 @@ class CollectRender2D(pyblish.api.InstancePlugin):
         end_frame += end_handle
 
         file_paths = [img_seq_filepath.replace("####", f"{x:04d}") for x in range(start_frame, end_frame + 1)]
-        files = [os.path.basename(x) for x in file_paths]
+        file_names = [os.path.basename(x) for x in file_paths]
         frames = list(range(start_frame, end_frame + 1))
 
         colorspace_data = get_color_management_preferences(render_node.scriptNode())
@@ -61,7 +61,7 @@ class CollectRender2D(pyblish.api.InstancePlugin):
             "frameEndHandle": 0,
             "frameList": frames,
             "byFrameStep": 1,
-            "expectedFiles": [{"beauty": files}],
+            "expectedFiles": file_paths,
 
             "colorspaceConfig": colorspace_data["config"],
             "colorspaceDisplay": colorspace_data["display"],
@@ -91,7 +91,7 @@ class CollectRender2D(pyblish.api.InstancePlugin):
             data["representations"].append({
                 'name': "exr",
                 'ext': "exr",
-                'files': files,
+                'files': file_names,
                 "stagingDir": dirname,
             })
 
@@ -104,7 +104,7 @@ class CollectRender2D(pyblish.api.InstancePlugin):
             data["representations"].append({
                 'name': "exr",
                 'ext': "exr",
-                'files': files,
+                'files': file_names,
                 "stagingDir": dirname,
             })
 
