@@ -31,21 +31,14 @@ class CollectRender2D(pyblish.api.InstancePlugin):
 
         img_seq_filepath = render_node["fileName"].getValue()
         dirname = os.path.dirname(img_seq_filepath)
-        creator_attributes = instance.data["creator_attributes"]
-        start_frame = creator_attributes["frameStart"]
-        end_frame = creator_attributes["frameEnd"]
-        start_handle = creator_attributes["handleStart"]
-        end_handle = creator_attributes["handleEnd"]
-
-        start_frame -= start_handle
-        end_frame += end_handle
+        start_frame = render_node["startFrame"].getValue()
+        end_frame = render_node["endFrame"].getValue()
 
         file_paths = [img_seq_filepath.replace("####", f"{x:04d}") for x in range(start_frame, end_frame + 1)]
         file_names = [os.path.basename(x) for x in file_paths]
         frames = list(range(start_frame, end_frame + 1))
 
         colorspace_data = get_color_management_preferences(render_node.scriptNode())
-
         data = {
 
             "attachTo": [],
@@ -127,4 +120,5 @@ class CollectRender2D(pyblish.api.InstancePlugin):
 
         data["label"] = label
         instance.data.update(data)
+        instance.data["publish_attributes"]["CollectJobInfo"]['frames'] = ",".join([str(f) for f in frames])
 

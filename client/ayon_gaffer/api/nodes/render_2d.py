@@ -28,13 +28,6 @@ class Render2D(Gaffer.Box):
         self.addChild(
             Gaffer.IntPlug("endFrame", Gaffer.Plug.Direction.In, defaultValue=100, flags=Gaffer.Plug.Flags.Default)
         )
-        self.addChild(
-            Gaffer.IntPlug("startHandle", Gaffer.Plug.Direction.In, defaultValue=0, flags=Gaffer.Plug.Flags.Default)
-        )
-
-        self.addChild(
-            Gaffer.IntPlug("endHandle", Gaffer.Plug.Direction.In, defaultValue=0, flags=Gaffer.Plug.Flags.Default)
-        )
 
         self.addChild(
             Gaffer.StringPlug("fileName", Gaffer.Plug.Direction.In, defaultValue="", flags=Gaffer.Plug.Flags.Default)
@@ -131,22 +124,6 @@ plugs = {
         "",
         "description",
         "The end frame for the render.",
-        "layout:section",
-        "Settings",
-    ],
-    "startHandle": [
-        "nodule:type",
-        "",
-        "description",
-        "The start frame handle for the render.",
-        "layout:section",
-        "Settings",
-    ],
-    "endHandle": [
-        "nodule:type",
-        "",
-        "description",
-        "The end frame handle for the render.",
         "layout:section",
         "Settings",
     ],

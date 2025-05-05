@@ -58,10 +58,8 @@ class CreateGafferRender2D(plugin.GafferCreatorBase):
             node["in"].setInput(self.selected_nodes[0]["out"])
 
         frame_start, frame_end, handle_start, handle_end = self._get_frame_range()
-        node["startFrame"].setValue(frame_start)
-        node["endFrame"].setValue(frame_end)
-        node["startHandle"].setValue(handle_start)
-        node["endHandle"].setValue(handle_end)
+        node["startFrame"].setValue(frame_start - handle_start)
+        node["endFrame"].setValue(frame_end + handle_end)
 
         data = {}
         data["folderPath"] = self.create_context.host.get_current_folder_path()
@@ -86,7 +84,6 @@ class CreateGafferRender2D(plugin.GafferCreatorBase):
         return task_entity["attrib"]["frameStart"], task_entity["attrib"]["frameEnd"], task_entity["attrib"]["handleStart"], task_entity["attrib"]["handleEnd"]
 
     def get_instance_attr_defs(self):
-        frame_start, frame_end, handle_start, handle_end = self._get_frame_range()
 
         rendering_targets = {}
         rendering_targets["local"] = "Local machine rendering"
@@ -99,21 +96,5 @@ class CreateGafferRender2D(plugin.GafferCreatorBase):
                 "render_target",
                 items=rendering_targets,
                 label="Render target"
-            ),
-            NumberDef("frameStart",
-                      label="Frame Start",
-                      default=frame_start,
-                      decimals=0),
-            NumberDef("frameEnd",
-                      label="Frame End",
-                      default=frame_end,
-                      decimals=0),
-            NumberDef("handleStart",
-                      label="Handle Start",
-                      default=handle_start,
-                      decimals=0),
-            NumberDef("handleEnd",
-                      label="Handle End",
-                      default=handle_end,
-                      decimals=0),
+            )
         ]
