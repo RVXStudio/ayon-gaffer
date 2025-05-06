@@ -415,13 +415,8 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
             raise RuntimeError(
                 f"Nothing inside {root_node} is connected to {task_out_plug}"
                 )
-        node = task_out_plug_input.node()
         context_var_nodes = Gaffer.NodeAlgo.upstreamNodes(
-            node, Gaffer.ContextVariables)
-
-        if node.typeName() == "Gaffer::ContextVariables":
-            return node
-
+            task_out_plug_input.node(), Gaffer.ContextVariables)
         if len(context_var_nodes) == 0:
             # for now we can't insert context variable nodes so we error
             raise RuntimeError(
