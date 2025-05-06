@@ -37,7 +37,9 @@ class GafferLoadAlembicCamera(ayon_gaffer.api.plugin.GafferLoaderBase):
         # See: https://github.com/GafferHQ/gaffer/issues/3954
         box = make_box(name, inputs=[], outputs=["out"])
         reader = GafferScene.SceneReader()
+        camera_tweaks = GafferScene.CameraTweaks()
         box.addChild(reader)
+        box.addChild(camera_tweaks)
 
         create_set = GafferScene.Set("cameras_set")
         box.addChild(create_set)
@@ -49,7 +51,9 @@ class GafferLoadAlembicCamera(ayon_gaffer.api.plugin.GafferLoaderBase):
 
         create_set["filter"].setInput(path_filter["out"])
 
-        box["BoxOut_out"]["in"].setInput(create_set["out"])
+        camera_tweaks["in"].setInput(create_set["out"])
+        camera_tweaks["filter"].setInput(path_filter["out"])
+        box["BoxOut_out"]["in"].setInput(camera_tweaks["out"])
 
         script.addChild(box)
 
