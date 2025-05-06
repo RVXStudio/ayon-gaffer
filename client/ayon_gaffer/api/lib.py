@@ -46,7 +46,6 @@ def set_node_color_from_settings(node: Gaffer.Node, product_type: str):
     col_list = load_settings.get("product_colors", {}).get("color_list", [])
 
     for entry in col_list:
-        print("!!!!", entry)
         if product_type.lower() == entry["name"].lower():
             set_node_color(node, entry["color"][:3])
             return
@@ -815,7 +814,9 @@ def node_name_from_template(template_string, context):
         "ext": repre_cont["representation"],
     }
     template = ayon_core.lib.StringTemplate(template_string)
-    return template.format(formatting_data)
+    name = template.format(formatting_data)
+    name = name.replace(".", "_")
+    return name
 
 
 def append_to_csv_plug(plug, value_to_add, allow_duplicates=False):

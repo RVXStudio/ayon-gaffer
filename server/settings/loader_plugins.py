@@ -99,6 +99,21 @@ class LoadSceneModel(BaseSettingsModel):
     )
 
 
+class LoadImageUdimProfiles(BaseSettingsModel):
+    _layout = "expanded"
+    product_type: list[str] = SettingsField(
+        title="Loaded product type",
+        default_factory=list
+    )
+    product_name: list[str] = SettingsField(
+        title="Loaded product name",
+        default_factory=list
+    )
+    use_udims: bool = SettingsField(
+        title="Use udims"
+    )
+
+
 class LoadImageModel(BaseSettingsModel):
     enabled: bool = SettingsField(
         title="Enabled"
@@ -111,6 +126,13 @@ class LoadImageModel(BaseSettingsModel):
     plugs: list[PlugModel] = SettingsField(
         default_factory=list,
         title="Plugs",
+    )
+
+    udim_profiles: list[LoadImageUdimProfiles] = SettingsField(
+        default_factory=list,
+        title="UDIM Profiles",
+        description=("For what product type/name combo do we want to use "
+                     " <UDIM> tags instead of frame numbers")
     )
 
     @validator("plugs")
@@ -190,10 +212,16 @@ DEFAULT_LOADER_PLUGINS_SETTINGS = {
         "enabled": True,
         "node_name_template": "{folder[name]}_{ext}",
         "plugs": [],
+        "udim_profiles": []
     },
     "GafferLoadImageAiImage": {
         "enabled": True,
         "node_name_template": "{folder[name]}_{ext}",
         "plugs": [],
+        "udim_profiles": [{
+            "product_type": ["image"],
+            "product_name": ["^texture\."],
+            "use_udims": True
+        }]
     },
 }

@@ -140,7 +140,9 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
             container = {
                 key: user[key].getValue() for key in required
             }
-            container["objectName"] = node.fullName()
+            node_name = node.fullName().replace(
+                node.scriptNode().fullName(), "").strip(".")
+            container["objectName"] = node_name
             container["_node"] = node
             if "version_freeze" in node["user"]:
                 container["version_freeze"] = user["version_freeze"].getValue()
