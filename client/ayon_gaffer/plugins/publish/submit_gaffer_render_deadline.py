@@ -25,7 +25,6 @@ import GafferDispatch
 
 import ayon_gaffer.api.lib
 import ayon_gaffer.api.pipeline
-from rvx_ayon.hosts.gaffer.lib import create_tmp_gaffer_file
 
 log = Logger.get_logger("ayon_gaffer.plugins.publish.submit_gaffer_render_deadline")
 
@@ -159,18 +158,7 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
             saved_context_vars = self.set_render_context_vars(
                 node, render_shot_name)
 
-            root = node.scriptNode()
-            original_file_name = root["fileName"].getValue()
-            dispatcher["dispatcher"]['deadline']['batchName'].setValue(os.path.basename(original_file_name))
-            try:
-                tmp_scene_path = create_tmp_gaffer_file(root)
-                self.log.info("Temporary render file: ", tmp_scene_path)
-                root["fileName"].setValue(tmp_scene_path)
-                dispatcher.dispatch([node])
-                root["fileName"].setValue(original_file_name)
-            except Exception as err:
-                self.log.error(f"Failed to submit job: {err}")
-                root["fileName"].setValue(original_file_name)
+            dispatcher.dispatch([node])
 
             self.restore_render_context_vars(node, saved_context_vars)
 
