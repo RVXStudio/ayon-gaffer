@@ -8,6 +8,7 @@ from ayon_core.pipeline import publish
 from ayon_core.lib import get_formatted_current_time
 from ayon_gaffer.api.colorspace import ARenderProduct
 from ayon_gaffer.api.lib import get_color_management_preferences
+from ayon_gaffer.api.nodes import RenderLayerNode
 
 
 class CollectRender(pyblish.api.InstancePlugin):
@@ -29,8 +30,8 @@ class CollectRender(pyblish.api.InstancePlugin):
 
         layer = instance.data["transientData"]["node"]
 
-        if layer.typeName() != "RVXAyon::RVXRenderLayer":
-            self.log.debug(f"Skip collecting node, not a RVXRenderLayer node")
+        if not isinstance(layer, RenderLayerNode):
+            self.log.debug(f"Skip collecting node, not a RenderLayer node")
             return
 
         layer.update_outputs()
