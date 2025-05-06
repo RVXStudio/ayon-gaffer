@@ -4,11 +4,12 @@ import pathlib
 
 import Gaffer
 
-from ayon_core.pipeline import CreatedInstance
+from ayon_core.pipeline import CreatedInstance, get_current_context
 from ayon_gaffer.api import plugin
 from ayon_core.lib import NumberDef, StringTemplate, EnumDef
 from ayon_gaffer.api.lib import get_work_default_directory
 from ayon_gaffer.api.nodes.lib import BoxNodeManager
+from ayon_core.settings import get_project_settings
 
 
 class CreateGafferRender2D(plugin.GafferCreatorBase):
@@ -25,10 +26,14 @@ class CreateGafferRender2D(plugin.GafferCreatorBase):
 
         formatting_data = copy.deepcopy(data)
         formatting_data.update({"ext": "exr"})
-
-        # todo find the template in the settings
+        project_name = get_current_context()["project_name"]
+        project_settings = get_project_settings(project_name)
         temp_rendering_path_template = (
-            "{work}/renders/gaffer/{product[name]}.{frame}.{ext}")
+            project_settings["gaffer"]
+            .get("create", {})
+            .get("CreateRender2d", {})
+            .get("temp_rendering_path_template", "{work}/renders/gaffer/{product[name]}.{frame}.{ext}")
+        )
 
         file_name = str(script["fileName"].getValue())
 
@@ -39,15 +44,12 @@ class CreateGafferRender2D(plugin.GafferCreatorBase):
         staging_dir = self.apply_staging_dir(created_inst)
         if staging_dir:
             basename = os.path.basename(fpath)
-            staging_path = pathlib.Path(staging_dir)/ basename
+            staging_path = pathlib.Path(staging_dir) / basename
             fpath = staging_path.as_posix()
 
         return fpath
 
-    def _create_node(self,
-                     product_name: str,
-                     pre_create_data: dict,
-                     script: Gaffer.ScriptNode) -> Gaffer.Node:
+    def _create_node(self, product_name: str, pre_create_data: dict, script: Gaffer.ScriptNode) -> Gaffer.Node:
 
         bm = BoxNodeManager()
         node = bm.create(script, "Render2D", "v1")
@@ -68,12 +70,7 @@ class CreateGafferRender2D(plugin.GafferCreatorBase):
         ctx_data = self.create_context.host.get_context_data()
         data.update(ctx_data)
 
-        instance = CreatedInstance(
-            product_type=self.product_type,
-            product_name=product_name,
-            data=data,
-            creator=self
-        )
+        instance = CreatedInstance(product_type=self.product_type, product_name=product_name, data=data, creator=self)
         path = self._update_write_node_filepath(instance, script)
         node["fileName"].setValue(path)
 
@@ -81,7 +78,12 @@ class CreateGafferRender2D(plugin.GafferCreatorBase):
 
     def _get_frame_range(self):
         task_entity = self.create_context.get_current_folder_entity()
-        return task_entity["attrib"]["frameStart"], task_entity["attrib"]["frameEnd"], task_entity["attrib"]["handleStart"], task_entity["attrib"]["handleEnd"]
+        return (
+            task_entity["attrib"]["frameStart"],
+            task_entity["attrib"]["frameEnd"],
+            task_entity["attrib"]["handleStart"],
+            task_entity["attrib"]["handleEnd"],
+        )
 
     def get_instance_attr_defs(self):
 
@@ -91,10 +93,4 @@ class CreateGafferRender2D(plugin.GafferCreatorBase):
         rendering_targets["farm"] = "Farm rendering"
         rendering_targets["frames_farm"] = "Use existing frames - farm"
 
-        return [
-            EnumDef(
-                "render_target",
-                items=rendering_targets,
-                label="Render target"
-            )
-        ]
+        return [EnumDef("render_target", items=rendering_targets, label="Render target")]

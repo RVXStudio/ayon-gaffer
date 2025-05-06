@@ -114,7 +114,6 @@ class CollectRender2D(pyblish.api.InstancePlugin):
             self.log.debug("Using local for render and publish")
             instance.data["families"] = ["render.local"]
 
-        # todo change label, is it the deadline job name?
         label = "{0} ({1})".format("render", instance.data["folderPath"])
         label += "  [{0}-{1}]".format(start_frame, end_frame)
 
