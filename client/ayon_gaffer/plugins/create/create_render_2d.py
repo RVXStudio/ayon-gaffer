@@ -8,7 +8,7 @@ from ayon_core.pipeline import CreatedInstance, get_current_context
 from ayon_gaffer.api import plugin
 from ayon_core.lib import NumberDef, StringTemplate, EnumDef
 from ayon_gaffer.api.lib import get_work_default_directory
-from ayon_gaffer.api.nodes.lib import BoxNodeManager
+from ayon_gaffer.api.nodes.lib import BoxNodeManagerInstance
 from ayon_core.settings import get_project_settings
 
 
@@ -51,8 +51,7 @@ class CreateGafferRender2D(plugin.GafferCreatorBase):
 
     def _create_node(self, product_name: str, pre_create_data: dict, script: Gaffer.ScriptNode) -> Gaffer.Node:
 
-        bm = BoxNodeManager()
-        node = bm.create(script, "Render2D", "v1")
+        node = BoxNodeManagerInstance.create(script, "Render2D", "v1")
 
         script.addChild(node)
 

@@ -61,11 +61,21 @@ class Render2D(Gaffer.Box):
 
 
     def clear_renders(self):
+        import GafferUI
+        result = GafferUI.ConfirmationDialogue(
+            title="Are you sure?",
+            message="This will delete your rendered frames"
+            ).waitForConfirmation()
+        if not result:
+            return
         dirpath = os.path.dirname(self["fileName"].getValue())
         for f in os.listdir(dirpath):
             path = os.path.join(dirpath, f)
             log.info("Removing: `{}`".format(path))
-            os.remove(path)
+            try:
+                os.remove(path)
+            except OSError as err:
+                log.info(f"Unable to remove {path}: {err}")
 
 
 plugs = {

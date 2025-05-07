@@ -119,5 +119,9 @@ class CollectRender2D(pyblish.api.InstancePlugin):
 
         data["label"] = label
         instance.data.update(data)
+        if "publish_attributes" not in instance.data.keys():
+            instance.data["publish_attributes"] = {}
+        if "CollectJobInfo" not in instance.data["publish_attributes"].keys():
+            instance.data["publish_attributes"]["CollectJobInfo"] = {}
         instance.data["publish_attributes"]["CollectJobInfo"]['frames'] = ",".join([str(f) for f in frames])
 

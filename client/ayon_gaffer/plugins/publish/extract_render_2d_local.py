@@ -31,7 +31,8 @@ class Extract2DRender(GafferExtractorPlugin, publish.OptionalPyblishPluginMixin)
         self.log.debug(f"Using frame range: {frange}")
         dispatcher["frameRange"].setValue(frange)
 
-        dispatcher.dispatch([render_node])
+        with render_node.scriptNode().context():
+            dispatcher.dispatch([render_node])
 
         if "representations" not in instance.data:
             instance.data["representations"] = []
