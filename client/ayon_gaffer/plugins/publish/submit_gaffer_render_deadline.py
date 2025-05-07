@@ -105,6 +105,11 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
         if not instance.data.get("farm"):
             self.log.debug("Skipping local instance.")
             return
+
+        if "render.frames_farm" in instance.data["families"]:
+            self.log.info("Publishing existing frames, not doing anything")
+            return
+
         instance.data["attributeValues"] = self.get_attr_values_from_data(
             instance.data)
 

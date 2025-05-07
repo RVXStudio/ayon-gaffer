@@ -4,7 +4,8 @@ import IECore
 from ayon_gaffer.api.nodes import (
     AyonPublishTask,
     RenderLayerNode,
-    RenderSettingsNode
+    RenderSettingsNode,
+    Render2D
 )
 import ayon_gaffer.api.pipeline
 from ayon_gaffer import GAFFER_HOST_DIR
@@ -28,6 +29,10 @@ IECore.registerRunTimeTyped(
 IECore.registerRunTimeTyped(
     RenderSettingsNode,
     typeName="AyonGaffer::RenderSettings"
+)
+IECore.registerRunTimeTyped(
+    Render2D,
+    typeName="AyonGaffer::Render2D"
 )
 
 

@@ -8,19 +8,63 @@ import GafferScene
 import imath
 import PyOpenColorIO as OCIO
 
+from ayon_core.pipeline.template_data import get_template_data_with_names
+
 if sys.version_info >= (3, 9, 0):
     from collections.abc import Iterator
 else:
     from typing import Iterator
 
-from ayon_core.lib import Logger
+from ayon_core.lib import Logger, get_version_from_path
 from ayon_core.settings import get_project_settings
-from ayon_core.pipeline import get_current_context
+from ayon_core.pipeline import get_current_context, get_current_project_name, Anatomy, get_current_host_name
 
 import ayon_core.lib
 import ayon_api
 
 log = Logger.get_logger('ayon_gaffer.api.lib')
+
+def get_work_default_directory(data, file_name):
+    ''' Helping function for formatting of anatomy paths
+
+    Arguments:
+        data (dict): dictionary with attributes used for formatting
+
+    Return:
+        path (str)
+    '''
+
+    project_name = get_current_project_name()
+    anatomy = Anatomy(project_name)
+
+    frame_padding = anatomy.templates_obj.frame_padding
+
+    version = data.get("version")
+    if version is None:
+        version = get_version_from_path(file_name)
+        data["version"] = get_version_from_path(file_name)
+
+    folder_path = data["folderPath"]
+    task_name = data["task"]
+    host_name = get_current_host_name()
+
+    context_data = get_template_data_with_names(
+        project_name, folder_path, task_name, host_name
+    )
+    data.update(context_data)
+    data.update({
+        "subset": data["productName"],
+        "family": data["productType"],
+        "product": {
+            "name": data["productName"],
+            "type": data["productType"],
+        },
+        "frame": "#" * frame_padding,
+    })
+
+    work_default_dir_template = anatomy.get_template_item("work", "default", "directory")
+    normalized_dir = work_default_dir_template.format_strict(data).normalized()
+    return str(normalized_dir).replace("\\", "/")
 
 
 def set_node_color(node: Gaffer.Node, color: Tuple[float, float, float]):
@@ -625,6 +669,28 @@ def copy_plug(plug, destination_node):
     except Exception as err:
         log.error(f"Could not copy plug: {plug.getName()} to"
                   f"{destination_node}: {err}")
+
+
+def insert_plug(node, plug, position):
+    """
+    `This is based on the layout:index.
+    If it is not present on the plugs, the plug will be inserted at the end regardless of the position given
+    """
+    indices_map = {}
+    for child in node.children():
+        index = Gaffer.Metadata.value(child, "layout:index" )
+        if index:
+            indices_map[index] = child
+
+    for key in sorted(indices_map.keys(), reverse=True):
+        if key >= position:
+            indices_map[key + 1] = indices_map[key]
+
+    indices_map[position] = plug
+
+    node.addChild(plug)
+    for index, plug in indices_map.items():
+        Gaffer.Metadata.registerValue(plug, "layout:index", index)
 
 
 def get_all_plugs(in_node, thelist, include_non_serializable=True):

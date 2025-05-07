@@ -10,6 +10,7 @@ from .loader_plugins import (
 
 from .imageio import ImageIOSettings, DEFAULT_IMAGEIO_SETTINGS
 from .deadline import GafferDeadlineSettings, DEFAULT_DEADLINE_SETTINGS
+from .create_plugins import CreatorPluginsSettings, DEFAULT_CREATE_SETTINGS
 
 
 class GafferSettings(BaseSettingsModel):
@@ -18,6 +19,9 @@ class GafferSettings(BaseSettingsModel):
     load: LoaderPluginsModel = SettingsField(
         default_factory=LoaderPluginsModel,
         title="Loader Plugins")
+    create: CreatorPluginsSettings = SettingsField(
+        default_factory=CreatorPluginsSettings,
+        title="Creator Plugins")
     node_preset_paths: list[str] = SettingsField(
         default_factory=list,
         title="Node preset paths"
@@ -33,4 +37,5 @@ DEFAULT_VALUES = {
     "load": DEFAULT_LOADER_PLUGINS_SETTINGS,
     "node_preset_paths": [],
     "deadline": DEFAULT_DEADLINE_SETTINGS,
+    "create": DEFAULT_CREATE_SETTINGS,
 }
