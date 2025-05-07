@@ -19,6 +19,7 @@ class CreateGafferRender2D(plugin.GafferCreatorBase):
     product_type = "render"
     description = "Render 2D"
     icon = "fa5.film"
+    strip_task = False
 
     def _update_write_node_filepath(self, created_inst, script):
 

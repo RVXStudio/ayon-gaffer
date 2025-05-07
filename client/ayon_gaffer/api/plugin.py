@@ -172,6 +172,7 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
     """
     default_variants = ["Main"]
     selected_nodes = []
+    strip_task = True
 
     @abstractmethod
     def _create_node(self,
@@ -215,8 +216,9 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
             "productName": product_name
         })
 
-        # strip out the task
-        instance_data["task"] = None
+        if self.strip_task:
+            # strip out the task
+            instance_data["task"] = None
 
         script = get_root()
         assert script, "Must have a gaffer scene script as root"
