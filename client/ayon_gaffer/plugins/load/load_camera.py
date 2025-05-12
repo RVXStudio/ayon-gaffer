@@ -55,6 +55,13 @@ class GafferLoadAlembicCamera(ayon_gaffer.api.plugin.GafferLoaderBase):
         camera_tweaks["filter"].setInput(path_filter["out"])
         box["BoxOut_out"]["in"].setInput(camera_tweaks["out"])
 
+        Gaffer.PlugAlgo.promote(camera_tweaks["tweaks"])
+        Gaffer.Metadata.registerValue(box["tweaks"], 'layout:section', 'Camera Tweaks')
+        Gaffer.Metadata.registerValue(box["tweaks"], 'layout:index', 2)
+
+        # display the + icon of the camera tweaks on the box
+        Gaffer.Metadata.registerValue(box["tweaks"], "layout:customWidget:footer:widgetType",
+                                      "GafferSceneUI.CameraTweaksUI._TweaksFooter")
         script.addChild(box)
 
         # Promote the reader's filename directly to the box
