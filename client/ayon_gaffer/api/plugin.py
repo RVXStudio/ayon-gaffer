@@ -532,6 +532,8 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
             to_delete = []
             output_plugs = inode["out_render"].outputs()
             outputs = [f.node().fullName() for f in output_plugs]
+            if AYON_ATTR_GROUP_KEY not in inode["user"].keys():
+                continue
             for child in inode["user"][AYON_ATTR_GROUP_KEY].children():
                 group_name = child["name"].getValue()
                 if group_name not in outputs:
