@@ -74,13 +74,24 @@ class RenderLayerNode(Gaffer.Box):
         )
         self.addChild(layer_range_plug)
 
+        node_name_plug = Gaffer.StringPlug(
+            "node_name",
+            defaultValue=self.getName(),
+            flags=Gaffer.Plug.Flags.Default
+        )
+        self.addChild(node_name_plug)
+
     def connect_signals(self):
         if self.plug_signal is None:
             log.debug("Connecting plugSetSignal")
             self.plug_signal = self.plugSetSignal()
             self.plug_signal.connect(self.on_plug_changed, scoped=False)
         # self.parentChangedSignal().connect(self.notify_parent, scoped=False)
-        # self.childAddedSignal().connect(self.notify_name, scoped=False)
+        self.nameChangedSignal().connect(self.name_changed, scoped=False)
+        self.name_changed()
+
+    def name_changed(self, *args):
+        self["node_name"].setValue(self.getName())
 
     def on_plug_changed(self, plug):
         if plug.getName() == 'outputs':
@@ -172,6 +183,17 @@ Gaffer.Metadata.registerNode(
     "nodeGadget:color", imath.Color3f(0.3203125, 0.125, 0),
 
     plugs={
+
+        "node_name": [
+            "description",
+            '''
+            The output path of the render layer. Takes some tags and some fancy
+            stuff.
+            ''',
+            "nodule:type", "",
+            "plugValueWidget:type", "",
+        ],
+
         "outputs": [
             "description",
             """
