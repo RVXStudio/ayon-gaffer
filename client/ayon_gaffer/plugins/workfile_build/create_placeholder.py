@@ -21,28 +21,27 @@ from ayon_core.pipeline.workfile.workfile_template_builder import (
 from ayon_gaffer.api.workfile_template_builder import (
     GafferPlaceholderPlugin
 )
-
+from ayon_gaffer.api import get_root
 
 class GafferPlaceholderCreatePlugin(
     GafferPlaceholderPlugin, PlaceholderCreateMixin
 ):
     identifier = "gaffer.create"
-    label = "gaffer create"
+    label = "Gaffer Create"
 
-    def _parse_placeholder_node_data(self, node):
+    def _parse_placeholder_node_data(self, node: Gaffer.Node):
         placeholder_data = super(
             GafferPlaceholderCreatePlugin, self
         )._parse_placeholder_node_data(node)
 
-        node_knobs = node.knobs()
         nb_children = 0
-        if "nb_children" in node_knobs:
-            nb_children = int(node_knobs["nb_children"].getValue())
+        if "nb_children" in node["user"]:
+            nb_children = int(node["user"]["nb_children"].getValue())
         placeholder_data["nb_children"] = nb_children
 
         siblings = []
-        if "siblings" in node_knobs:
-            siblings = node_knobs["siblings"].values()
+        if "siblings" in node["user"]:
+            siblings = node["user"]["siblings"].getValue()
         placeholder_data["siblings"] = siblings
 
         node_full_name = node.fullName()
@@ -52,16 +51,17 @@ class GafferPlaceholderCreatePlugin(
         return placeholder_data
 
     def _before_instance_create(self, placeholder):
-        placeholder.data["nodes_init"] = nuke.allNodes()
+        placeholder.data["nodes_init"] = get_root().children()
 
     def collect_placeholders(self):
         output = []
         scene_placeholders = self._collect_scene_placeholders()
         for node_name, node in scene_placeholders.items():
-            plugin_identifier_knob = node.knob("plugin_identifier")
+            plug_identifier = node["user"]["plugin_identifier"]
+
             if (
-                plugin_identifier_knob is None
-                or plugin_identifier_knob.getValue() != self.identifier
+                plug_identifier is None
+                or plug_identifier.getValue() != self.identifier
             ):
                 continue
 
@@ -91,11 +91,12 @@ class GafferPlaceholderCreatePlugin(
             failed (bool): Loading of representation failed.
         """
         # deselect all selected nodes
-        placeholder_node = nuke.toNode(placeholder.scene_identifier)
+        root = get_root()
+        placeholder_node = root[placeholder.scene_identifier]
 
         # getting the latest nodes added
         nodes_init = placeholder.data["nodes_init"]
-        nodes_created = list(set(nuke.allNodes()) - set(nodes_init))
+        nodes_created = list(set(root.children()) - set(nodes_init))
         self.log.debug("Created nodes: {}".format(nodes_created))
         if not nodes_created:
             return
@@ -128,7 +129,7 @@ class GafferPlaceholderCreatePlugin(
 
             if placeholder.data.get("keep_placeholder"):
                 self._imprint_inits()
-                self._update_nodes(placeholder, nuke.allNodes(), nodes_created)
+                self._update_nodes(placeholder, root.children(), nodes_created)
 
             self._set_created_connections(placeholder)
 
@@ -148,7 +149,7 @@ class GafferPlaceholderCreatePlugin(
             self._set_copies_connections(placeholder, copies)
 
             self._update_nodes(
-                nuke.allNodes(),
+                root.children(),
                 new_nodes + nodes_created,
                 20
             )
@@ -163,9 +164,9 @@ class GafferPlaceholderCreatePlugin(
             xpointer, ypointer = find_free_space_to_paste_nodes(
                 nodes_created, direction="bottom", offset=200
             )
-            node = nuke.createNode("NoOp")
+            node = Gaffer.Node()
             reset_selection()
-            nuke.delete(node)
+            del(node)
             for node in nodes_created:
                 xpos = (node.xpos() - min_x) + xpointer
                 ypos = (node.ypos() - min_y) + ypointer
@@ -174,8 +175,6 @@ class GafferPlaceholderCreatePlugin(
         placeholder.data["nb_children"] += 1
         reset_selection()
 
-        # go back to root group
-        nuke.root().begin()
 
     def _move_to_placeholder_group(self, placeholder, nodes_created):
         """
