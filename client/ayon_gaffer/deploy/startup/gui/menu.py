@@ -6,12 +6,17 @@ See: http://www.gafferhq.org/documentation/0.53.0.0/Tutorials/Scripting/AddingAM
 
 """
 from ayon_core.pipeline import install_host, registered_host
+from ayon_core.tools.workfile_template_build import open_template_ui
 from ayon_gaffer.api import GafferHost, set_root, lib
 from ayon_gaffer.api.pipeline import get_context_label
 from ayon_core.lib import Logger
 import ayon_gaffer.api.nodes.lib
-
-from ayon_gaffer.api.workfile_template_builder import build_workfile_template
+from ayon_gaffer.api.workfile_template_builder import (
+    build_workfile_template,
+    create_placeholder,
+    update_placeholder,
+    GafferTemplateBuilder,
+)
 import GafferUI
 import Gaffer
 import IECore
@@ -32,6 +37,9 @@ def ayon_menu(menu):
         script_window = menu.ancestor(GafferUI.ScriptWindow)
         set_root(script_window.scriptNode())     # todo: avoid hack
         return script_window._qtWidget()
+
+    def get_script_node(menu):
+        return menu.ancestor(GafferUI.ScriptWindow).scriptNode()
 
     definition = IECore.MenuDefinition()
     context_label = get_context_label().replace('/', '|')
@@ -90,13 +98,17 @@ def ayon_menu(menu):
     definition.append(f"TemplatesDivider", {"divider": True})
 
     definition.append(
-        f"/Template Builder/Build Workfile from Template", {"command": lambda: build_workfile_template_callback()}
+        f"/Template Builder/Build Workfile from Template", {"command": lambda: build_workfile_template()}
+    )
+
+    definition.append(
+        "/Template Builder/Open template", lambda menu: open_template_ui(GafferTemplateBuilder(registered_host()), get_main_window(menu))
     )
     definition.append(
         "/Template Builder/Open template", {"command": lambda: None}
     )
-    definition.append("/Template Builder/Create Place Holder", {"command": lambda: create_placeholder()})
-    definition.append("/Template Builder/Update Place Holder", {"command": lambda: update_placeholder()})
+    definition.append("/Template Builder/Create Place Holder", {"command": lambda menu: create_placeholder(get_main_window(menu))})
+    definition.append("/Template Builder/Update Place Holder", {"command": lambda menu: update_placeholder(get_script_node(menu))})
 
     return definition
 
@@ -144,14 +156,6 @@ def set_frame_range_callback(menu):
     script_node = scriptWindow.scriptNode()
     lib.set_frame_range(script_node)
 
-def build_workfile_template_callback():
-    build_workfile_template()
-
-def create_placeholder():
-    print("create place holder")
-
-def update_placeholder():
-    print("update place holder")
 
 def update_root_context_variables_callback(menu):
     host = registered_host()

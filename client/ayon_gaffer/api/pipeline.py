@@ -19,6 +19,7 @@ from ayon_core.pipeline import (
     AYON_CONTAINER_ID,
     get_current_folder_path,
     get_current_task_name,
+    register_workfile_build_plugin_path,
 )
 from ayon_gaffer import GAFFER_HOST_DIR
 import ayon_gaffer.api.nodes
@@ -35,6 +36,7 @@ PUBLISH_PATH = os.path.join(PLUGINS_DIR, "publish")
 LOAD_PATH = os.path.join(PLUGINS_DIR, "load")
 CREATE_PATH = os.path.join(PLUGINS_DIR, "create")
 INVENTORY_PATH = os.path.join(PLUGINS_DIR, "inventory")
+WORKFILE_BUILD_PATH = os.path.join(PLUGINS_DIR, "workfile_build")
 DEADLINE_LIMIT_GROUPS = []
 AYON_ATTR_GROUP_KEY = "ayon_attr_group"
 
@@ -69,6 +71,7 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         register_loader_plugin_path(LOAD_PATH)
         register_creator_plugin_path(CREATE_PATH)
         register_inventory_action_path(INVENTORY_PATH)
+        register_workfile_build_plugin_path(WORKFILE_BUILD_PATH)
         log.info("Registering paths")
         log.info(PUBLISH_PATH)
         log.info(LOAD_PATH)

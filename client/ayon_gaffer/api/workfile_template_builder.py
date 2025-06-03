@@ -1,5 +1,5 @@
 import collections
-import Gaffer, GafferUI
+import Gaffer, GafferUI, imath
 from ayon_core.pipeline import registered_host
 from ayon_core.pipeline.workfile.workfile_template_builder import (
     AbstractTemplateBuilder,
@@ -10,15 +10,13 @@ from ayon_core.tools.workfile_template_build import (
 )
 from .pipeline import (
     imprint,
-    # reset_selection,
-    # get_main_window,
-    # WorkfileSettings,
 )
+from ayon_gaffer.api import get_root
 
 PLACEHOLDER_SET = "PLACEHOLDERS_SET"
 
 def get_main_window():
-    sw = GafferUI.ScriptWindow(Gaffer.ScriptNode())
+    sw = GafferUI.ScriptWindow(get_root())
     return sw._qtWidget()
 
 class GafferTemplateBuilder(AbstractTemplateBuilder):
@@ -37,7 +35,7 @@ class GafferTemplateBuilder(AbstractTemplateBuilder):
         """
 
         # TODO check if the template is already imported
-        script_node = Gaffer.ScriptNode()
+        script_node = get_root()
         script_node.importFile(path, continueOnError=True)
         # todo reset_selection()
         # reset_selection()
@@ -46,7 +44,7 @@ class GafferTemplateBuilder(AbstractTemplateBuilder):
 
 
 class GafferPlaceholderPlugin(PlaceholderPlugin):
-    node_color = 4278190335
+    node_color = imath.Color4f(0.8, 0.393973, 0.0342622, 1)  # todo get the right color from nuke
 
     def _collect_scene_placeholders(self):
         # Cache placeholder data to shared data
@@ -56,21 +54,20 @@ class GafferPlaceholderPlugin(PlaceholderPlugin):
         if placeholder_nodes is None:
             placeholder_nodes = {}
             all_groups = collections.deque()
-            all_groups.append(nuke.thisGroup())
+            all_groups.append(get_root())
             while all_groups:
                 group = all_groups.popleft()
-                for node in group.nodes():
-                    if isinstance(node, nuke.Group):
+                for node in group.children():
+                    if isinstance(node, Gaffer.Box):
                         all_groups.append(node)
 
-                    node_knobs = node.knobs()
-                    if (
-                        "is_placeholder" not in node_knobs
-                        or not node.knob("is_placeholder").value()
-                    ):
+                    if "user" not in node:
                         continue
 
-                    if "empty" in node_knobs and node.knob("empty").value():
+                    if "is_placeholder" not in node["user"] or not node["user"]["is_placeholder"].getValue():
+                        continue
+
+                    if "empty" in node["user"] and node["user"]["empty"].getValue():
                         continue
 
                     placeholder_nodes[node.fullName()] = node
@@ -83,16 +80,20 @@ class GafferPlaceholderPlugin(PlaceholderPlugin):
     def create_placeholder(self, placeholder_data):
         placeholder_data["plugin_identifier"] = self.identifier
 
-        placeholder = nuke.nodes.NoOp()
+        script = get_root()
+        placeholder = Gaffer.Node()
+
+        script.addChild(placeholder)
+
         placeholder.setName("PLACEHOLDER")
-        placeholder.knob("tile_color").setValue(self.node_color)
+        # placeholder["color"].setValue(self.node_color)  # todo color is not available on Node
 
         imprint(placeholder, placeholder_data)
         imprint(placeholder, {"is_placeholder": True})
-        placeholder.knob("is_placeholder").setVisible(False)
+        # placeholder.knob("is_placeholder").setVisible(False)  # todo set metadata
 
     def update_placeholder(self, placeholder_item, placeholder_data):
-        node = nuke.toNode(placeholder_item.scene_identifier)
+        node = get_root()[placeholder_item.scene_identifier]
         imprint(node, placeholder_data)
 
     def _parse_placeholder_node_data(self, node):
@@ -107,8 +108,9 @@ class GafferPlaceholderPlugin(PlaceholderPlugin):
 
     def delete_placeholder(self, placeholder):
         """Remove placeholder if building was successful"""
-        placeholder_node = nuke.toNode(placeholder.scene_identifier)
-        nuke.delete(placeholder_node)
+        # todo check if the placeholder is empty
+        node = get_root()[placeholder.scene_identifier]
+        del(node)
 
 
 def build_workfile_template(*args, **kwargs):
@@ -125,16 +127,15 @@ def update_workfile_template(*args):
     builder = GafferTemplateBuilder(registered_host())
     builder.rebuild_template()
 
-
-def create_placeholder(*args):
+def create_placeholder(main_window):
     host = registered_host()
     builder = GafferTemplateBuilder(host)
-    window = WorkfileBuildPlaceholderDialog(host, builder,
-                                            parent=get_main_window())
+    window = WorkfileBuildPlaceholderDialog(host, builder, parent=main_window)
+
     window.show()
 
 
-def update_placeholder(*args):
+def update_placeholder(script_node):
     host = registered_host()
     builder = GafferTemplateBuilder(host)
     placeholder_items_by_id = {
@@ -142,7 +143,7 @@ def update_placeholder(*args):
         for placeholder_item in builder.get_placeholders()
     }
     placeholder_items = []
-    for node in nuke.selectedNodes():
+    for node in script_node.selection():
         node_name = node.fullName()
         if node_name in placeholder_items_by_id:
             placeholder_items.append(placeholder_items_by_id[node_name])
