@@ -97,18 +97,18 @@ def ayon_menu(menu):
     # Divider
     definition.append(f"TemplatesDivider", {"divider": True})
 
-    definition.append(
-        f"/Template Builder/Build Workfile from Template", {"command": lambda: build_workfile_template()}
-    )
+    definition.append(f"/Template Builder/Build Workfile from Template", {"command": lambda: build_workfile_template(parent=get_main_window(menu))})
 
     definition.append(
-        "/Template Builder/Open template", lambda menu: open_template_ui(GafferTemplateBuilder(registered_host()), get_main_window(menu))
+        "/Template Builder/Open template",
+        {"command": lambda menu: open_template_ui(GafferTemplateBuilder(registered_host()), get_main_window(menu))},
     )
     definition.append(
-        "/Template Builder/Open template", {"command": lambda: None}
+        "/Template Builder/Create Place Holder", {"command": lambda menu: create_placeholder(get_main_window(menu))}
     )
-    definition.append("/Template Builder/Create Place Holder", {"command": lambda menu: create_placeholder(get_main_window(menu))})
-    definition.append("/Template Builder/Update Place Holder", {"command": lambda menu: update_placeholder(get_script_node(menu))})
+    definition.append(
+        "/Template Builder/Update Place Holder", {"command": lambda menu: update_placeholder(get_script_node(menu))}
+    )
 
     return definition
 

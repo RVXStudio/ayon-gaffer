@@ -4,13 +4,14 @@ from ayon_core.pipeline.workfile.workfile_template_builder import (
     LoadPlaceholderItem,
     PlaceholderLoadMixin,
 )
+from ayon_gaffer.api import get_root
+from ayon_gaffer.api.pipeline import imprint
 # from ayon_gaffer.api.lib import (
 #     find_free_space_to_paste_nodes,
 #     get_extreme_positions,
 #     get_group_io_nodes,
 #     imprint,
 #     refresh_node,
-#     refresh_nodes,
 #     reset_selection,
 #     get_names_from_nodes,
 #     get_nodes_by_names,
@@ -32,15 +33,14 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
             GafferPlaceholderLoadPlugin, self
         )._parse_placeholder_node_data(node)
 
-        node_knobs = node.knobs()
         nb_children = 0
-        if "nb_children" in node_knobs:
-            nb_children = int(node_knobs["nb_children"].getValue())
+        if "nb_children" in node["user"]:
+            nb_children = int(node["user"]["nb_children"].getValue())
         placeholder_data["nb_children"] = nb_children
 
         siblings = []
-        if "siblings" in node_knobs:
-            siblings = node_knobs["siblings"].values()
+        if "siblings" in node["user"]:
+            siblings = node["user"]["siblings"].values()
         placeholder_data["siblings"] = siblings
 
         node_full_name = node.fullName()
@@ -55,7 +55,7 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
         )
         if loaded_representation_ids is None:
             loaded_representation_ids = set()
-            for node in nuke.allNodes():
+            for node in get_root().children():
                 if "repre_id" in node.knobs():
                     loaded_representation_ids.add(
                         node.knob("repre_id").getValue()
@@ -67,7 +67,7 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
         return loaded_representation_ids
 
     def _before_placeholder_load(self, placeholder):
-        placeholder.data["nodes_init"] = nuke.allNodes()
+        placeholder.data["nodes_init"] = get_root().children()
 
     def _before_repre_load(self, placeholder, representation):
         placeholder.data["last_repre_id"] = representation["id"]
@@ -76,7 +76,7 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
         output = []
         scene_placeholders = self._collect_scene_placeholders()
         for node_name, node in scene_placeholders.items():
-            plugin_identifier_knob = node.knob("plugin_identifier")
+            plugin_identifier_knob = node["user"]["plugin_identifier"]
             if (
                 plugin_identifier_knob is None
                 or plugin_identifier_knob.getValue() != self.identifier
@@ -110,12 +110,13 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
             failed (bool): Loading of representation failed.
         """
         # deselect all selected nodes
-        placeholder_node = nuke.toNode(placeholder.scene_identifier)
+        root = get_root()
+        placeholder_node = root[placeholder.scene_identifier]
 
         # getting the latest nodes added
         # TODO get from shared populate data!
         nodes_init = placeholder.data["nodes_init"]
-        nodes_loaded = list(set(nuke.allNodes()) - set(nodes_init))
+        nodes_loaded = list(set(root.children()) - set(nodes_init))
         self.log.debug("Loaded nodes: {}".format(nodes_loaded))
         if not nodes_loaded:
             return
@@ -126,7 +127,6 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
             placeholder, nodes_loaded
         )
         placeholder.data["last_loaded"] = nodes_loaded
-        refresh_nodes(nodes_loaded)
 
         # positioning of the loaded nodes
         min_x, min_y, _, _ = get_extreme_positions(nodes_loaded)
@@ -134,10 +134,6 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
             xpos = (node.xpos() - min_x) + placeholder_node.xpos()
             ypos = (node.ypos() - min_y) + placeholder_node.ypos()
             node.setXYpos(xpos, ypos)
-        refresh_nodes(nodes_loaded)
-
-        # fix the problem of z_order for backdrops
-        self._fix_z_order(placeholder)
 
         if placeholder.data.get("keep_placeholder"):
             self._imprint_siblings(placeholder)
@@ -157,7 +153,6 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
             # dimensions and siblings names
 
             siblings = get_nodes_by_names(placeholder.data["siblings"])
-            refresh_nodes(siblings)
             copies = self._create_sib_copies(placeholder)
             new_nodes = list(copies.values())  # copies nodes
             self._update_nodes(new_nodes, nodes_loaded)
@@ -167,7 +162,7 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
             self._set_copies_connections(placeholder, copies)
 
             self._update_nodes(
-                nuke.allNodes(),
+                root.children(),
                 new_nodes + nodes_loaded,
                 20
             )
@@ -182,9 +177,10 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
             xpointer, ypointer = find_free_space_to_paste_nodes(
                 nodes_loaded, direction="bottom", offset=200
             )
-            node = nuke.createNode("NoOp")
+            # todo is it really needed for gaffer
+            node = Gaffer.Node("PLACEHOLDER")
             reset_selection()
-            nuke.delete(node)
+            del(node)
             for node in nodes_loaded:
                 xpos = (node.xpos() - min_x) + xpointer
                 ypos = (node.ypos() - min_y) + ypointer
@@ -192,9 +188,6 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
 
         placeholder.data["nb_children"] += 1
         reset_selection()
-
-        # go back to root group
-        nuke.root().begin()
 
     def _move_to_placeholder_group(self, placeholder, nodes_loaded):
         """
@@ -218,36 +211,6 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
                 nodes_loaded = nuke.selectedNodes()
         return nodes_loaded
 
-    def _fix_z_order(self, placeholder):
-        """Fix the problem of z_order when a backdrop is loaded."""
-
-        nodes_loaded = placeholder.data["last_loaded"]
-        loaded_backdrops = []
-        bd_orders = set()
-        for node in nodes_loaded:
-            if isinstance(node, nuke.BackdropNode):
-                loaded_backdrops.append(node)
-                bd_orders.add(node.knob("z_order").getValue())
-
-        if not bd_orders:
-            return
-
-        sib_orders = set()
-        for node_name in placeholder.data["siblings"]:
-            node = nuke.toNode(node_name)
-            if isinstance(node, nuke.BackdropNode):
-                sib_orders.add(node.knob("z_order").getValue())
-
-        if not sib_orders:
-            return
-
-        min_order = min(bd_orders)
-        max_order = max(sib_orders)
-        for backdrop_node in loaded_backdrops:
-            z_order = backdrop_node.knob("z_order").getValue()
-            backdrop_node.knob("z_order").setValue(
-                z_order + max_order - min_order + 1)
-
     def _imprint_siblings(self, placeholder):
         """
         - add siblings names to placeholder attributes (nodes loaded with it)
@@ -264,7 +227,6 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
                 # save the id of representation for all imported nodes
                 imprint(node, data)
                 node.knob("repre_id").setVisible(False)
-                refresh_node(node)
                 continue
 
             if (
@@ -282,18 +244,14 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
     def _imprint_inits(self):
         """Add initial positions and dimensions to the attributes"""
 
-        for node in nuke.allNodes():
-            refresh_node(node)
-            imprint(node, {"x_init": node.xpos(), "y_init": node.ypos()})
-            node.knob("x_init").setVisible(False)
-            node.knob("y_init").setVisible(False)
+        for node in get_root().children():
+            imprint(node, {"x_init": node["__uiPosition"]["x"].getValue(), "y_init": node["__uiPosition"]["y"].getValue()})
             width = node.screenWidth()
             height = node.screenHeight()
             if "bdwidth" in node.knobs():
                 imprint(node, {"w_init": width, "h_init": height})
                 node.knob("w_init").setVisible(False)
                 node.knob("h_init").setVisible(False)
-            refresh_node(node)
 
     def _update_nodes(
         self, placeholder, nodes, considered_nodes, offset_y=None
@@ -368,7 +326,7 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
         """
         set inputs and outputs of loaded nodes"""
 
-        placeholder_node = nuke.toNode(placeholder.scene_identifier)
+        placeholder_node = get_root()[placeholder.scene_identifier]
         input_node, output_node = get_group_io_nodes(
             placeholder.data["last_loaded"]
         )

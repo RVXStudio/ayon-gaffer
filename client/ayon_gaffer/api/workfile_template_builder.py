@@ -5,19 +5,17 @@ from ayon_core.pipeline.workfile.workfile_template_builder import (
     AbstractTemplateBuilder,
     PlaceholderPlugin,
 )
-from ayon_core.tools.workfile_template_build import (
-    WorkfileBuildPlaceholderDialog,
-)
-from .pipeline import (
-    imprint,
-)
+from ayon_core.tools.workfile_template_build import WorkfileBuildPlaceholderDialog
+from .pipeline import imprint
 from ayon_gaffer.api import get_root
 
 PLACEHOLDER_SET = "PLACEHOLDERS_SET"
 
+
 def get_main_window():
     sw = GafferUI.ScriptWindow(get_root())
     return sw._qtWidget()
+
 
 class GafferTemplateBuilder(AbstractTemplateBuilder):
     """Concrete implementation of AbstractTemplateBuilder for gaffer"""
@@ -37,8 +35,6 @@ class GafferTemplateBuilder(AbstractTemplateBuilder):
         # TODO check if the template is already imported
         script_node = get_root()
         script_node.importFile(path, continueOnError=True)
-        # todo reset_selection()
-        # reset_selection()
 
         return True
 
@@ -48,9 +44,7 @@ class GafferPlaceholderPlugin(PlaceholderPlugin):
 
     def _collect_scene_placeholders(self):
         # Cache placeholder data to shared data
-        placeholder_nodes = self.builder.get_shared_populate_data(
-            "placeholder_nodes"
-        )
+        placeholder_nodes = self.builder.get_shared_populate_data("placeholder_nodes")
         if placeholder_nodes is None:
             placeholder_nodes = {}
             all_groups = collections.deque()
@@ -72,9 +66,7 @@ class GafferPlaceholderPlugin(PlaceholderPlugin):
 
                     placeholder_nodes[node.fullName()] = node
 
-            self.builder.set_shared_populate_data(
-                "placeholder_nodes", placeholder_nodes
-            )
+            self.builder.set_shared_populate_data("placeholder_nodes", placeholder_nodes)
         return placeholder_nodes
 
     def create_placeholder(self, placeholder_data):
@@ -99,10 +91,10 @@ class GafferPlaceholderPlugin(PlaceholderPlugin):
     def _parse_placeholder_node_data(self, node):
         placeholder_data = {}
         for key in self.get_placeholder_keys():
-            knob = node.knob(key)
+            plug = node["user"][key]
             value = None
-            if knob is not None:
-                value = knob.getValue()
+            if plug is not None:
+                value = plug.getValue()
             placeholder_data[key] = value
         return placeholder_data
 
@@ -110,22 +102,23 @@ class GafferPlaceholderPlugin(PlaceholderPlugin):
         """Remove placeholder if building was successful"""
         # todo check if the placeholder is empty
         node = get_root()[placeholder.scene_identifier]
-        del(node)
+        del node
 
 
 def build_workfile_template(*args, **kwargs):
     builder = GafferTemplateBuilder(registered_host())
-    built_template = builder.build_template(*args, **kwargs)
+    built_template = builder.build_template()
 
     # todo set the context when the scene is built
     # if built_template:
-        # set all settings to shot context default
-        # WorkfileSettings().set_context_settings()
+    # set all settings to shot context default
+    # WorkfileSettings().set_context_settings()
 
 
 def update_workfile_template(*args):
     builder = GafferTemplateBuilder(registered_host())
     builder.rebuild_template()
+
 
 def create_placeholder(main_window):
     host = registered_host()
@@ -139,8 +132,7 @@ def update_placeholder(script_node):
     host = registered_host()
     builder = GafferTemplateBuilder(host)
     placeholder_items_by_id = {
-        placeholder_item.scene_identifier: placeholder_item
-        for placeholder_item in builder.get_placeholders()
+        placeholder_item.scene_identifier: placeholder_item for placeholder_item in builder.get_placeholders()
     }
     placeholder_items = []
     for node in script_node.selection():
@@ -156,7 +148,6 @@ def update_placeholder(script_node):
         raise ValueError("Too many selected nodes")
 
     placeholder_item = placeholder_items[0]
-    window = WorkfileBuildPlaceholderDialog(host, builder,
-                                            parent=get_main_window())
+    window = WorkfileBuildPlaceholderDialog(host, builder, parent=get_main_window())
     window.set_update_mode(placeholder_item)
     window.exec_()
