@@ -11,6 +11,7 @@ from ayon_gaffer.api.pipeline import get_context_label
 from ayon_core.lib import Logger
 import ayon_gaffer.api.nodes.lib
 
+from ayon_gaffer.api.workfile_template_builder import build_workfile_template
 import GafferUI
 import Gaffer
 import IECore
@@ -85,6 +86,18 @@ def ayon_menu(menu):
         {"command": lambda menu: host_tools.show_workfiles(
             parent=get_main_window(menu))}
     )
+    # Divider
+    definition.append(f"TemplatesDivider", {"divider": True})
+
+    definition.append(
+        f"/Template Builder/Build Workfile from Template", {"command": lambda: build_workfile_template_callback()}
+    )
+    definition.append(
+        "/Template Builder/Open template", {"command": lambda: None}
+    )
+    definition.append("/Template Builder/Create Place Holder", {"command": lambda: create_placeholder()})
+    definition.append("/Template Builder/Update Place Holder", {"command": lambda: update_placeholder()})
+
     return definition
 
 
@@ -131,6 +144,14 @@ def set_frame_range_callback(menu):
     script_node = scriptWindow.scriptNode()
     lib.set_frame_range(script_node)
 
+def build_workfile_template_callback():
+    build_workfile_template()
+
+def create_placeholder():
+    print("create place holder")
+
+def update_placeholder():
+    print("update place holder")
 
 def update_root_context_variables_callback(menu):
     host = registered_host()
