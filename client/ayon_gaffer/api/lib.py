@@ -670,6 +670,53 @@ def copy_plug(plug, destination_node):
         log.error(f"Could not copy plug: {plug.getName()} to"
                   f"{destination_node}: {err}")
 
+def get_full_name(node):
+    # .fullName() returns gui.ScriptNode.Box.Node
+    # here it returns only: Box.Node
+    name = node.getName()
+    parent = node.parent()
+    while not isinstance(parent, Gaffer.ScriptNode):
+        name = parent.getName() + "." + name
+        parent = parent.parent()
+    return name
+
+def get_nodes_by_names(root: Gaffer.Node, names: List[str]) -> List[Gaffer.Node]:
+    """
+    Get a list of nodes based on their names, including nested paths.
+
+    Examples:
+        >>> get_nodes_by_names(root, ["Box.Node", "Box"])
+        [Gaffer.Node( "Node" ), Gaffer.Node( "Box" )]]
+    """
+    nodes = []
+    for name in names:
+        try:
+            # Split the name by hierarchy (e.g., "Box.Node" -> ["Box", "Node"])
+            parts = name.split(".")
+            node = root
+            for part in parts:
+                node = node[part]
+            nodes.append(node)
+        except KeyError:
+            continue
+    return nodes
+
+def get_names_from_nodes(nodes):
+    return [get_full_name(node) for node in nodes]
+
+def get_nodes_bbox(nodes):
+    """Get the 4 numbers that represent the box of a group of nodes."""
+
+    if not nodes:
+        raise ValueError("there is no nodes in the list")
+
+    nodes_xpos = [n["__uiPosition"]["x"].getValue() for n in nodes]
+
+    nodes_ypos = [n["__uiPosition"]["y"].getValue() for n in nodes]
+
+    min_x, min_y = (min(nodes_xpos), min(nodes_ypos))
+    max_x, max_y = (max(nodes_xpos), max(nodes_ypos))
+    return min_x, min_y, max_x, max_y
 
 def insert_plug(node, plug, position):
     """

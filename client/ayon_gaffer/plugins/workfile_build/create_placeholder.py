@@ -4,35 +4,18 @@ from ayon_core.pipeline.workfile.workfile_template_builder import (
     CreatePlaceholderItem,
     PlaceholderCreateMixin,
 )
-# from ayon_nuke.api.lib import (
-#     find_free_space_to_paste_nodes,
-#     get_extreme_positions,
-#     get_group_io_nodes,
-#     imprint,
-#     refresh_node,
-#     refresh_nodes,
-#     reset_selection,
-#     get_names_from_nodes,
-#     get_nodes_by_names,
-#     select_nodes,
-#     duplicate_node,
-#     node_tempfile,
-# )
-from ayon_gaffer.api.workfile_template_builder import (
-    GafferPlaceholderPlugin
-)
+from ayon_gaffer.api.workfile_template_builder import GafferPlaceholderPlugin
+
+from ayon_gaffer.api.lib import get_nodes_bbox, get_nodes_by_names, get_full_name, get_names_from_nodes
 from ayon_gaffer.api import get_root
 
-class GafferPlaceholderCreatePlugin(
-    GafferPlaceholderPlugin, PlaceholderCreateMixin
-):
+
+class GafferPlaceholderCreatePlugin(GafferPlaceholderPlugin, PlaceholderCreateMixin):
     identifier = "gaffer.create"
     label = "Gaffer Create"
 
     def _parse_placeholder_node_data(self, node: Gaffer.Node):
-        placeholder_data = super(
-            GafferPlaceholderCreatePlugin, self
-        )._parse_placeholder_node_data(node)
+        placeholder_data = super(GafferPlaceholderCreatePlugin, self)._parse_placeholder_node_data(node)
 
         nb_children = 0
         if "nb_children" in node["user"]:
@@ -44,7 +27,7 @@ class GafferPlaceholderCreatePlugin(
             siblings = node["user"]["siblings"].getValue()
         placeholder_data["siblings"] = siblings
 
-        node_full_name = node.fullName()
+        node_full_name = get_full_name(node)
         placeholder_data["group_name"] = node_full_name.rpartition(".")[0]
         placeholder_data["last_loaded"] = []
         placeholder_data["delete"] = False
@@ -59,17 +42,12 @@ class GafferPlaceholderCreatePlugin(
         for node_name, node in scene_placeholders.items():
             plug_identifier = node["user"]["plugin_identifier"]
 
-            if (
-                plug_identifier is None
-                or plug_identifier.getValue() != self.identifier
-            ):
+            if plug_identifier is None or plug_identifier.getValue() != self.identifier:
                 continue
 
             placeholder_data = self._parse_placeholder_node_data(node)
 
-            output.append(
-                CreatePlaceholderItem(node_name, placeholder_data, self)
-            )
+            output.append(CreatePlaceholderItem(node_name, placeholder_data, self))
 
         return output
 
@@ -103,19 +81,15 @@ class GafferPlaceholderCreatePlugin(
 
         placeholder.data["delete"] = True
 
-        nodes_created = self._move_to_placeholder_group(
-            placeholder, nodes_created
-        )
+        nodes_created = self._move_to_placeholder_group(placeholder, nodes_created)
         placeholder.data["last_created"] = nodes_created
-        refresh_nodes(nodes_created)
 
         # positioning of the created nodes
-        min_x, min_y, _, _ = get_extreme_positions(nodes_created)
+        min_x, min_y, _, _ = get_nodes_bbox(nodes_created)
         for node in nodes_created:
             xpos = (node.xpos() - min_x) + placeholder_node.xpos()
             ypos = (node.ypos() - min_y) + placeholder_node.ypos()
             node.setXYpos(xpos, ypos)
-        refresh_nodes(nodes_created)
 
         # fix the problem of z_order for backdrops
         self._fix_z_order(placeholder)
@@ -139,7 +113,6 @@ class GafferPlaceholderCreatePlugin(
             # dimensions and siblings names
 
             siblings = get_nodes_by_names(placeholder.data["siblings"])
-            refresh_nodes(siblings)
             copies = self._create_sib_copies(placeholder)
             new_nodes = list(copies.values())  # copies nodes
             self._update_nodes(new_nodes, nodes_created)
@@ -148,11 +121,7 @@ class GafferPlaceholderCreatePlugin(
             imprint(placeholder_node, {"siblings": new_nodes_name})
             self._set_copies_connections(placeholder, copies)
 
-            self._update_nodes(
-                root.children(),
-                new_nodes + nodes_created,
-                20
-            )
+            self._update_nodes(root.children(), new_nodes + nodes_created, 20)
 
             new_siblings = get_names_from_nodes(new_nodes)
             placeholder.data["siblings"] = new_siblings
@@ -161,12 +130,10 @@ class GafferPlaceholderCreatePlugin(
             # if the placeholder doesn't have siblings, the created
             # nodes will be placed in a free space
 
-            xpointer, ypointer = find_free_space_to_paste_nodes(
-                nodes_created, direction="bottom", offset=200
-            )
+            xpointer, ypointer = find_free_space_to_paste_nodes(nodes_created, direction="bottom", offset=200)
             node = Gaffer.Node()
             reset_selection()
-            del(node)
+            del node
             for node in nodes_created:
                 xpos = (node.xpos() - min_x) + xpointer
                 ypos = (node.ypos() - min_y) + ypointer
@@ -174,7 +141,6 @@ class GafferPlaceholderCreatePlugin(
 
         placeholder.data["nb_children"] += 1
         reset_selection()
-
 
     def _move_to_placeholder_group(self, placeholder, nodes_created):
         """
@@ -224,8 +190,7 @@ class GafferPlaceholderCreatePlugin(
         max_order = max(sib_orders)
         for backdrop_node in created_backdrops:
             z_order = backdrop_node.knob("z_order").getValue()
-            backdrop_node.knob("z_order").setValue(
-                z_order + max_order - min_order + 1)
+            backdrop_node.knob("z_order").setValue(z_order + max_order - min_order + 1)
 
     def _imprint_siblings(self, placeholder):
         """
@@ -239,12 +204,8 @@ class GafferPlaceholderCreatePlugin(
         for node in created_nodes:
             node_knobs = node.knobs()
 
-            if (
-                "is_placeholder" not in node_knobs
-                or (
-                    "is_placeholder" in node_knobs
-                    and node.knob("is_placeholder").value()
-                )
+            if "is_placeholder" not in node_knobs or (
+                "is_placeholder" in node_knobs and node.knob("is_placeholder").value()
             ):
                 siblings = list(created_nodes_set - {node})
                 siblings_name = get_names_from_nodes(siblings)
@@ -255,7 +216,6 @@ class GafferPlaceholderCreatePlugin(
         """Add initial positions and dimensions to the attributes"""
 
         for node in nuke.allNodes():
-            refresh_node(node)
             imprint(node, {"x_init": node.xpos(), "y_init": node.ypos()})
             node.knob("x_init").setVisible(False)
             node.knob("y_init").setVisible(False)
@@ -265,11 +225,8 @@ class GafferPlaceholderCreatePlugin(
                 imprint(node, {"w_init": width, "h_init": height})
                 node.knob("w_init").setVisible(False)
                 node.knob("h_init").setVisible(False)
-            refresh_node(node)
 
-    def _update_nodes(
-        self, placeholder, nodes, considered_nodes, offset_y=None
-    ):
+    def _update_nodes(self, placeholder, nodes, considered_nodes, offset_y=None):
         """Adjust backdrop nodes dimensions and positions.
 
         Considering some nodes sizes.
@@ -283,7 +240,7 @@ class GafferPlaceholderCreatePlugin(
 
         placeholder_node = nuke.toNode(placeholder.scene_identifier)
 
-        min_x, min_y, max_x, max_y = get_extreme_positions(considered_nodes)
+        min_x, min_y, max_x, max_y = get_nodes_bbox(considered_nodes)
 
         diff_x = diff_y = 0
         contained_nodes = []  # for backdrops
@@ -298,7 +255,7 @@ class GafferPlaceholderCreatePlugin(
             min_y = placeholder_node.ypos()
         else:
             siblings = get_nodes_by_names(placeholder.data["siblings"])
-            minX, _, maxX, _ = get_extreme_positions(siblings)
+            minX, _, maxX, _ = get_nodes_bbox(siblings)
             diff_y = max_y - min_y + 20
             diff_x = abs(max_x - min_x - maxX + minX)
             contained_nodes = considered_nodes
@@ -307,20 +264,12 @@ class GafferPlaceholderCreatePlugin(
             return
 
         for node in nodes:
-            refresh_node(node)
 
-            if (
-                node == placeholder_node
-                or node in considered_nodes
-            ):
+            if node == placeholder_node or node in considered_nodes:
                 continue
 
-            if (
-                not isinstance(node, nuke.BackdropNode)
-                or (
-                    isinstance(node, nuke.BackdropNode)
-                    and not set(contained_nodes) <= set(node.getNodes())
-                )
+            if not isinstance(node, nuke.BackdropNode) or (
+                isinstance(node, nuke.BackdropNode) and not set(contained_nodes) <= set(node.getNodes())
             ):
                 if offset_y is None and node.xpos() >= min_x:
                     node.setXpos(node.xpos() + diff_x)
@@ -334,16 +283,12 @@ class GafferPlaceholderCreatePlugin(
                 node.knob("bdwidth").setValue(width + diff_x)
                 node.knob("bdheight").setValue(height + diff_y)
 
-            refresh_node(node)
-
     def _set_created_connections(self, placeholder):
         """
         set inputs and outputs of created nodes"""
 
         placeholder_node = nuke.toNode(placeholder.scene_identifier)
-        input_node, output_node = get_group_io_nodes(
-            placeholder.data["last_created"]
-        )
+        input_node, output_node = get_group_io_nodes(placeholder.data["last_created"])
         for node in placeholder_node.dependent():
             for idx in range(node.inputs()):
                 if node.input(idx) == placeholder_node and output_node:
@@ -355,7 +300,7 @@ class GafferPlaceholderCreatePlugin(
                     input_node.setInput(0, node)
 
     def _create_sib_copies(self, placeholder):
-        """ creating copies of the palce_holder siblings (the ones who were
+        """creating copies of the palce_holder siblings (the ones who were
         created with it) for the new nodes added
 
         Returns :
@@ -375,7 +320,6 @@ class GafferPlaceholderCreatePlugin(
                 h_init = new_node.knob("h_init").getValue()
                 new_node.knob("bdwidth").setValue(w_init)
                 new_node.knob("bdheight").setValue(h_init)
-                refresh_node(node)
 
             if "repre_id" in node.knobs().keys():
                 node.removeKnob(node.knob("repre_id"))
@@ -389,9 +333,7 @@ class GafferPlaceholderCreatePlugin(
             copies (dict): Copied nodes by their names.
         """
 
-        last_input, last_output = get_group_io_nodes(
-            placeholder.data["last_created"]
-        )
+        last_input, last_output = get_group_io_nodes(placeholder.data["last_created"])
         siblings = get_nodes_by_names(placeholder.data["siblings"])
         siblings_input, siblings_output = get_group_io_nodes(siblings)
         copy_input = copies[siblings_input.name()]

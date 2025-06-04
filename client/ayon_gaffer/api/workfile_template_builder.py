@@ -1,5 +1,5 @@
 import collections
-import Gaffer, GafferUI, imath
+import Gaffer, GafferUI, GafferScene, imath
 from ayon_core.pipeline import registered_host
 from ayon_core.pipeline.workfile.workfile_template_builder import (
     AbstractTemplateBuilder,
@@ -39,6 +39,9 @@ class GafferTemplateBuilder(AbstractTemplateBuilder):
         return True
 
 
+# todo put this in api
+
+
 class GafferPlaceholderPlugin(PlaceholderPlugin):
     node_color = imath.Color4f(0.8, 0.393973, 0.0342622, 1)  # todo get the right color from nuke
 
@@ -64,7 +67,9 @@ class GafferPlaceholderPlugin(PlaceholderPlugin):
                     if "empty" in node["user"] and node["user"]["empty"].getValue():
                         continue
 
-                    placeholder_nodes[node.fullName()] = node
+                    # todo here I need to get the name until the sccript node
+                    # todo not gui.ScriptNode.Placeholder
+                    placeholder_nodes[get_full_name(node)] = node
 
             self.builder.set_shared_populate_data("placeholder_nodes", placeholder_nodes)
         return placeholder_nodes
@@ -74,6 +79,20 @@ class GafferPlaceholderPlugin(PlaceholderPlugin):
 
         script = get_root()
         placeholder = Gaffer.Node()
+        #  todo maybe I need to add untyped plugs so I can make the connections easier if it is a 2d or a scene plug
+        placeholder.addChild(
+            GafferScene.ScenePlug(
+                "in",
+                flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic,
+            )
+        )
+        placeholder.addChild(
+            GafferScene.ScenePlug(
+                "out",
+                direction=Gaffer.Plug.Direction.Out,
+                flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic,
+            )
+        )
 
         script.addChild(placeholder)
 
@@ -136,7 +155,7 @@ def update_placeholder(script_node):
     }
     placeholder_items = []
     for node in script_node.selection():
-        node_name = node.fullName()
+        node_name = get_full_name(node)
         if node_name in placeholder_items_by_id:
             placeholder_items.append(placeholder_items_by_id[node_name])
 
