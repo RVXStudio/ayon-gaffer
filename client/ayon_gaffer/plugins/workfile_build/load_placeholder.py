@@ -1,11 +1,11 @@
-import Gaffer
+import Gaffer, GafferUI, imath
 
 from ayon_core.pipeline.workfile.workfile_template_builder import (
     LoadPlaceholderItem,
     PlaceholderLoadMixin,
 )
 from ayon_gaffer.api import get_root
-from ayon_gaffer.api.lib import get_nodes_bbox, get_nodes_by_names, get_full_name, get_names_from_nodes
+from ayon_gaffer.api.lib import get_nodes_bbox, get_nodes_by_names, get_full_name, get_names_from_nodes, find_free_space_to_paste_nodes
 from ayon_gaffer.api.pipeline import imprint
 
 from ayon_gaffer.api.workfile_template_builder import GafferPlaceholderPlugin
@@ -85,14 +85,8 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
         """
         # deselect all selected nodes
         root = get_root()
-        # todo
-        import sys;sys.path.append("/opt/pycharm-2025.1.1.1/debug-eggs/pydevd-pycharm.egg")
-        import pydevd_pycharm
-        pydevd_pycharm.settrace('localhost', port=3000, stdoutToServer=True, stderrToServer=True)
         placeholder_node = root[placeholder.scene_identifier]
-
         # getting the latest nodes added
-        # TODO get from shared populate data!
         nodes_init = placeholder.data["nodes_init"]
         nodes_loaded = list(set(root.children()) - set(nodes_init))
         self.log.debug("Loaded nodes: {}".format(nodes_loaded))
@@ -104,12 +98,14 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
         placeholder.data["last_loaded"] = nodes_loaded
 
         # positioning of the loaded nodes
-        min_x, min_y, _, _ = get_nodes_bbox(nodes_loaded)
+        graph = GafferUI.GraphGadget(root)
+        graph.getLayout().layoutNodes(graph)
+        min_x, min_y, _, _ = get_nodes_bbox(root, nodes_loaded)
         for node in nodes_loaded:
-            # todo use graph.GetNodePosition instead of __uiPosition because it is not created at this point
-            xpos = (node["__uiPosition"]["x"].getValue() - min_x) + placeholder_node["__uiPosition"]["x"].getValue()
-            ypos = (node["__uiPosition"]["y"].getValue() - min_y) + placeholder_node["__uiPosition"]["y"].getValue()
-            node.setXYpos(xpos, ypos)
+
+            xpos = (graph.getNodePosition(node).x - min_x) + graph.getNodePosition(placeholder_node).x
+            ypos = (graph.getNodePosition(node).y - min_y) + graph.getNodePosition(placeholder_node).y
+            graph.setNodePosition(node, imath.V2f(xpos, ypos))
 
         if placeholder.data.get("keep_placeholder"):
             self._imprint_siblings(placeholder)
@@ -118,8 +114,7 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
             # save initial nodes positions and dimensions, update them
             # and set inputs and outputs of loaded nodes
             if placeholder.data.get("keep_placeholder"):
-                self._imprint_inits()
-                self._update_nodes(placeholder, root.children(), nodes_loaded)
+                self._imprint_inits(graph)
 
             self._set_loaded_connections(placeholder)
 
@@ -131,13 +126,10 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
             siblings = get_nodes_by_names(placeholder.data["siblings"])
             copies = self._create_sib_copies(placeholder)
             new_nodes = list(copies.values())  # copies nodes
-            self._update_nodes(new_nodes, nodes_loaded)
             placeholder_node.removeKnob(placeholder_node.knob("siblings"))
             new_nodes_name = get_names_from_nodes(new_nodes)
             imprint(placeholder_node, {"siblings": new_nodes_name})
             self._set_copies_connections(placeholder, copies)
-
-            self._update_nodes(root.children(), new_nodes + nodes_loaded, 20)
 
             new_siblings = get_names_from_nodes(new_nodes)
             placeholder.data["siblings"] = new_siblings
@@ -149,15 +141,13 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
             xpointer, ypointer = find_free_space_to_paste_nodes(nodes_loaded, direction="bottom", offset=200)
             # todo is it really needed for gaffer
             node = Gaffer.Node("PLACEHOLDER")
-            reset_selection()
             del node
             for node in nodes_loaded:
-                xpos = (node["__uiPosition"]["x"].getValue() - min_x) + xpointer
-                ypos = (node["__uiPosition"]["y"].getValue() - min_y) + ypointer
+                xpos = (graph.getNodePosition(node).x - min_x) + xpointer
+                ypos = (graph.getNodePosition(node).y - min_y) + ypointer
                 node.setXYpos(xpos, ypos)
 
         placeholder.data["nb_children"] += 1
-        reset_selection()
 
     def _imprint_siblings(self, placeholder):
         """
@@ -185,78 +175,13 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
                 siblings = {"siblings": siblings_name}
                 imprint(node, siblings)
 
-    def _imprint_inits(self):
+    def _imprint_inits(self, graph):
         """Add initial positions and dimensions to the attributes"""
 
         for node in get_root().children():
             imprint(
-                node, {"x_init": node["__uiPosition"]["x"].getValue(), "y_init": node["__uiPosition"]["y"].getValue()}
+                node, {"x_init": graph.getNodePostion(node).x, "y_init": graph.getNodePosition(node).y}
             )
-            width = node.screenWidth()
-            height = node.screenHeight()
-            if "bdwidth" in node.knobs():
-                imprint(node, {"w_init": width, "h_init": height})
-                node.knob("w_init").setVisible(False)
-                node.knob("h_init").setVisible(False)
-
-    def _update_nodes(self, placeholder, nodes, considered_nodes, offset_y=None):
-        """Adjust backdrop nodes dimensions and positions.
-
-        Considering some nodes sizes.
-
-        Args:
-            nodes (list): list of nodes to update
-            considered_nodes (list): list of nodes to consider while updating
-                positions and dimensions
-            offset (int): distance between copies
-        """
-
-        placeholder_node = get_root()[placeholder.scene_identifier]
-
-        min_x, min_y, max_x, max_y = get_nodes_bbox(considered_nodes)
-
-        diff_x = diff_y = 0
-        contained_nodes = []  # for backdrops
-
-        if offset_y is None:
-            width_ph = placeholder_node.screenWidth()
-            height_ph = placeholder_node.screenHeight()
-            diff_y = max_y - min_y - height_ph
-            diff_x = max_x - min_x - width_ph
-            contained_nodes = [placeholder_node]
-            min_x = placeholder_node["__uiPosition"]["x"].getValue()
-            min_y = placeholder_node["__uiPosition"]["y"].getValue()
-        else:
-            siblings = get_nodes_by_names(placeholder.data["siblings"])
-            minX, _, maxX, _ = get_nodes_bbox(siblings)
-            diff_y = max_y - min_y + 20
-            diff_x = abs(max_x - min_x - maxX + minX)
-            contained_nodes = considered_nodes
-
-        if diff_y <= 0 and diff_x <= 0:
-            return
-
-        for node in nodes:
-
-            if node == placeholder_node or node in considered_nodes:
-                continue
-
-            if not isinstance(node, nuke.BackdropNode) or (
-                isinstance(node, nuke.BackdropNode) and not set(contained_nodes) <= set(node.getNodes())
-            ):
-                if offset_y is None and node["__uiPosition"]["x"].getValue() >= min_x:
-                    node.setXpos(node["__uiPosition"]["x"].getValue() + diff_x)
-
-                if node["__uiPosition"]["y"].getValue() >= min_y:
-                    node.setYpos(node["__uiPosition"]["y"].getValue() + diff_y)
-
-            else:
-                width = node.screenWidth()
-                height = node.screenHeight()
-                node.knob("bdwidth").setValue(width + diff_x)
-                node.knob("bdheight").setValue(height + diff_y)
-
-            refresh_node(node)
 
     def _set_loaded_connections(self, placeholder):
         """
@@ -295,7 +220,6 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
                 h_init = new_node.knob("h_init").getValue()
                 new_node.knob("bdwidth").setValue(w_init)
                 new_node.knob("bdheight").setValue(h_init)
-                refresh_node(node)
 
             if "repre_id" in node.knobs().keys():
                 node.removeKnob(node.knob("repre_id"))
