@@ -8,6 +8,7 @@ from ayon_core.pipeline.workfile.workfile_template_builder import (
 from ayon_core.tools.workfile_template_build import WorkfileBuildPlaceholderDialog
 from .pipeline import imprint
 from ayon_gaffer.api import get_root
+from ayon_gaffer.api.lib import get_full_name
 
 PLACEHOLDER_SET = "PLACEHOLDERS_SET"
 

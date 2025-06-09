@@ -85,6 +85,10 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
         """
         # deselect all selected nodes
         root = get_root()
+        # todo
+        import sys;sys.path.append("/opt/pycharm-2025.1.1.1/debug-eggs/pydevd-pycharm.egg")
+        import pydevd_pycharm
+        pydevd_pycharm.settrace('localhost', port=3000, stdoutToServer=True, stderrToServer=True)
         placeholder_node = root[placeholder.scene_identifier]
 
         # getting the latest nodes added
@@ -102,6 +106,7 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
         # positioning of the loaded nodes
         min_x, min_y, _, _ = get_nodes_bbox(nodes_loaded)
         for node in nodes_loaded:
+            # todo use graph.GetNodePosition instead of __uiPosition because it is not created at this point
             xpos = (node["__uiPosition"]["x"].getValue() - min_x) + placeholder_node["__uiPosition"]["x"].getValue()
             ypos = (node["__uiPosition"]["y"].getValue() - min_y) + placeholder_node["__uiPosition"]["y"].getValue()
             node.setXYpos(xpos, ypos)
