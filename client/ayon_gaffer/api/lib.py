@@ -680,30 +680,6 @@ def get_full_name(node):
         parent = parent.parent()
     return name
 
-def get_nodes_by_names(root: Gaffer.Node, names: List[str]) -> List[Gaffer.Node]:
-    """
-    Get a list of nodes based on their names, including nested paths.
-
-    Examples:
-        >>> get_nodes_by_names(root, ["Box.Node", "Box"])
-        [Gaffer.Node( "Node" ), Gaffer.Node( "Box" )]]
-    """
-    nodes = []
-    for name in names:
-        try:
-            # Split the name by hierarchy (e.g., "Box.Node" -> ["Box", "Node"])
-            parts = name.split(".")
-            node = root
-            for part in parts:
-                node = node[part]
-            nodes.append(node)
-        except KeyError:
-            continue
-    return nodes
-
-def get_names_from_nodes(nodes):
-    return [get_full_name(node) for node in nodes]
-
 def get_io_plugs(node):
     input_plugs, output_plugs = [], []
     for plug in node.children():
@@ -723,88 +699,6 @@ def get_io_plugs(node):
                         output_plugs.append(output_)
 
     return input_plugs, output_plugs
-
-def find_free_space_to_paste_nodes(
-    nodes,
-    script_node,
-    graph=None,
-    direction="right",
-    offset=300
-):
-    """
-    For getting coordinates in DAG (node graph) for placing new nodes
-
-    Arguments:
-        nodes (list): list of nuke.Node objects
-        group (nuke.Node) [optional]: object in which context it is
-        direction (str) [optional]: where we want it to be placed
-                                    [left, right, top, bottom]
-        offset (int) [optional]: what offset it is from rest of nodes
-
-    Returns:
-        xpos (int): x coordinace in DAG
-        ypos (int): y coordinace in DAG
-    """
-    if len(nodes) == 0:
-        return 0, 0
-    if graph is None:
-        import GafferUI
-        graph = GafferUI.GraphGadget(script_node)
-        graph.getLayout().layoutNodes(graph)
-
-    group_xpos = list()
-    group_ypos = list()
-
-    nodes_xpos = [graph.getNodePosition(n).x for n in nodes]
-    nodes_ypos = [graph.getNodePosition(n).y for n in nodes]
-
-    # get complete screen size of all nodes to be placed in
-    nodes_screen_width = max(nodes_xpos) - min(nodes_xpos)
-    nodes_screen_heigth = max(nodes_ypos) - min(nodes_ypos)
-
-    # get screen size (r,l,t,b) of all nodes in `group`
-    group_xpos = [graph.getNodePosition(n).x for n in script_node.children() if n not in nodes]
-    group_ypos = [graph.getNodePosition(n).y for n in script_node.children() if n not in nodes]
-
-    if len(group_xpos) == 0:
-        group_xpos = [0]
-    if len(group_ypos) == 0:
-        group_ypos = [0]
-
-    if direction == "left":
-        xpos = min(group_xpos) - abs(nodes_screen_width) - abs(offset)
-        ypos = min(group_ypos)
-        return xpos, ypos
-    elif direction == "right":
-        xpos = max(group_xpos) + abs(offset)
-        ypos = min(group_ypos)
-        return xpos, ypos
-    elif direction == "top":
-        xpos = min(group_xpos)
-        ypos = min(group_ypos) - abs(nodes_screen_heigth) - abs(offset)
-        return xpos, ypos
-    elif direction == "bottom":
-        xpos = min(group_xpos)
-        ypos = max(group_ypos) + abs(offset)
-        return xpos, ypos
-    return 0, 0
-
-
-def get_nodes_bbox(script_node, nodes):
-    """Get the 4 numbers that represent the box of a group of nodes."""
-    import GafferUI
-    if not nodes:
-        raise ValueError("there is no nodes in the list")
-
-    g = GafferUI.GraphGadget(script_node)
-    g.getLayout().layoutNodes(g)
-
-    nodes_xpos = [g.getNodePosition(n).x for n in nodes]
-    nodes_ypos = [g.getNodePosition(n).y for n in nodes]
-
-    min_x, min_y = (min(nodes_xpos), min(nodes_ypos))
-    max_x, max_y = (max(nodes_xpos), max(nodes_ypos))
-    return min_x, min_y, max_x, max_y
 
 def insert_plug(node, plug, position):
     """
