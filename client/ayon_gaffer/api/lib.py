@@ -704,6 +704,26 @@ def get_nodes_by_names(root: Gaffer.Node, names: List[str]) -> List[Gaffer.Node]
 def get_names_from_nodes(nodes):
     return [get_full_name(node) for node in nodes]
 
+def get_io_plugs(node):
+    input_plugs, output_plugs = [], []
+    for plug in node.children():
+        if plug.typeName() in ("GafferScene::ScenePlug", "GafferDispatch::TaskNode::TaskPlug", "Gaffer::ArrayPlug"):
+            if plug.getName() == "preTasks":
+                for x in plug.children():
+                    in_ = x.getInput()
+                    if in_:
+                        input_plugs.append(in_)
+            else:
+                if plug.direction() == Gaffer.Plug.Direction.In:
+                    in_ = plug.getInput()
+                    if in_:
+                        input_plugs.append(in_)
+                elif plug.direction() == Gaffer.Plug.Direction.Out:
+                    for output_ in plug.outputs():
+                        output_plugs.append(output_)
+
+    return input_plugs, output_plugs
+
 def find_free_space_to_paste_nodes(
     nodes,
     script_node,

@@ -1,5 +1,5 @@
 import collections
-import Gaffer, GafferUI, GafferScene, imath
+import Gaffer, GafferUI, GafferScene, GafferDispatch, imath
 from ayon_core.pipeline import registered_host
 from ayon_core.pipeline.workfile.workfile_template_builder import (
     AbstractTemplateBuilder,
@@ -8,9 +8,7 @@ from ayon_core.pipeline.workfile.workfile_template_builder import (
 from ayon_core.tools.workfile_template_build import WorkfileBuildPlaceholderDialog
 from .pipeline import imprint
 from ayon_gaffer.api import get_root
-from ayon_gaffer.api.lib import get_full_name
-
-PLACEHOLDER_SET = "PLACEHOLDERS_SET"
+from ayon_gaffer.api.lib import get_full_name, get_io_plugs
 
 
 def get_main_window():
@@ -80,20 +78,42 @@ class GafferPlaceholderPlugin(PlaceholderPlugin):
 
         script = get_root()
         placeholder = Gaffer.Node()
-        #  todo maybe I need to add untyped plugs so I can make the connections easier if it is a 2d or a scene plug
-        placeholder.addChild(
-            GafferScene.ScenePlug(
-                "in",
-                flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic,
+        creator_id = placeholder_data["creator"].split(".")[-1]
+
+        # todo instead try to find the original creator node and their plugs
+
+        # todo this does not work
+        # creators = self.builder._collect_creators()
+
+        if creator_id in ("render", "render2d"):
+            placeholder.addChild(
+                GafferDispatch.TaskNode.TaskPlug(
+                    "in",
+                    flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic,
+                )
             )
-        )
-        placeholder.addChild(
-            GafferScene.ScenePlug(
-                "out",
-                direction=Gaffer.Plug.Direction.Out,
-                flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic,
+            placeholder.addChild(
+                GafferDispatch.TaskNode.TaskPlug(
+                    "out",
+                    direction=Gaffer.Plug.Direction.Out,
+                    flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic,
+                )
             )
-        )
+
+        else:
+            placeholder.addChild(
+                GafferScene.ScenePlug(
+                    "in",
+                    flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic,
+                )
+            )
+            placeholder.addChild(
+                GafferScene.ScenePlug(
+                    "out",
+                    direction=Gaffer.Plug.Direction.Out,
+                    flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic,
+                )
+            )
 
         script.addChild(placeholder)
 
@@ -120,19 +140,50 @@ class GafferPlaceholderPlugin(PlaceholderPlugin):
 
     def delete_placeholder(self, placeholder):
         """Remove placeholder if building was successful"""
-        # todo check if the placeholder is empty
-        node = get_root()[placeholder.scene_identifier]
-        del node
+        root = get_root()
+        try:
+            node = root[placeholder.scene_identifier]
+            root.removeChild(node)
+        except KeyError:
+            pass
+
+    def post_placeholder_process(self, placeholder, failed):
+        """Cleanup placeholder after load of its corresponding representations.
+
+        Args:
+            placeholder (PlaceholderItem): Item which was just used to load
+                representation.
+            failed (bool): Loading of representation failed.
+        """
+        root = get_root()
+        placeholder_node = root[placeholder.scene_identifier]
+        nodes_init = placeholder.data["nodes_init"]
+        nodes_loaded = list(set(root.children()) - set(nodes_init))
+        if not nodes_loaded:
+            return
+        self.log.debug("Loaded nodes: {}".format(nodes_loaded))
+
+        node_loaded = nodes_loaded[0]
+
+        out_plugs_to_connect, in_plugs_to_connect = get_io_plugs(placeholder_node)
+
+        for in_plug_to_connect in in_plugs_to_connect:
+            if "out" in node_loaded:
+                in_plug_to_connect.setInput(node_loaded["out"])
+            elif "task" in node_loaded:
+                in_plug_to_connect.setInput(node_loaded["task"])
+
+        for out_plug_to_connect in out_plugs_to_connect:
+            if "in" in node_loaded:
+                node_loaded["in"].setInput(out_plug_to_connect)
+            elif "preTasks" in node_loaded:
+                for p in node_loaded["preTasks"].children():
+                    p.setInput(out_plug_to_connect)
 
 
 def build_workfile_template(*args, **kwargs):
     builder = GafferTemplateBuilder(registered_host())
-    built_template = builder.build_template()
-
-    # todo set the context when the scene is built
-    # if built_template:
-    # set all settings to shot context default
-    # WorkfileSettings().set_context_settings()
+    builder.build_template()
 
 
 def update_workfile_template(*args):
