@@ -8,7 +8,7 @@ from ayon_core.pipeline.workfile.workfile_template_builder import (
 from ayon_core.tools.workfile_template_build import WorkfileBuildPlaceholderDialog
 from .pipeline import imprint
 from ayon_gaffer.api import get_root
-from ayon_gaffer.api.lib import get_full_name, get_io_plugs
+from ayon_gaffer.api.lib import get_full_name, get_up_and_downstream_plugs, get_io_plugs, copy_plug
 
 
 def get_main_window():
@@ -31,18 +31,13 @@ class GafferTemplateBuilder(AbstractTemplateBuilder):
             bool: Whether the template was successfully imported or not
         """
 
-        # TODO check if the template is already imported
         script_node = get_root()
         script_node.importFile(path, continueOnError=True)
 
         return True
 
 
-# todo put this in api
-
-
 class GafferPlaceholderPlugin(PlaceholderPlugin):
-    node_color = imath.Color4f(0.8, 0.393973, 0.0342622, 1)  # todo get the right color from nuke
 
     def _collect_scene_placeholders(self):
         # Cache placeholder data to shared data
@@ -66,8 +61,6 @@ class GafferPlaceholderPlugin(PlaceholderPlugin):
                     if "empty" in node["user"] and node["user"]["empty"].getValue():
                         continue
 
-                    # todo here I need to get the name until the sccript node
-                    # todo not gui.ScriptNode.Placeholder
                     placeholder_nodes[get_full_name(node)] = node
 
             self.builder.set_shared_populate_data("placeholder_nodes", placeholder_nodes)
@@ -78,51 +71,28 @@ class GafferPlaceholderPlugin(PlaceholderPlugin):
 
         script = get_root()
         placeholder = Gaffer.Node()
-        creator_id = placeholder_data["creator"].split(".")[-1]
 
-        # todo instead try to find the original creator node and their plugs
+        creators_by_name = self.builder.get_creators_by_name()
+        creator = creators_by_name.get(placeholder_data["creator"])
+        if not creator:
+            raise ValueError("Creator not found: {}".format(placeholder_data["creator"]))
 
-        # todo this does not work
-        # creators = self.builder._collect_creators()
+        tmp_node = creator._create_node(product_name="tmp_node", pre_create_data={}, script=script)
 
-        if creator_id in ("render", "render2d"):
-            placeholder.addChild(
-                GafferDispatch.TaskNode.TaskPlug(
-                    "in",
-                    flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic,
-                )
-            )
-            placeholder.addChild(
-                GafferDispatch.TaskNode.TaskPlug(
-                    "out",
-                    direction=Gaffer.Plug.Direction.Out,
-                    flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic,
-                )
-            )
+        plugs = get_io_plugs(tmp_node)
 
-        else:
-            placeholder.addChild(
-                GafferScene.ScenePlug(
-                    "in",
-                    flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic,
-                )
-            )
-            placeholder.addChild(
-                GafferScene.ScenePlug(
-                    "out",
-                    direction=Gaffer.Plug.Direction.Out,
-                    flags=Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic,
-                )
-            )
+        for source_plug in plugs:
+            copy_plug(source_plug, placeholder)
+
+        script.removeChild(tmp_node)
 
         script.addChild(placeholder)
 
-        placeholder.setName("PLACEHOLDER")
-        # placeholder["color"].setValue(self.node_color)  # todo color is not available on Node
+        placeholder.setName(f"PLACEHOLDER_{placeholder_data['creator'].split('.')[-1]}")
+        Gaffer.Metadata.registerValue(placeholder, "nodeGadget:color", imath.Color3f(0.6, 0.2, 0.2))
 
         imprint(placeholder, placeholder_data)
         imprint(placeholder, {"is_placeholder": True})
-        # placeholder.knob("is_placeholder").setVisible(False)  # todo set metadata
 
     def update_placeholder(self, placeholder_item, placeholder_data):
         node = get_root()[placeholder_item.scene_identifier]
@@ -145,7 +115,7 @@ class GafferPlaceholderPlugin(PlaceholderPlugin):
             node = root[placeholder.scene_identifier]
             root.removeChild(node)
         except KeyError:
-            pass
+            self.log.error("Placeholder node not found: {}".format(placeholder.scene_identifier))
 
     def post_placeholder_process(self, placeholder, failed):
         """Cleanup placeholder after load of its corresponding representations.
@@ -160,12 +130,14 @@ class GafferPlaceholderPlugin(PlaceholderPlugin):
         nodes_init = placeholder.data["nodes_init"]
         nodes_loaded = list(set(root.children()) - set(nodes_init))
         if not nodes_loaded:
+            self.log.error("No nodes loaded after placeholder processing, nothing to connect.")
             return
+
         self.log.debug("Loaded nodes: {}".format(nodes_loaded))
 
         node_loaded = nodes_loaded[0]
 
-        out_plugs_to_connect, in_plugs_to_connect = get_io_plugs(placeholder_node)
+        out_plugs_to_connect, in_plugs_to_connect = get_up_and_downstream_plugs(placeholder_node)
 
         for in_plug_to_connect in in_plugs_to_connect:
             if "out" in node_loaded:
@@ -211,7 +183,6 @@ def update_placeholder(script_node):
         if node_name in placeholder_items_by_id:
             placeholder_items.append(placeholder_items_by_id[node_name])
 
-    # TODO show UI at least
     if len(placeholder_items) == 0:
         raise ValueError("No node selected")
 

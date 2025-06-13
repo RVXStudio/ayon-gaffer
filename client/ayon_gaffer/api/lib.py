@@ -5,6 +5,7 @@ from typing import Tuple, List, Optional
 
 import Gaffer
 import GafferScene
+import GafferDispatch
 import imath
 import PyOpenColorIO as OCIO
 
@@ -654,11 +655,11 @@ def copy_plug(plug, destination_node):
         for part in plug_parts:
             new_plug_parent = new_plug_parent[part]
 
-        new_plug = type(plug)(
-            plug.getName(),
-            defaultValue=plug.defaultValue(),
-            flags=plug.getFlags()
-        )
+        # Array plugs don't have default values
+        if hasattr(plug, "defaultValue"):
+            new_plug = type(plug)(name=plug.getName(), direction=plug.direction(), defaultValue=plug.defaultValue(), flags=plug.getFlags())
+        else:
+            new_plug = type(plug)(name=plug.getName(), direction=plug.direction(), flags=plug.getFlags())
         new_plug_parent.addChild(new_plug)
 
         metadata_keys = Gaffer.Metadata.registeredValues(plug)
@@ -670,6 +671,7 @@ def copy_plug(plug, destination_node):
         log.error(f"Could not copy plug: {plug.getName()} to"
                   f"{destination_node}: {err}")
 
+
 def get_full_name(node):
     # .fullName() returns gui.ScriptNode.Box.Node
     # here it returns only: Box.Node
@@ -680,25 +682,41 @@ def get_full_name(node):
         parent = parent.parent()
     return name
 
-def get_io_plugs(node):
-    input_plugs, output_plugs = [], []
+
+def get_io_plugs(node, types=("GafferScene::ScenePlug", "GafferDispatch::TaskNode::TaskPlug")):
+    result = []
     for plug in node.children():
-        if plug.typeName() in ("GafferScene::ScenePlug", "GafferDispatch::TaskNode::TaskPlug", "Gaffer::ArrayPlug"):
-            if plug.getName() == "preTasks":
-                for x in plug.children():
-                    in_ = x.getInput()
+        if plug.typeName() == "Gaffer::ArrayPlug":
+            result.append(plug)
+            for child_plug in plug.children():
+                if child_plug.typeName() in types:
+                    result.append(child_plug)
+        elif plug.typeName() in types:
+            result.append(plug)
+
+    return result
+
+def get_up_and_downstream_plugs(node, types=("GafferScene::ScenePlug", "GafferDispatch::TaskNode::TaskPlug")):
+    up_plugs, down_plugs = [], []
+    for plug in node.children():
+        if plug.typeName() in types:
+            if plug.typeName() == "Gaffer::ArrayPlug":
+                for p in plug.children():
+                    if p.typeName() not in types:
+                        continue
+                    in_ = p.getInput()
                     if in_:
-                        input_plugs.append(in_)
+                        up_plugs.append(in_)
             else:
                 if plug.direction() == Gaffer.Plug.Direction.In:
                     in_ = plug.getInput()
                     if in_:
-                        input_plugs.append(in_)
+                        up_plugs.append(in_)
                 elif plug.direction() == Gaffer.Plug.Direction.Out:
                     for output_ in plug.outputs():
-                        output_plugs.append(output_)
+                        down_plugs.append(output_)
 
-    return input_plugs, output_plugs
+    return up_plugs, down_plugs
 
 def insert_plug(node, plug, position):
     """
