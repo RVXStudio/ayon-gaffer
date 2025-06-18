@@ -76,6 +76,8 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         log.info(PUBLISH_PATH)
         log.info(LOAD_PATH)
         log.info(CREATE_PATH)
+        log.info(INVENTORY_PATH)
+        log.info(WORKFILE_BUILD_PATH)
 
         self._register_callbacks()
 

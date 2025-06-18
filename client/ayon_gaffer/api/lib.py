@@ -671,6 +671,8 @@ def copy_plug(plug, destination_node):
         log.error(f"Could not copy plug: {plug.getName()} to"
                   f"{destination_node}: {err}")
 
+    return new_plug
+
 
 def get_full_name(node):
     # .fullName() returns gui.ScriptNode.Box.Node
@@ -683,7 +685,7 @@ def get_full_name(node):
     return name
 
 
-def get_io_plugs(node, types=("GafferScene::ScenePlug", "GafferDispatch::TaskNode::TaskPlug")):
+def get_io_plugs(node, types=("GafferScene::ScenePlug", "GafferDispatch::TaskNode::TaskPlug", "GafferImage::ImagePlug")):
     result = []
     for plug in node.children():
         if plug.typeName() == "Gaffer::ArrayPlug":
@@ -696,7 +698,7 @@ def get_io_plugs(node, types=("GafferScene::ScenePlug", "GafferDispatch::TaskNod
 
     return result
 
-def get_up_and_downstream_plugs(node, types=("GafferScene::ScenePlug", "GafferDispatch::TaskNode::TaskPlug")):
+def get_up_and_downstream_plugs(node, types=("GafferScene::ScenePlug", "GafferDispatch::TaskNode::TaskPlug", "GafferImage::ImagePlug")):
     up_plugs, down_plugs = [], []
     for plug in node.children():
         if plug.typeName() in types:
@@ -717,6 +719,36 @@ def get_up_and_downstream_plugs(node, types=("GafferScene::ScenePlug", "GafferDi
                         down_plugs.append(output_)
 
     return up_plugs, down_plugs
+
+def get_plug_connection_mapping(node, types=("GafferScene::ScenePlug", "GafferDispatch::TaskNode::TaskPlug")):
+    connections = []
+    for plug in node.children():
+        if plug.typeName() == "Gaffer::ArrayPlug":
+            for child_plug in plug.children():
+                if child_plug.typeName() not in types:
+                    continue
+                if child_plug.direction() == Gaffer.Plug.Direction.In:
+                    in_plug = child_plug.getInput()
+                    if not in_plug:
+                        continue
+                    connections.append({"in":in_plug, "out": child_plug})
+
+                elif child_plug.direction() == Gaffer.Plug.Direction.Out:
+                    for out_plug in child_plug.outputs():
+                        connections.append({"in": child_plug, "out": out_plug})
+
+        elif plug.typeName() in types:
+            if plug.direction() == Gaffer.Plug.Direction.In:
+                in_plug = plug.getInput()
+                if not in_plug:
+                    continue
+                connections.append({"in": in_plug, "out": plug})
+
+            elif plug.direction() == Gaffer.Plug.Direction.Out:
+                for out_plug in plug.outputs():
+                    connections.append({"in": plug, "out": out_plug})
+    return connections
+
 
 def insert_plug(node, plug, position):
     """

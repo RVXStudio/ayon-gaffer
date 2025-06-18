@@ -1,12 +1,12 @@
-import imath
+import Gaffer, GafferScene, imath
 
 from ayon_core.pipeline.workfile.workfile_template_builder import (
     LoadPlaceholderItem,
     PlaceholderLoadMixin,
 )
 from ayon_gaffer.api import get_root
-from ayon_gaffer.api.lib import get_full_name
-
+from ayon_gaffer.api.lib import get_full_name, get_io_plugs, copy_plug
+from ayon_gaffer.api.pipeline import imprint
 from ayon_gaffer.api.workfile_template_builder import GafferPlaceholderPlugin
 
 
@@ -39,6 +39,42 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
 
     def _before_repre_load(self, placeholder, representation):
         placeholder.data["last_repre_id"] = representation["id"]
+
+    def create_placeholder(self, placeholder_data):
+        placeholder_data["plugin_identifier"] = self.identifier
+
+        script = get_root()
+        placeholder = Gaffer.Node()
+
+        loader = self.builder.get_loaders_by_name().get(placeholder_data["loader"])
+        if hasattr(loader, "node_class"):
+            tmp_node = loader.node_class()
+        else:
+            # if the loader class does not register a node type, we expect the default plugs
+            # to be scene plugs in and out like the group node
+            tmp_node = GafferScene.Group()
+
+        script.addChild(tmp_node)
+
+        plugs = get_io_plugs(tmp_node)
+
+        for source_plug in plugs:
+            new_plug = copy_plug(source_plug, placeholder)
+            flags = new_plug.getFlags()
+            # add dynamic plug so it is serialized
+            new_plug.setFlags(flags | Gaffer.Plug.Flags.Dynamic)
+
+        script.removeChild(tmp_node)
+
+        placeholder_name = placeholder_data['loader']
+
+        script.addChild(placeholder)
+
+        placeholder.setName(f"PLACEHOLDER_{placeholder_name}")
+        Gaffer.Metadata.registerValue(placeholder, "nodeGadget:color", imath.Color3f(0.6, 0.2, 0.2))
+
+        imprint(placeholder, placeholder_data)
+        imprint(placeholder, {"is_placeholder": True})
 
     def collect_placeholders(self):
         output = []

@@ -1,5 +1,5 @@
 import collections
-import Gaffer, GafferUI, GafferScene, GafferDispatch, imath
+import Gaffer, GafferUI, imath
 from ayon_core.pipeline import registered_host
 from ayon_core.pipeline.workfile.workfile_template_builder import (
     AbstractTemplateBuilder,
@@ -8,7 +8,7 @@ from ayon_core.pipeline.workfile.workfile_template_builder import (
 from ayon_core.tools.workfile_template_build import WorkfileBuildPlaceholderDialog
 from .pipeline import imprint
 from ayon_gaffer.api import get_root
-from ayon_gaffer.api.lib import get_full_name, get_up_and_downstream_plugs, get_io_plugs, copy_plug
+from ayon_gaffer.api.lib import get_full_name, get_plug_connection_mapping
 
 
 def get_main_window():
@@ -66,33 +66,7 @@ class GafferPlaceholderPlugin(PlaceholderPlugin):
             self.builder.set_shared_populate_data("placeholder_nodes", placeholder_nodes)
         return placeholder_nodes
 
-    def create_placeholder(self, placeholder_data):
-        placeholder_data["plugin_identifier"] = self.identifier
 
-        script = get_root()
-        placeholder = Gaffer.Node()
-
-        creators_by_name = self.builder.get_creators_by_name()
-        creator = creators_by_name.get(placeholder_data["creator"])
-        if not creator:
-            raise ValueError("Creator not found: {}".format(placeholder_data["creator"]))
-
-        tmp_node = creator._create_node(product_name="tmp_node", pre_create_data={}, script=script)
-
-        plugs = get_io_plugs(tmp_node)
-
-        for source_plug in plugs:
-            copy_plug(source_plug, placeholder)
-
-        script.removeChild(tmp_node)
-
-        script.addChild(placeholder)
-
-        placeholder.setName(f"PLACEHOLDER_{placeholder_data['creator'].split('.')[-1]}")
-        Gaffer.Metadata.registerValue(placeholder, "nodeGadget:color", imath.Color3f(0.6, 0.2, 0.2))
-
-        imprint(placeholder, placeholder_data)
-        imprint(placeholder, {"is_placeholder": True})
 
     def update_placeholder(self, placeholder_item, placeholder_data):
         node = get_root()[placeholder_item.scene_identifier]
@@ -137,21 +111,27 @@ class GafferPlaceholderPlugin(PlaceholderPlugin):
 
         node_loaded = nodes_loaded[0]
 
-        out_plugs_to_connect, in_plugs_to_connect = get_up_and_downstream_plugs(placeholder_node)
+        def find_matching_source_plug(plug, node):
+            name = plug.getName()
+            if name in node:
+                return node[name]
+            elif plug.parent().typeName() == "Gaffer::ArrayPlug":
+                if plug.parent().getName() in node:
+                    return node[plug.parent().getName()][name]
+            return plug
 
-        for in_plug_to_connect in in_plugs_to_connect:
-            if "out" in node_loaded:
-                in_plug_to_connect.setInput(node_loaded["out"])
-            elif "task" in node_loaded:
-                in_plug_to_connect.setInput(node_loaded["task"])
+        plug_mapping = get_plug_connection_mapping(placeholder_node)
 
-        for out_plug_to_connect in out_plugs_to_connect:
-            if "in" in node_loaded:
-                node_loaded["in"].setInput(out_plug_to_connect)
-            elif "preTasks" in node_loaded:
-                for p in node_loaded["preTasks"].children():
-                    p.setInput(out_plug_to_connect)
+        for connection in plug_mapping:
+            in_plug = connection["in"]
+            if placeholder_node.fullName() in in_plug.fullName():
+                in_plug = find_matching_source_plug(connection["in"], node_loaded)
 
+            out_plug = connection["out"]
+            if placeholder_node.fullName() in out_plug.fullName():
+                out_plug = find_matching_source_plug(connection["out"], node_loaded)
+
+            out_plug.setInput(in_plug)
 
 def build_workfile_template(*args, **kwargs):
     builder = GafferTemplateBuilder(registered_host())

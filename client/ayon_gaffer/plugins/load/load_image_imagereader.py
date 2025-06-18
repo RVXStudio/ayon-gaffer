@@ -18,11 +18,12 @@ class GafferLoadImageReader(ayon_gaffer.api.plugin.GafferImageLoaderBase):
     order = -10
     icon = "code-fork"
     color = "orange"
+    node_class = GafferImage.ImageReader
 
     def load(self, context, name, namespace, options):
         # Create the Loader with the filename path set
 
-        node = GafferImage.ImageReader()
+        node = self.node_class()
 
         # path = self.filepath_from_context(context)
         # path = self._convert_path(path, options)

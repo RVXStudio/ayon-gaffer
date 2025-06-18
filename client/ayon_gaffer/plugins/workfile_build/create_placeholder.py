@@ -1,13 +1,13 @@
-import Gaffer
-
+import Gaffer, imath
 from ayon_core.pipeline.workfile.workfile_template_builder import (
     CreatePlaceholderItem,
     PlaceholderCreateMixin,
 )
 from ayon_gaffer.api.workfile_template_builder import GafferPlaceholderPlugin
-
+from ayon_gaffer.api.pipeline import imprint
 from ayon_gaffer.api import get_root
-from ayon_gaffer.api.lib import get_full_name
+from ayon_gaffer.api.lib import get_full_name, get_io_plugs, copy_plug
+
 
 class GafferPlaceholderCreatePlugin(GafferPlaceholderPlugin, PlaceholderCreateMixin):
     identifier = "gaffer.create"
@@ -39,6 +39,42 @@ class GafferPlaceholderCreatePlugin(GafferPlaceholderPlugin, PlaceholderCreateMi
             output.append(CreatePlaceholderItem(node_name, placeholder_data, self))
 
         return output
+
+    def create_placeholder(self, placeholder_data):
+        placeholder_data["plugin_identifier"] = self.identifier
+
+        script = get_root()
+
+        placeholder = Gaffer.Node()
+
+        creators_by_name = self.builder.get_creators_by_name()
+
+        creator = creators_by_name.get(placeholder_data["creator"])
+        if not creator:
+            raise ValueError("Creator not found: {}".format(placeholder_data["creator"]))
+
+        tmp_node = creator._create_node(product_name="tmp_node", pre_create_data={}, script=script)
+
+        plugs = get_io_plugs(tmp_node)
+
+        for source_plug in plugs:
+            new_plug = copy_plug(source_plug, placeholder)
+            flags = new_plug.getFlags()
+            # add dynamic plug so it is serialized
+            new_plug.setFlags(flags | Gaffer.Plug.Flags.Dynamic)
+
+
+        script.removeChild(tmp_node)
+        placeholder_name = placeholder_data['creator'].split('.')[-1]
+
+
+        script.addChild(placeholder)
+
+        placeholder.setName(f"PLACEHOLDER_{placeholder_name}")
+        Gaffer.Metadata.registerValue(placeholder, "nodeGadget:color", imath.Color3f(0.6, 0.2, 0.2))
+
+        imprint(placeholder, placeholder_data)
+        imprint(placeholder, {"is_placeholder": True})
 
     def populate_placeholder(self, placeholder):
         self.populate_create_placeholder(placeholder)
