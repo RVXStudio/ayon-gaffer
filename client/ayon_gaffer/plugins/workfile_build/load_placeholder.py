@@ -66,7 +66,7 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
 
         script.removeChild(tmp_node)
 
-        placeholder_name = placeholder_data['loader']
+        placeholder_name = placeholder_data["loader"]
 
         script.addChild(placeholder)
 

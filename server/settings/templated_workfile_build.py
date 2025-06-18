@@ -32,3 +32,4 @@ class TemplatedWorkfileBuildModel(BaseSettingsModel):
     profiles: list[TemplatedWorkfileProfileModel] = SettingsField(
         default_factory=list
     )
+    build_on_scene_new: bool = SettingsField(default_factory=lambda: True, title="Build on scene new")

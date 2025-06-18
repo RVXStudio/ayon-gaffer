@@ -223,6 +223,21 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
 
         ayon_gaffer.api.nodes.check_boxnode_versions(script_node)
 
+        build_on_scene_new = get_current_project_settings()["gaffer"].get("templated_workfile_build", {}).get("build_on_scene_new", True)
+        if build_on_scene_new and not script_node["fileName"].getValue():
+            log.info("Building from template")
+            try:
+                self._build_from_template(script_node)
+            except Exception as exc:
+                log.error(f"Could not build from template. Exception: {exc}")
+
+    def _build_from_template(self, script_node):
+        set_root(script_node)
+        from ayon_gaffer.api.workfile_template_builder import GafferTemplateBuilder
+
+        builder = GafferTemplateBuilder(self)
+        builder.build_template()
+
     def connect_render_layer_signals(self, script_node, new_node):
         if isinstance(new_node, RenderLayerNode):
             try:

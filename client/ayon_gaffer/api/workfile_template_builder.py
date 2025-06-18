@@ -6,8 +6,7 @@ from ayon_core.pipeline.workfile.workfile_template_builder import (
     PlaceholderPlugin,
 )
 from ayon_core.tools.workfile_template_build import WorkfileBuildPlaceholderDialog
-from .pipeline import imprint
-from ayon_gaffer.api import get_root
+from .pipeline  import get_root
 from ayon_gaffer.api.lib import get_full_name, get_plug_connection_mapping
 
 
@@ -132,6 +131,7 @@ class GafferPlaceholderPlugin(PlaceholderPlugin):
                 out_plug = find_matching_source_plug(connection["out"], node_loaded)
 
             out_plug.setInput(in_plug)
+
 
 def build_workfile_template(*args, **kwargs):
     builder = GafferTemplateBuilder(registered_host())
