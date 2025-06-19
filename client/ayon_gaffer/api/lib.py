@@ -685,7 +685,24 @@ def get_full_name(node):
     return name
 
 
-def get_io_plugs(node, types=("GafferScene::ScenePlug", "GafferDispatch::TaskNode::TaskPlug", "GafferImage::ImagePlug")):
+def get_io_plugs(
+    node: Gaffer.Node,
+    types = (
+        "GafferScene::ScenePlug",
+        "GafferDispatch::TaskNode::TaskPlug",
+        "GafferImage::ImagePlug"
+    )
+) -> list[Gaffer.Plug]:
+    """
+    Returns a list of input/output plugs of the given node that match the specified types.
+
+    Args:
+        node (Gaffer.Node): The node to inspect.
+        types (tuple): Tuple of plug type names to match.
+
+    Returns:
+        list: List of matching plugs (including array plugs and their children).
+    """
     result = []
     for plug in node.children():
         if plug.typeName() == "Gaffer::ArrayPlug":
@@ -698,29 +715,26 @@ def get_io_plugs(node, types=("GafferScene::ScenePlug", "GafferDispatch::TaskNod
 
     return result
 
-def get_up_and_downstream_plugs(node, types=("GafferScene::ScenePlug", "GafferDispatch::TaskNode::TaskPlug", "GafferImage::ImagePlug")):
-    up_plugs, down_plugs = [], []
-    for plug in node.children():
-        if plug.typeName() in types:
-            if plug.typeName() == "Gaffer::ArrayPlug":
-                for p in plug.children():
-                    if p.typeName() not in types:
-                        continue
-                    in_ = p.getInput()
-                    if in_:
-                        up_plugs.append(in_)
-            else:
-                if plug.direction() == Gaffer.Plug.Direction.In:
-                    in_ = plug.getInput()
-                    if in_:
-                        up_plugs.append(in_)
-                elif plug.direction() == Gaffer.Plug.Direction.Out:
-                    for output_ in plug.outputs():
-                        down_plugs.append(output_)
 
-    return up_plugs, down_plugs
+def get_plug_connection_mapping(
+    node: Gaffer.Node,
+    types: tuple = (
+        "GafferScene::ScenePlug",
+        "GafferDispatch::TaskNode::TaskPlug",
+        "GafferImage::ImagePlug"
+    )
+) -> list[dict]:
+    """
+    Returns a list of dictionaries describing the connections between plugs of the given node
+    that match the specified types.
 
-def get_plug_connection_mapping(node, types=("GafferScene::ScenePlug", "GafferDispatch::TaskNode::TaskPlug")):
+    Args:
+        node (Gaffer.Node): The node to inspect.
+        types (tuple): Tuple of plug type names to match.
+
+    Returns:
+        list[dict]: List of dictionaries with keys 'in' and 'out' representing plug connections.
+    """
     connections = []
     for plug in node.children():
         if plug.typeName() == "Gaffer::ArrayPlug":
