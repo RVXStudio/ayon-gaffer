@@ -44,9 +44,18 @@ class GafferPlaceholderCreatePlugin(GafferPlaceholderPlugin, PlaceholderCreateMi
         placeholder_data["plugin_identifier"] = self.identifier
 
         script = get_root()
+        placeholder_node = Gaffer.Node()
+        self._create_placeholder_plugs(script, placeholder_node, placeholder_data)
 
-        placeholder = Gaffer.Node()
+        placeholder_name = placeholder_data["creator"].split(".")[-1]
+        placeholder_node.setName(f"PLACEHOLDER_{placeholder_name}")
+        Gaffer.Metadata.registerValue(placeholder_node, "nodeGadget:color", imath.Color3f(0.6, 0.2, 0.2))
 
+        imprint(placeholder_node, placeholder_data)
+        imprint(placeholder_node, {"is_placeholder": True})
+        return placeholder_node
+
+    def _create_placeholder_plugs(self, script, placeholder, placeholder_data):
         creators_by_name = self.builder.get_creators_by_name()
 
         creator = creators_by_name.get(placeholder_data["creator"])
@@ -54,7 +63,6 @@ class GafferPlaceholderCreatePlugin(GafferPlaceholderPlugin, PlaceholderCreateMi
             raise ValueError("Creator not found: {}".format(placeholder_data["creator"]))
 
         tmp_node = creator._create_node(product_name="tmp_node", pre_create_data={}, script=script)
-
         plugs = get_io_plugs(tmp_node)
 
         for source_plug in plugs:
@@ -63,18 +71,8 @@ class GafferPlaceholderCreatePlugin(GafferPlaceholderPlugin, PlaceholderCreateMi
             # add dynamic plug so it is serialized
             new_plug.setFlags(flags | Gaffer.Plug.Flags.Dynamic)
 
-
         script.removeChild(tmp_node)
-        placeholder_name = placeholder_data['creator'].split('.')[-1]
-
-
         script.addChild(placeholder)
-
-        placeholder.setName(f"PLACEHOLDER_{placeholder_name}")
-        Gaffer.Metadata.registerValue(placeholder, "nodeGadget:color", imath.Color3f(0.6, 0.2, 0.2))
-
-        imprint(placeholder, placeholder_data)
-        imprint(placeholder, {"is_placeholder": True})
 
     def populate_placeholder(self, placeholder):
         self.populate_create_placeholder(placeholder)

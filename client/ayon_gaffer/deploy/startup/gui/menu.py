@@ -107,7 +107,7 @@ def ayon_menu(menu):
         "/Template Builder/Create Place Holder", {"command": lambda menu: create_placeholder(get_main_window(menu))}
     )
     definition.append(
-        "/Template Builder/Update Place Holder", {"command": lambda menu: update_placeholder(get_script_node(menu))}
+        "/Template Builder/Update Place Holder", {"command": lambda menu: update_placeholder(get_script_node(menu), get_main_window(menu))}
     )
 
     return definition

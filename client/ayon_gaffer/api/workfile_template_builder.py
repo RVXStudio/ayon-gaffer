@@ -6,8 +6,8 @@ from ayon_core.pipeline.workfile.workfile_template_builder import (
     PlaceholderPlugin,
 )
 from ayon_core.tools.workfile_template_build import WorkfileBuildPlaceholderDialog
-from .pipeline  import get_root
-from ayon_gaffer.api.lib import get_full_name, get_plug_connection_mapping
+from .pipeline import get_root
+from ayon_gaffer.api.lib import get_full_name, copy_node_connections, copy_node_position_in_node_graph
 
 
 def get_main_window():
@@ -65,11 +65,12 @@ class GafferPlaceholderPlugin(PlaceholderPlugin):
             self.builder.set_shared_populate_data("placeholder_nodes", placeholder_nodes)
         return placeholder_nodes
 
-
-
     def update_placeholder(self, placeholder_item, placeholder_data):
-        node = get_root()[placeholder_item.scene_identifier]
-        imprint(node, placeholder_data)
+        old_placeholder_node = get_root()[placeholder_item.scene_identifier]
+        placeholder_node = self.create_placeholder(placeholder_data)
+        copy_node_connections(old_placeholder_node, placeholder_node)
+        self.delete_placeholder(placeholder_item)
+        copy_node_position_in_node_graph(get_root(), old_placeholder_node, placeholder_node)
 
     def _parse_placeholder_node_data(self, node):
         placeholder_data = {}
@@ -108,29 +109,7 @@ class GafferPlaceholderPlugin(PlaceholderPlugin):
 
         self.log.debug("Loaded nodes: {}".format(nodes_loaded))
 
-        node_loaded = nodes_loaded[0]
-
-        def find_matching_source_plug(plug, node):
-            name = plug.getName()
-            if name in node:
-                return node[name]
-            elif plug.parent().typeName() == "Gaffer::ArrayPlug":
-                if plug.parent().getName() in node:
-                    return node[plug.parent().getName()][name]
-            return plug
-
-        plug_mapping = get_plug_connection_mapping(placeholder_node)
-
-        for connection in plug_mapping:
-            in_plug = connection["in"]
-            if placeholder_node.fullName() in in_plug.fullName():
-                in_plug = find_matching_source_plug(connection["in"], node_loaded)
-
-            out_plug = connection["out"]
-            if placeholder_node.fullName() in out_plug.fullName():
-                out_plug = find_matching_source_plug(connection["out"], node_loaded)
-
-            out_plug.setInput(in_plug)
+        copy_node_connections(placeholder_node, nodes_loaded[0])
 
 
 def build_workfile_template(*args, **kwargs):
@@ -151,7 +130,7 @@ def create_placeholder(main_window):
     window.show()
 
 
-def update_placeholder(script_node):
+def update_placeholder(script_node, main_window):
     host = registered_host()
     builder = GafferTemplateBuilder(host)
     placeholder_items_by_id = {
@@ -170,6 +149,6 @@ def update_placeholder(script_node):
         raise ValueError("Too many selected nodes")
 
     placeholder_item = placeholder_items[0]
-    window = WorkfileBuildPlaceholderDialog(host, builder, parent=get_main_window())
+    window = WorkfileBuildPlaceholderDialog(host, builder, parent=main_window)
     window.set_update_mode(placeholder_item)
     window.exec_()

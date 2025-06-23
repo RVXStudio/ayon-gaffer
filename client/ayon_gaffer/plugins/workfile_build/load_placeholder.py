@@ -40,12 +40,7 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
     def _before_repre_load(self, placeholder, representation):
         placeholder.data["last_repre_id"] = representation["id"]
 
-    def create_placeholder(self, placeholder_data):
-        placeholder_data["plugin_identifier"] = self.identifier
-
-        script = get_root()
-        placeholder = Gaffer.Node()
-
+    def _create_placeholder_plugs(self, script, placeholder, placeholder_data):
         loader = self.builder.get_loaders_by_name().get(placeholder_data["loader"])
         if hasattr(loader, "node_class"):
             tmp_node = loader.node_class()
@@ -66,15 +61,24 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
 
         script.removeChild(tmp_node)
 
+    def create_placeholder(self, placeholder_data):
+        placeholder_data["plugin_identifier"] = self.identifier
+
+        script = get_root()
+        placeholder_node = Gaffer.Node()
+
+        self._create_placeholder_plugs(script, placeholder_node, placeholder_data)
+
         placeholder_name = placeholder_data["loader"]
 
-        script.addChild(placeholder)
+        script.addChild(placeholder_node)
 
-        placeholder.setName(f"PLACEHOLDER_{placeholder_name}")
-        Gaffer.Metadata.registerValue(placeholder, "nodeGadget:color", imath.Color3f(0.6, 0.2, 0.2))
+        placeholder_node.setName(f"PLACEHOLDER_{placeholder_name}")
+        Gaffer.Metadata.registerValue(placeholder_node, "nodeGadget:color", imath.Color3f(0.6, 0.2, 0.2))
 
-        imprint(placeholder, placeholder_data)
-        imprint(placeholder, {"is_placeholder": True})
+        imprint(placeholder_node, placeholder_data)
+        imprint(placeholder_node, {"is_placeholder": True})
+        return placeholder_node
 
     def collect_placeholders(self):
         output = []

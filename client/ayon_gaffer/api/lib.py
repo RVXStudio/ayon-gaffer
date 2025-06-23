@@ -763,6 +763,65 @@ def get_plug_connection_mapping(
                     connections.append({"in": plug, "out": out_plug})
     return connections
 
+def copy_node_connections(source_node: Gaffer.Node, target_node: Gaffer.Node) -> None:
+    """
+    Copies plug connections from `source_node` to `target_node` for all serializable plugs.
+
+    Args:
+        source_node: The node from which to copy connections.
+        target_node: The node to which to apply the copied connections.
+    """
+    def _find_matching_source_plug(plug, node):
+        name = plug.getName()
+        if name in node:
+            if bool(node[name].getFlags() & Gaffer.Plug.Flags.Serialisable):
+                return node[name]
+
+        elif plug.parent().typeName() == "Gaffer::ArrayPlug":
+            if plug.parent().getName() in node:
+                found_plug = node[plug.parent().getName()][name]
+                if bool(found_plug.getFlags() & Gaffer.Plug.Flags.Serialisable):
+                    return found_plug
+        return None
+
+    plug_mapping = get_plug_connection_mapping(source_node)
+
+    for connection in plug_mapping:
+        in_plug = connection["in"]
+        out_plug = connection["out"]
+
+        # if the plug belongs to the source node
+        if source_node.fullName() in in_plug.fullName():
+            in_plug = _find_matching_source_plug(in_plug, target_node)
+
+        # if the plug belongs to the source node
+        if source_node.fullName() in out_plug.fullName():
+            out_plug = _find_matching_source_plug(out_plug, target_node)
+
+        if in_plug is None or out_plug is None:
+            continue
+
+        log.debug(f"Connected {out_plug.fullName()} to {in_plug.fullName()}")
+        out_plug.setInput(in_plug)
+
+def copy_node_position_in_node_graph(
+    script: Gaffer.ScriptNode,
+    source_node: Gaffer.Node,
+    target_node: Gaffer.Node
+    ) -> None:
+    """
+    Copy the position of `source_node` in the node graph to `target_node`.
+
+    Args:
+        script: The script node containing the graph.
+        source_node: The node whose position to copy.
+        target_node: The node to move to the copied position.
+
+    """
+    import GafferUI
+    graph_gadget = GafferUI.GraphGadget(script)
+    pos = graph_gadget.getNodePosition(source_node)
+    graph_gadget.setNodePosition(target_node, pos)
 
 def insert_plug(node, plug, position):
     """
