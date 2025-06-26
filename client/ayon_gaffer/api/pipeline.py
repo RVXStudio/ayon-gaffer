@@ -19,6 +19,7 @@ from ayon_core.pipeline import (
     AYON_CONTAINER_ID,
     get_current_folder_path,
     get_current_task_name,
+    register_workfile_build_plugin_path,
 )
 from ayon_gaffer import GAFFER_HOST_DIR
 import ayon_gaffer.api.nodes
@@ -35,6 +36,7 @@ PUBLISH_PATH = os.path.join(PLUGINS_DIR, "publish")
 LOAD_PATH = os.path.join(PLUGINS_DIR, "load")
 CREATE_PATH = os.path.join(PLUGINS_DIR, "create")
 INVENTORY_PATH = os.path.join(PLUGINS_DIR, "inventory")
+WORKFILE_BUILD_PATH = os.path.join(PLUGINS_DIR, "workfile_build")
 DEADLINE_LIMIT_GROUPS = []
 AYON_ATTR_GROUP_KEY = "ayon_attr_group"
 
@@ -69,10 +71,13 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         register_loader_plugin_path(LOAD_PATH)
         register_creator_plugin_path(CREATE_PATH)
         register_inventory_action_path(INVENTORY_PATH)
+        register_workfile_build_plugin_path(WORKFILE_BUILD_PATH)
         log.info("Registering paths")
         log.info(PUBLISH_PATH)
         log.info(LOAD_PATH)
         log.info(CREATE_PATH)
+        log.info(INVENTORY_PATH)
+        log.info(WORKFILE_BUILD_PATH)
 
         self._register_callbacks()
 
@@ -217,6 +222,27 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
             self.connect_render_layer_signals(script_node, node)
 
         ayon_gaffer.api.nodes.check_boxnode_versions(script_node)
+
+        build_on_scene_new = get_current_project_settings()["gaffer"].get("templated_workfile_build", {}).get("build_on_scene_new", True)
+        if not build_on_scene_new:
+            log.info("Skipping workfile build on scene new: Ayon settings build_on_scene_new is set to False")
+
+        if os.path.exists(os.environ.get("AYON_LAST_WORKFILE")):
+            log.info(f"$AYON_LAST_WORKFILE exists!, not creating template")
+            return
+
+        log.info("Building from template")
+        try:
+            self._build_from_template(script_node)
+        except Exception as exc:
+            log.error(f"Could not build from template. Exception: {exc}")
+
+    def _build_from_template(self, script_node):
+        set_root(script_node)
+        from ayon_gaffer.api.workfile_template_builder import GafferTemplateBuilder
+
+        builder = GafferTemplateBuilder(self)
+        builder.build_template()
 
     def connect_render_layer_signals(self, script_node, new_node):
         if isinstance(new_node, RenderLayerNode):
