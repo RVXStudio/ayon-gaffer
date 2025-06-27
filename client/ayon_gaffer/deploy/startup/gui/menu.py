@@ -6,11 +6,17 @@ See: http://www.gafferhq.org/documentation/0.53.0.0/Tutorials/Scripting/AddingAM
 
 """
 from ayon_core.pipeline import install_host, registered_host
+from ayon_core.tools.workfile_template_build import open_template_ui
 from ayon_gaffer.api import GafferHost, set_root, lib
 from ayon_gaffer.api.pipeline import get_context_label
 from ayon_core.lib import Logger
 import ayon_gaffer.api.nodes.lib
-
+from ayon_gaffer.api.workfile_template_builder import (
+    build_workfile_template,
+    create_placeholder,
+    update_placeholder,
+    GafferTemplateBuilder,
+)
 import GafferUI
 import Gaffer
 import IECore
@@ -31,6 +37,9 @@ def ayon_menu(menu):
         script_window = menu.ancestor(GafferUI.ScriptWindow)
         set_root(script_window.scriptNode())     # todo: avoid hack
         return script_window._qtWidget()
+
+    def get_script_node(menu):
+        return menu.ancestor(GafferUI.ScriptWindow).scriptNode()
 
     definition = IECore.MenuDefinition()
     context_label = get_context_label().replace('/', '|')
@@ -85,6 +94,22 @@ def ayon_menu(menu):
         {"command": lambda menu: host_tools.show_workfiles(
             parent=get_main_window(menu))}
     )
+    # Divider
+    definition.append(f"TemplatesDivider", {"divider": True})
+
+    definition.append(f"/Template Builder/Build Workfile from Template", {"command": lambda: build_workfile_template(parent=get_main_window(menu))})
+
+    definition.append(
+        "/Template Builder/Open template",
+        {"command": lambda menu: open_template_ui(GafferTemplateBuilder(registered_host()), get_main_window(menu))},
+    )
+    definition.append(
+        "/Template Builder/Create Place Holder", {"command": lambda menu: create_placeholder(get_main_window(menu))}
+    )
+    definition.append(
+        "/Template Builder/Update Place Holder", {"command": lambda menu: update_placeholder(get_script_node(menu), get_main_window(menu))}
+    )
+
     return definition
 
 

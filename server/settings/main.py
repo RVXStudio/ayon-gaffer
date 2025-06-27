@@ -11,6 +11,7 @@ from .loader_plugins import (
 from .imageio import ImageIOSettings, DEFAULT_IMAGEIO_SETTINGS
 from .deadline import GafferDeadlineSettings, DEFAULT_DEADLINE_SETTINGS
 from .create_plugins import CreatorPluginsSettings, DEFAULT_CREATE_SETTINGS
+from .templated_workfile_build import TemplatedWorkfileBuildModel
 
 
 class GafferSettings(BaseSettingsModel):
@@ -30,6 +31,10 @@ class GafferSettings(BaseSettingsModel):
         default_factory=GafferDeadlineSettings,
         title="Deadline"
     )
+    templated_workfile_build: TemplatedWorkfileBuildModel = SettingsField(
+        title="Templated Workfile Build",
+        default_factory=TemplatedWorkfileBuildModel
+    )
 
 
 DEFAULT_VALUES = {
@@ -38,4 +43,5 @@ DEFAULT_VALUES = {
     "node_preset_paths": [],
     "deadline": DEFAULT_DEADLINE_SETTINGS,
     "create": DEFAULT_CREATE_SETTINGS,
+    "templated_workfile_build": {"profiles": []},
 }

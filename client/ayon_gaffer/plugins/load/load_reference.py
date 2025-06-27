@@ -17,6 +17,7 @@ class GafferLoadReference(ayon_gaffer.api.plugin.GafferLoaderBase):
     order = -10
     icon = "code-fork"
     color = "orange"
+    node_class = Gaffer.Reference
 
     def load(self, context, name, namespace, data):
 
@@ -24,7 +25,7 @@ class GafferLoadReference(ayon_gaffer.api.plugin.GafferLoaderBase):
 
         path = self.filepath_from_context(context).replace("\\", "/")
 
-        reference = Gaffer.Reference(name)
+        reference = self.node_class(name)
         script.addChild(reference)
         reference.load(path)
 
