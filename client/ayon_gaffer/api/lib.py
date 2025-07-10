@@ -5,6 +5,7 @@ from typing import Tuple, List, Optional
 
 import Gaffer
 import GafferScene
+import GafferDispatch
 import imath
 import PyOpenColorIO as OCIO
 
@@ -654,11 +655,11 @@ def copy_plug(plug, destination_node):
         for part in plug_parts:
             new_plug_parent = new_plug_parent[part]
 
-        new_plug = type(plug)(
-            plug.getName(),
-            defaultValue=plug.defaultValue(),
-            flags=plug.getFlags()
-        )
+        # Array plugs don't have default values
+        if hasattr(plug, "defaultValue"):
+            new_plug = type(plug)(name=plug.getName(), direction=plug.direction(), defaultValue=plug.defaultValue(), flags=plug.getFlags())
+        else:
+            new_plug = type(plug)(name=plug.getName(), direction=plug.direction(), flags=plug.getFlags())
         new_plug_parent.addChild(new_plug)
 
         metadata_keys = Gaffer.Metadata.registeredValues(plug)
@@ -670,6 +671,157 @@ def copy_plug(plug, destination_node):
         log.error(f"Could not copy plug: {plug.getName()} to"
                   f"{destination_node}: {err}")
 
+    return new_plug
+
+
+def get_full_name(node):
+    # .fullName() returns gui.ScriptNode.Box.Node
+    # here it returns only: Box.Node
+    name = node.getName()
+    parent = node.parent()
+    while not isinstance(parent, Gaffer.ScriptNode):
+        name = parent.getName() + "." + name
+        parent = parent.parent()
+    return name
+
+
+def get_io_plugs(
+    node: Gaffer.Node,
+    types = (
+        "GafferScene::ScenePlug",
+        "GafferDispatch::TaskNode::TaskPlug",
+        "GafferImage::ImagePlug"
+    )
+) -> list[Gaffer.Plug]:
+    """
+    Returns a list of input/output plugs of the given node that match the specified types.
+
+    Args:
+        node (Gaffer.Node): The node to inspect.
+        types (tuple): Tuple of plug type names to match.
+
+    Returns:
+        list: List of matching plugs (including array plugs and their children).
+    """
+    result = []
+    for plug in node.children():
+        if plug.typeName() == "Gaffer::ArrayPlug":
+            result.append(plug)
+            for child_plug in plug.children():
+                if child_plug.typeName() in types:
+                    result.append(child_plug)
+        elif plug.typeName() in types:
+            result.append(plug)
+
+    return result
+
+
+def get_plug_connection_mapping(
+    node: Gaffer.Node,
+    types: tuple = (
+        "GafferScene::ScenePlug",
+        "GafferDispatch::TaskNode::TaskPlug",
+        "GafferImage::ImagePlug"
+    )
+) -> list[dict]:
+    """
+    Returns a list of dictionaries describing the connections between plugs of the given node
+    that match the specified types.
+
+    Args:
+        node (Gaffer.Node): The node to inspect.
+        types (tuple): Tuple of plug type names to match.
+
+    Returns:
+        list[dict]: List of dictionaries with keys 'in' and 'out' representing plug connections.
+    """
+    connections = []
+    for plug in node.children():
+        if plug.typeName() == "Gaffer::ArrayPlug":
+            for child_plug in plug.children():
+                if child_plug.typeName() not in types:
+                    continue
+                if child_plug.direction() == Gaffer.Plug.Direction.In:
+                    in_plug = child_plug.getInput()
+                    if not in_plug:
+                        continue
+                    connections.append({"in":in_plug, "out": child_plug})
+
+                elif child_plug.direction() == Gaffer.Plug.Direction.Out:
+                    for out_plug in child_plug.outputs():
+                        connections.append({"in": child_plug, "out": out_plug})
+
+        elif plug.typeName() in types:
+            if plug.direction() == Gaffer.Plug.Direction.In:
+                in_plug = plug.getInput()
+                if not in_plug:
+                    continue
+                connections.append({"in": in_plug, "out": plug})
+
+            elif plug.direction() == Gaffer.Plug.Direction.Out:
+                for out_plug in plug.outputs():
+                    connections.append({"in": plug, "out": out_plug})
+    return connections
+
+def copy_node_connections(source_node: Gaffer.Node, target_node: Gaffer.Node) -> None:
+    """
+    Copies plug connections from `source_node` to `target_node` for all serializable plugs.
+
+    Args:
+        source_node: The node from which to copy connections.
+        target_node: The node to which to apply the copied connections.
+    """
+    def _find_matching_source_plug(plug, node):
+        name = plug.getName()
+        if name in node:
+            if bool(node[name].getFlags() & Gaffer.Plug.Flags.Serialisable):
+                return node[name]
+
+        elif plug.parent().typeName() == "Gaffer::ArrayPlug":
+            if plug.parent().getName() in node:
+                found_plug = node[plug.parent().getName()][name]
+                if bool(found_plug.getFlags() & Gaffer.Plug.Flags.Serialisable):
+                    return found_plug
+        return None
+
+    plug_mapping = get_plug_connection_mapping(source_node)
+
+    for connection in plug_mapping:
+        in_plug = connection["in"]
+        out_plug = connection["out"]
+
+        # if the plug belongs to the source node
+        if source_node.fullName() in in_plug.fullName():
+            in_plug = _find_matching_source_plug(in_plug, target_node)
+
+        # if the plug belongs to the source node
+        if source_node.fullName() in out_plug.fullName():
+            out_plug = _find_matching_source_plug(out_plug, target_node)
+
+        if in_plug is None or out_plug is None:
+            continue
+
+        log.debug(f"Connected {out_plug.fullName()} to {in_plug.fullName()}")
+        out_plug.setInput(in_plug)
+
+def copy_node_position_in_node_graph(
+    script: Gaffer.ScriptNode,
+    source_node: Gaffer.Node,
+    target_node: Gaffer.Node
+    ) -> None:
+    """
+    Copy the position of `source_node` in the node graph to `target_node`.
+
+    Args:
+        script: The script node containing the graph.
+        source_node: The node whose position to copy.
+        target_node: The node to move to the copied position.
+
+    """
+    import GafferUI
+    graph_gadget = GafferUI.GraphGadget(script)
+    pos = graph_gadget.getNodePosition(source_node)
+    graph_gadget.setNodePosition(target_node, pos)
 
 def insert_plug(node, plug, position):
     """

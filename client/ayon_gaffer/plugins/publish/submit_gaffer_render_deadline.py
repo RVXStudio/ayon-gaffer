@@ -190,7 +190,7 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
             }
 
             instance.data["deadlineSubmissionJob"] = fake_deadline_job
-            instance.data["deadlineSubmissionWaitForIds"] = [j._jobId for j in submitted_jobs]
+            instance.data["deadlineDependencyJobIds"] = [j._jobId for j in submitted_jobs]
 
     def get_env_var_value(self, var, val):
         if val == '':

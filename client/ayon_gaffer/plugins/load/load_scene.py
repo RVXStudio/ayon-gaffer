@@ -35,6 +35,7 @@ class GafferLoadScene(ayon_gaffer.api.plugin.GafferLoaderBase):
     template_profiles = []
     simple_loading = {}
     advanced_loading = {}
+    node_class = GafferScene.SceneReader
 
     @classmethod
     def get_options(cls, *args):
@@ -96,7 +97,7 @@ class GafferLoadScene(ayon_gaffer.api.plugin.GafferLoaderBase):
                 aux_transforms
             )
         else:
-            node = GafferScene.SceneReader()
+            node = self.node_class()
             node_name = self._get_node_name(
                 self.simple_loading["node_name_template"], context)
             node.setName(node_name)
