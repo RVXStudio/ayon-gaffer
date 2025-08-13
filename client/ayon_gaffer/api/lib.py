@@ -997,7 +997,7 @@ def node_name_from_template(template_string, context):
             construct_folder_full_name
         )
         use_full_name = True
-    except ModuleNotFoundError:
+    except (ModuleNotFoundError, ImportError):
         # couldn't load the rvx custom core function
         use_full_name = False
     folder_entity = context["folder"]
