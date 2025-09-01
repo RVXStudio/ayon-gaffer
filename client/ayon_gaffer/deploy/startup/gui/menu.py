@@ -175,10 +175,6 @@ def _install_ayon():
     install_host(GafferHost(application))
 
 
-ANNOTATIONS_NODE_TYPES = ("Gaffer::Box", "GafferImage::ImageReader", "GafferArnold::ArnoldShader",
-                          "GafferArnold::ArnoldVDB")
-
-
 def _on_set_plug(plug):
     if plug.getName() == "representation":
         update_annotations(plug.parent().parent())
@@ -189,8 +185,12 @@ def _on_new_user_plug(_, plug):
         update_annotations(plug.parent().parent())
 
 
+def _is_node_to_annotate(node):
+    return "user" in node and "id" in node["user"] and node["user"]["id"].getValue() == "ayon.load.container"
+
+
 def _on_new_node(_, node):
-    if node.typeName() in ANNOTATIONS_NODE_TYPES:
+    if _is_node_to_annotate(node):
         node["user"].childAddedSignal().connect(_on_new_user_plug, scoped=False)
         node.plugSetSignal().connect(_on_set_plug, scoped=False)
 
@@ -199,7 +199,7 @@ def _on_scene_new(_, script_node):
     set_root(script_node)
     script_node.childAddedSignal().connect(_on_new_node, scoped=False)
     for node in script_node.children():
-        if node.typeName() in ANNOTATIONS_NODE_TYPES:
+        if _is_node_to_annotate(node):
             node.plugSetSignal().connect(_on_set_plug, scoped=False)
 
     update_annotations_on_all_nodes()
