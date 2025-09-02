@@ -5,7 +5,9 @@ import sys
 import json
 
 import Gaffer  # noqa
+import imath
 
+import ayon_api
 from ayon_core.host import HostBase, IWorkfileHost, ILoadHost, IPublishHost
 from ayon_gaffer.api.nodes import RenderLayerNode
 
@@ -20,6 +22,7 @@ from ayon_core.pipeline import (
     get_current_folder_path,
     get_current_task_name,
     register_workfile_build_plugin_path,
+    registered_host,
 )
 from ayon_gaffer import GAFFER_HOST_DIR
 import ayon_gaffer.api.nodes
@@ -448,3 +451,38 @@ def register_boxnode_paths_from_settings():
     for boxnode_path in boxnode_paths:
         ayon_gaffer.api.nodes.register_boxnode_path(boxnode_path)
         log.info(f"Added [{boxnode_path}] to boxnode paths")
+
+
+def _set_annotation(node, representation_id):
+    try:
+        project_name = os.environ.get("AYON_PROJECT_NAME")
+        rep = ayon_api.get_representation_by_id(project_name, representation_id)
+        version_id = rep["versionId"]
+        version = ayon_api.get_version_by_id(project_name, version_id)
+        product_id = version["productId"]
+        current_version = version["version"]
+
+        last_version = ayon_api.get_last_version_by_product_id(project_name, product_id)
+        Gaffer.Metadata.registerValue(node, 'annotation:user:text', "v{:03d}".format(current_version))
+        if current_version != last_version["version"]:
+            Gaffer.Metadata.registerValue(node, 'annotation:user:color', imath.Color3f(0.55, 0.25, 0.25))
+        else:
+            Gaffer.Metadata.registerValue(node, 'annotation:user:color', imath.Color3f(0.25, 0.55, 0.25))
+    except Exception as e:
+        print(e)
+
+
+def update_annotations(node):
+    if "representation" not in node["user"]:
+        return
+
+    _set_annotation(node, node["user"]["representation"].getValue())
+
+
+def update_annotations_on_all_nodes():
+    host = registered_host()
+    for container in host.get_containers():
+        node = container["_node"]
+        representation_id = container["representation"]
+
+        _set_annotation(node, representation_id)

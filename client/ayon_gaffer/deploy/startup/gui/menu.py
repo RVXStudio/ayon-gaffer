@@ -8,7 +8,7 @@ See: http://www.gafferhq.org/documentation/0.53.0.0/Tutorials/Scripting/AddingAM
 from ayon_core.pipeline import install_host, registered_host
 from ayon_core.tools.workfile_template_build import open_template_ui
 from ayon_gaffer.api import GafferHost, set_root, lib
-from ayon_gaffer.api.pipeline import get_context_label
+from ayon_gaffer.api.pipeline import get_context_label, update_annotations, update_annotations_on_all_nodes
 from ayon_core.lib import Logger
 import ayon_gaffer.api.nodes.lib
 from ayon_gaffer.api.workfile_template_builder import (
@@ -175,7 +175,40 @@ def _install_ayon():
     install_host(GafferHost(application))
 
 
+def _on_set_plug(plug):
+    if plug.getName() == "representation":
+        update_annotations(plug.parent().parent())
+
+
+def _on_new_user_plug(_, plug):
+    if plug.getName() == "representation":
+        update_annotations(plug.parent().parent())
+
+
+def _is_node_to_annotate(node):
+    return "user" in node and "id" in node["user"] and node["user"]["id"].getValue() == "ayon.load.container"
+
+
+def _on_new_node(_, node):
+    if _is_node_to_annotate(node):
+        node["user"].childAddedSignal().connect(_on_new_user_plug, scoped=False)
+        node.plugSetSignal().connect(_on_set_plug, scoped=False)
+
+
+def _on_scene_new(_, script_node):
+    set_root(script_node)
+    script_node.childAddedSignal().connect(_on_new_node, scoped=False)
+    for node in script_node.children():
+        if _is_node_to_annotate(node):
+            node.plugSetSignal().connect(_on_set_plug, scoped=False)
+
+    update_annotations_on_all_nodes()
+
+
 _install_ayon()
 _install_ayon_menu()
 
 _install_boxnode_context_menu()
+
+scripts_list = application.root()["scripts"]  # noqa
+scripts_list.childAddedSignal().connect(_on_scene_new, scoped=False)
