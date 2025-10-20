@@ -55,6 +55,8 @@ class GafferPlaceholderLoadPlugin(GafferPlaceholderPlugin, PlaceholderLoadMixin)
 
         for source_plug in plugs:
             new_plug = copy_plug(source_plug, placeholder)
+            if new_plug is None:
+                continue
             flags = new_plug.getFlags()
             # add dynamic plug so it is serialized
             new_plug.setFlags(flags | Gaffer.Plug.Flags.Dynamic)
