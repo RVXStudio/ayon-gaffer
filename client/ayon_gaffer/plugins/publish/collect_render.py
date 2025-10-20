@@ -90,20 +90,6 @@ class CollectRender(pyblish.api.InstancePlugin):
             colorspace_data = get_color_management_preferences(
                 layer.scriptNode())
 
-            # this is where the metadata json file will be placed at
-            # now we construct the path to the gaffer_cleanup.json
-            # add the cleanup dirs to the instance, if it is not already there
-
-            cleanup_paths = [os.path.normpath(ctxt.substitute(val)) for val
-                             in layer["cleanup_paths"].getValue()]
-            self.log.info(f"Found cleanup dirs {cleanup_paths}")
-
-            cleanup_file = os.path.join(
-                layer_output_folder, "gaffer_cleanup.json")
-            self.log.info(f"Path to cleanup file: {cleanup_file}")
-
-            cleanup_paths.append(cleanup_file)
-
         output_dir = os.path.dirname(outputs[list(outputs.keys())[0]])
 
         data = {
@@ -140,8 +126,6 @@ class CollectRender(pyblish.api.InstancePlugin):
             "colorspaceView": colorspace_data["view"],
             "colorspace": colorspace_data["colorspace"],
             "outputDir": output_dir,
-            "gaffer_cleanup_paths": cleanup_paths,
-            "gaffer_cleanup_file_path": cleanup_file,
             # this utilizes an RVX modification to the publishing process
             # where we can enable/disable hardlinking when instances
             # request it

@@ -60,13 +60,6 @@ class RenderLayerNode(Gaffer.Box):
         )
         self.addChild(outputs_plug)
 
-        cleanup_paths_plug = Gaffer.StringVectorDataPlug(
-            "cleanup_paths",
-            defaultValue=IECore.StringVectorData([]),
-            flags=Gaffer.Plug.Flags.Default
-        )
-        self.addChild(cleanup_paths_plug)
-
         layer_range_plug = Gaffer.V2iPlug(
             "layer_range",
             defaultValue=imath.V2i(0, 0),
@@ -202,16 +195,6 @@ Gaffer.Metadata.registerNode(
               <aov_name>::<path_to_output_files>
             """,
             "label", "Outputs",
-            "layout:section", "Outputs",
-            "nodule:type", ""
-        ],
-
-        "cleanup_paths": [
-            "description",
-            """
-            A list of paths that should be cleaned up after publishing
-            """,
-            "label", "Cleanup Paths",
             "layout:section", "Outputs",
             "nodule:type", ""
         ],
