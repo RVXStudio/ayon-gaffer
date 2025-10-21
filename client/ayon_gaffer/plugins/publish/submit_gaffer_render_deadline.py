@@ -7,6 +7,7 @@ from datetime import datetime
 
 import requests
 import pyblish.api
+import pyseq
 
 
 from ayon_core.pipeline import AYONPyblishPluginMixin
@@ -22,6 +23,8 @@ from ayon_core.lib import (
 import GafferDeadline
 import Gaffer
 import GafferDispatch
+import IECore
+import GafferScene
 
 import ayon_gaffer.api.lib
 import ayon_gaffer.api.pipeline
@@ -155,6 +158,9 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
             self.add_limit_groups(node)
             saved_settings = self.apply_submission_settings(node, instance)
 
+            self.set_outputs(node, instance)
+            self.set_extra_info(node, instance)
+
             saved_context_vars = self.set_render_context_vars(
                 node, render_shot_name)
 
@@ -197,6 +203,25 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
             return os.environ.get(var, '')
         else:
             return val
+
+    def set_outputs(self, root_node, instance):
+        for node in root_node.children(GafferScene.Render):
+            output_list = []
+            for aov, filelist in instance.data["expectedFiles"][0].items():
+                seq = pyseq.Sequence(filelist)
+                output_list.append(seq.format("%D%h%p%t"))
+            node["dispatcher"]["deadline"]["outputs"].setValue(
+                IECore.StringVectorData(output_list))
+
+    def set_extra_info(self, root_node, instance):
+        for node in root_node.children(GafferScene.Render):
+            node["dispatcher"]["deadline"]["extraDeadlineSettings"].setValue(
+            IECore.CompoundObject(
+                {
+                    "ExtraInfo0": IECore.StringData(instance.data["folderPath"])
+                }
+            )
+        )
 
     def populate_dispatcher_env_vars(self, root_node):
         self.log.info(f"Setting env vars for {root_node} ...")
