@@ -670,6 +670,7 @@ def copy_plug(plug, destination_node):
     except Exception as err:
         log.error(f"Could not copy plug: {plug.getName()} to"
                   f"{destination_node}: {err}")
+        new_plug = None
 
     return new_plug
 

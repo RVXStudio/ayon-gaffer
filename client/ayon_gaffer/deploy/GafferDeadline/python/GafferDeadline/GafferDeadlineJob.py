@@ -365,7 +365,10 @@ class GafferDeadlineJob(object):
         outputCounter = 0
         for o in self.getOutputs():
             output_key = f"OutputFilename{outputCounter}"
+            outdir_key = f"OutputDirectory{outputCounter}"
+
             payload["JobInfo"][output_key] = o
+            payload["JobInfo"][outdir_key] = os.path.dirname(o)
             outputCounter += 1
 
         for k, v in self._pluginProperties.items():
