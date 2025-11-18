@@ -63,7 +63,7 @@ class BoxNodeManager():
                 if not os.path.isdir(node_type_path):
                     continue
                 node_versions = {}
-                version_expression = re.compile(node_type + r"_(.+)\.gfr")
+                version_expression = re.compile(node_type + r"_v?(.+)\.gfr")
                 for version_file in os.listdir(node_type_path):
                     match = re.match(version_expression, version_file)
                     if match is None:
@@ -92,7 +92,7 @@ class BoxNodeManager():
 
         node_file_path = node_info.get(node_version)
         if node_file_path is None:
-            raise RuntimeError(f"Version [{node_version}] does"
+            raise RuntimeError(f"Version [{node_version}] does "
                                "not exist for type [{node_type}]")
         return node_file_path
 
@@ -230,7 +230,18 @@ class BoxNodeManager():
         node_tree = cls.list()
         if node_type not in node_tree:
             raise RuntimeError(f"Boxnode type [{node_type}] not registered")
-        return sorted(list(node_tree[node_type].keys()), reverse=True)
+        # let's try and make the keys into integes
+        keylist = list(node_tree[node_type].keys())
+        try:
+            sorted_keys = [int(k) for k in keylist]
+            sorted_keys.sort(reverse=True)
+            # and back to str
+            sorted_keys = [str(k) for k in sorted_keys]
+        except ValueError:
+            # ok, we just bail here
+            sorted_keys = sorted(keylist, reverse=True)
+
+        return sorted_keys
 
 
 def get_boxnode_type(box_node):
@@ -393,7 +404,7 @@ def export_selected_node_as_boxnode(node, graphEditor):
     certain boxnode path.
     (the ones defined in settings under `node_preset_paths`)
     '''
-    from Qt import QtWidgets
+    from qtpy import QtWidgets
     import GafferUI
 
     class SaveBoxnodeDialog(QtWidgets.QDialog):
