@@ -52,7 +52,7 @@ class CreateGafferRender2D(plugin.GafferCreatorBase):
 
     def _create_node(self, product_name: str, pre_create_data: dict, script: Gaffer.ScriptNode) -> Gaffer.Node:
 
-        node = BoxNodeManagerInstance.create(script, "Render2D", "v1")
+        node = BoxNodeManagerInstance.create(script, "Render2D", "1")
 
         script.addChild(node)
 
