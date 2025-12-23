@@ -205,6 +205,9 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         if colorspace_display_transform:
             script_node['openColorIO']['displayTransform'].setValue(str(colorspace_display_transform))
 
+    def work_root(self, session):
+        return session["AYON_WORKDIR"]
+
     def _on_scene_new(self, script_container, script_node):
         # Update the projectRootDirectory variable for new workfile scripts
         self.update_project_root_directory(script_node)
