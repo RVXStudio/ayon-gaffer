@@ -27,7 +27,7 @@ from ayon_core.pipeline import (
 from ayon_gaffer import GAFFER_HOST_DIR
 import ayon_gaffer.api.nodes
 import ayon_gaffer.api.lib
-from ayon_core.settings import get_current_project_settings
+from ayon_core.pipeline.context_tools import get_current_project_settings
 from ayon_core.lib import Logger, StringTemplate
 
 import ayon_gaffer.api.nodes
@@ -152,8 +152,8 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
                 node.scriptNode().fullName(), "").strip(".")
             container["objectName"] = node_name
             container["_node"] = node
-            if "version_freeze" in node["user"]:
-                container["version_freeze"] = user["version_freeze"].getValue()
+            if "version_locked" in node["user"]:
+                container["version_locked"] = user["version_locked"].getValue()
 
             yield container
 
@@ -313,7 +313,7 @@ def imprint(node: Gaffer.Node,
     """
 
     FLAGS = Gaffer.Plug.Flags.Default | Gaffer.Plug.Flags.Dynamic
-    log.info(f"Impringint ..")
+    log.info("Imprinting ...")
     parent_plug = node["user"]
     if group:
         # check for the group plug
