@@ -25,10 +25,8 @@ class GafferAddon(
     def initialize(self, module_settings):
         self.enabled = True
 
-    def get_plugin_paths(self):
-        return {
-            "publish": [os.path.join(GAFFER_HOST_DIR, "plugins", "farm")]
-        }
+    def get_publish_plugin_paths(self, host_name):
+        return [os.path.join(GAFFER_HOST_DIR, "plugins", "farm")]
 
     def add_implementation_envs(self, env, _app):
         # Add requirements to GAFFER_EXTENSION_PATHS
