@@ -13,6 +13,7 @@ class CreateGafferRender(plugin.GafferRenderCreator):
     deprecated_identifiers = ["io.openpype.creators.gaffer.render"]
     label = "Render"
     product_type = "render"
+    product_base_type = "render"
     description = "Farm rendering"
     icon = "fa5.film"
 

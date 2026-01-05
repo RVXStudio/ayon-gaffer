@@ -145,7 +145,7 @@ class LoadImageModel(BaseSettingsModel):
 class LoaderPluginsModel(BaseSettingsModel):
     product_colors: ColorSettings = SettingsField(
         default_factory=ColorSettings,
-        tile="Loaded products node color"
+        title="Loaded products node color"
     )
     GafferLoadScene: LoadSceneModel = SettingsField(
         default_factory=LoadSceneModel,
