@@ -14,6 +14,7 @@ from ayon_gaffer.api.plugin import CreatorImprintReadMixin
 class GafferWorkfileCreator(AutoCreator, CreatorImprintReadMixin):
     identifier = "io.ayon.creators.gaffer.workfile"
     product_type = "workfile"
+    product_base_type = "workfile"
     label = "Workfile"
     icon = "fa5.file"
 

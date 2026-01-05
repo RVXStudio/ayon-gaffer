@@ -9,6 +9,7 @@ class CreateGafferNodes(plugin.GafferCreatorBase):
     identifier = "io.ayon.creators.gaffer.gaffernodes"
     label = "Gaffer Box"
     product_type = "gafferNodes"
+    product_base_type = "gafferNodes"
     description = "Export Box node for referencing"
     icon = "gears"
 

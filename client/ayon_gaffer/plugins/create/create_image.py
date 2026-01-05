@@ -8,6 +8,7 @@ class CreateGafferImage(plugin.GafferCreatorBase):
     identifier = "io.ayon.creators.gaffer.image"
     label = "Image"
     product_type = "image"
+    product_base_type = "image"
     description = "Image writer"
     icon = "fa5.eye"
 
