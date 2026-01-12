@@ -750,7 +750,11 @@ class GafferImageLoaderBase(GafferLoaderBase, PlugSettingsMixin):
                 self.log.info("Sequence, replacing padding with '#'")
                 out_path = seq.format(f"%D%h{hash_padding}%t")
         else:
-            out_path = seq.path()
+            # we take the path of the first item since if we simply do
+            # seq.path() the default behaviour of pyseq is to have the format
+            # (if there are frames) file.start-end.ext, which we don't want if
+            # there is a single file here.
+            out_path = seq[0].path
         return out_path.replace("\\", "/")
 
     def remove(self, container):
