@@ -30,7 +30,7 @@ def get_pyseq_sequence(in_path, frame_start=None, frame_end=None):
 
     # first check if there is a frame there
 
-    expr = re.compile(r"(?P<head>.*[\.])(?P<frame>\d+)(?P<tail>[\.][a-zA-Z0-9\.]+$)")
+    expr = re.compile(r"(?P<head>.*[\._])(?P<frame>\d+)(?P<tail>[\.][a-zA-Z0-9\.]+$)")
     dir_files = os.listdir(in_dir)
     res = re.search(expr, in_name)
     if res is None:
