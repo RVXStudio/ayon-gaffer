@@ -9,6 +9,7 @@ class CreateGafferPointcache(plugin.GafferCreatorBase):
     identifier = "io.ayon.creators.gaffer.pointcache"
     label = "Pointcache"
     product_type = "pointcache"
+    product_base_type = "pointcache"
     description = "Scene writer to pointcache"
     icon = "gears"
 

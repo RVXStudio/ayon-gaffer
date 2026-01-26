@@ -9,6 +9,7 @@ class CreateGafferModel(plugin.GafferCreatorBase):
     identifier = "io.ayon.creators.gaffer.model"
     label = "Model"
     product_type = "model"
+    product_base_type = "model"
     description = "Scene writer to model"
     icon = "gears"
 

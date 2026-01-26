@@ -4,10 +4,12 @@ from ayon_gaffer.api import plugin
 import Gaffer
 import GafferScene
 
+
 class CreateGafferCamera(plugin.GafferCreatorBase):
     identifier = "io.ayon.creators.gaffer.camera"
     label = "Camera"
     product_type = "camera"
+    product_base_type = "camera"
     description = "Export animated camera"
     icon = "video-camera"
 

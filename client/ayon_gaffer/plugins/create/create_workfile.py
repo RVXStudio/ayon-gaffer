@@ -14,10 +14,11 @@ from ayon_gaffer.api.plugin import CreatorImprintReadMixin
 class GafferWorkfileCreator(AutoCreator, CreatorImprintReadMixin):
     identifier = "io.ayon.creators.gaffer.workfile"
     product_type = "workfile"
+    product_base_type = "workfile"
     label = "Workfile"
     icon = "fa5.file"
 
-    default_variant = ""
+    default_variant = "Main"
 
     create_allow_context_change = False
 
@@ -53,6 +54,8 @@ class GafferWorkfileCreator(AutoCreator, CreatorImprintReadMixin):
 
     def create(self, options=None):
 
+        variant = self.default_variant
+
         script = get_root()
         if not script:
             self.log.error("Unable to find current script")
@@ -68,12 +71,6 @@ class GafferWorkfileCreator(AutoCreator, CreatorImprintReadMixin):
 
         project_name = self.create_context.get_current_project_name()
         folder_path = self.create_context.get_current_folder_path()
-        if hasattr(self.create_context, 'get_current_workfile_comment'):
-            workfile_comment = self.create_context.get_current_workfile_comment() or ""
-            workfile_comment = re.sub(
-                '([a-zA-Z])', lambda x: x.groups()[0].upper(), workfile_comment, 1)
-        else:
-            workfile_comment = "Main"  # we use this in place of variant for workfiles 
         task_name = self.create_context.get_current_task_name()
         host_name = self.create_context.host_name
 
@@ -86,15 +83,17 @@ class GafferWorkfileCreator(AutoCreator, CreatorImprintReadMixin):
             folder_doc = ayon_api.get_folder_by_path(project_name, folder_path)
             task_entity = get_current_task_entity()
             product_name = self.get_product_name(
-                project_name, folder_doc, task_entity,
-                workfile_comment, host_name
+                project_name=project_name,
+                folder_entity=folder_doc,
+                task_entity=task_entity,
+                variant=variant,
+                host_name=host_name
             )
             data = {
                 "task": task_name,
-                "variant": workfile_comment
+                "variant": variant
             }
             data["folderPath"] = folder_path
-            data["workfile_comment"] = workfile_comment
 
             data.update(self.get_dynamic_data(
                 self.default_variant, task_name, folder_doc,
@@ -110,16 +109,16 @@ class GafferWorkfileCreator(AutoCreator, CreatorImprintReadMixin):
         elif (
             existing_instance_folder != folder_path
             or existing_instance["task"] != task_name
-            or existing_instance.get("workfile_comment", "") != workfile_comment
         ):
             folder_doc = ayon_api.get_folder_by_path(project_name, folder_path)
             task_entity = get_current_task_entity()
             product_name = self.get_product_name(
-                project_name, folder_doc, task_entity,
-                workfile_comment, host_name
+                project_name=project_name,
+                folder_entity=folder_doc,
+                task_entity=task_entity,
+                variant=self.default_variant,
+                host_name=host_name
             )
-            self.log.info(f"GOT NEW PRONAME {product_name}")
             existing_instance["folderPath"] = folder_path
             existing_instance["task"] = task_name
             existing_instance["productName"] = product_name
-            existing_instance["workfile_comment"] = workfile_comment
