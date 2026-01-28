@@ -25,7 +25,5 @@ class CollectCurrentScriptGaffer(pyblish.api.ContextPlugin):
         self.log.info(f"Collected currentFile:[{filepath}],")
 
         # store the version
-        context.data["version"] = get_version_from_path(filepath)
+        context.data["version"] = int(get_version_from_path(filepath))
         self.log.info(f"Collected version:[{context.data['version']}],")
-
-
