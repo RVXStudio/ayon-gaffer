@@ -23,7 +23,8 @@ class GafferLoadScene(ayon_gaffer.api.plugin.GafferLoaderBase):
         "usd",
         "look",
         "animation",
-        "layout"
+        "layout",
+        "crowd",
     ]
     representations = ["abc", "usd"]
 
