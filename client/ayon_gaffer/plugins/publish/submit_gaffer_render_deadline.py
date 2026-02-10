@@ -279,7 +279,7 @@ class GafferSubmitDeadline(pyblish.api.InstancePlugin,
             self.log.info(f"Arnold limit search: {node}")
             if node.typeName() == "GafferScene::Render":
                 try:
-                    if node["renderer"] != "Arnold":
+                    if node["renderer"].getValue() != "Arnold":
                         # this is not an arnold render node, ignore it
                         continue
                 except KeyError:
