@@ -5,6 +5,7 @@ from ayon_core.pipeline import (
 )
 from ayon_gaffer.api import get_root, imprint_container
 import ayon_gaffer.api.plugin
+import ayon_gaffer.api.utils
 
 
 class GafferLoadArnoldVDB(ayon_gaffer.api.plugin.GafferLoaderBase):
@@ -28,6 +29,8 @@ class GafferLoadArnoldVDB(ayon_gaffer.api.plugin.GafferLoaderBase):
         node.setName(name)
 
         path = self.filepath_from_context(context).replace("\\", "/")
+        # let's check if it's a sequence
+        path = self.convert_path_to_sequence(path)
         node["fileName"].setValue(path)
         script.addChild(node)
 
@@ -46,6 +49,7 @@ class GafferLoadArnoldVDB(ayon_gaffer.api.plugin.GafferLoaderBase):
         representation = context["representation"]
         path = get_representation_path(representation)
         path = path.replace("\\", "/")
+        path = self.convert_path_to_sequence(path)
 
         node = container["_node"]
         node["fileName"].setValue(path)
@@ -58,6 +62,16 @@ class GafferLoadArnoldVDB(ayon_gaffer.api.plugin.GafferLoaderBase):
 
         parent = node.parent()
         parent.removeChild(node)
+
+    def convert_path_to_sequence(self, path):
+        seq = ayon_gaffer.api.utils.get_pyseq_sequence(path)
+        if len(seq) > 1:
+            # ok more than one frame, let's make a hash padding
+            padding = seq._get_padding()
+            hash_padding = int(padding[1:-1])*"#"  # convert %04d to ####
+            path = seq.format(f"%D%h{hash_padding}%t")
+        return path
+
 
 
 if not os.environ.get("ARNOLD_ROOT"):

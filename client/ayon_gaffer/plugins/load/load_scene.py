@@ -9,6 +9,7 @@ from ayon_core.lib import filter_profiles
 from ayon_gaffer.api import get_root, imprint_container
 import ayon_gaffer.api.lib
 import ayon_gaffer.api.plugin
+import ayon_gaffer.api.utils
 
 import GafferScene
 
@@ -104,6 +105,12 @@ class GafferLoadScene(ayon_gaffer.api.plugin.GafferLoaderBase):
             node.setName(node_name)
 
         path = self.filepath_from_context(context).replace("\\", "/")
+        seq = ayon_gaffer.api.utils.get_pyseq_sequence(path)
+        if len(seq) > 1:
+            # ok more than one frame, let's make a hash padding
+            padding = seq._get_padding()
+            hash_padding = int(padding[1:-1])*"#"  # convert %04d to ####
+            path = seq.format(f"%D%h{hash_padding}%t")
         node["fileName"].setValue(path)
         script.addChild(node)
 
