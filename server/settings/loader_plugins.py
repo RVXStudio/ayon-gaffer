@@ -10,7 +10,7 @@ from ayon_server.settings import (
 from ayon_server.types import ColorRGBA_float
 
 
-from .common import PlugModel
+from .common import PlugModel, NodeModel
 
 
 class ProductColorEntryModel(BaseSettingsModel):
@@ -80,6 +80,11 @@ class AdvancedSceneLoadModel(BaseSettingsModel):
     )
     template_profiles: list[LoaderTemplateProfileModel] = SettingsField(
         title="SceneReader node name profiles",
+        default_factory=list
+    )
+    extra_nodes: list(NodeModel) = SettingsField(
+        title="Extra nodes",
+        description="Nodes to add after the loading and scengraph manipulation",
         default_factory=list
     )
 
