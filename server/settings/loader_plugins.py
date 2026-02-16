@@ -82,7 +82,7 @@ class AdvancedSceneLoadModel(BaseSettingsModel):
         title="SceneReader node name profiles",
         default_factory=list
     )
-    extra_nodes: list(NodeModel) = SettingsField(
+    extra_nodes: list[NodeModel] = SettingsField(
         title="Extra nodes",
         description="Nodes to add after the loading and scengraph manipulation",
         default_factory=list
