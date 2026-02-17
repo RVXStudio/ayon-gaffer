@@ -559,6 +559,13 @@ def update_root_context_variables(script_node, project_name, folder_path):
     handle_start = folder["attrib"]["handleStart"]
     handle_end = folder["attrib"]["handleEnd"]
 
+    hierarchy = folder_path.split("/")
+    folder_name = hierarchy[-1]
+    parent_folder_name = ""
+    if len(hierarchy) > 1:
+        parent_folder_name = hierarchy[-2]
+    folder_type = folder["folderType"]
+
     set_root_context_variables(script_node, {
         "fps": fps,
         "resolution": (res_x, res_y),
@@ -566,6 +573,9 @@ def update_root_context_variables(script_node, project_name, folder_path):
         "frame_end": frame_end,
         "handle_start": handle_start,
         "handle_end": handle_end,
+        "folder_name": folder_name,
+        "parent_folder_name": parent_folder_name,
+        "folder_type": folder_type
     })
 
 
@@ -946,6 +956,9 @@ def set_root_context_variables(script_node, var_dict):
             default_value = var_data
         elif isinstance(var_data, float):
             plug_type = Gaffer.FloatPlug
+            default_value = var_data
+        elif isinstance(var_data, str):
+            plug_type = Gaffer.StringPlug
             default_value = var_data
         else:
             raise RuntimeError(
