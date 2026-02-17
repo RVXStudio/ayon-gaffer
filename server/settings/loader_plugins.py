@@ -65,6 +65,28 @@ class LoaderTemplateProfileModel(BaseSettingsModel):
         return value
 
 
+class ExtraNodesProfileModel(BaseSettingsModel):
+    _layout = "expanded"
+    product_type: list[str] = SettingsField(
+        title="Imported product type",
+        default_factory=list
+    )
+    product_name: list[str] = SettingsField(
+        title="Imported product name",
+        default_factory=list
+    )
+    extension: list[str] = SettingsField(
+        title="Imported extension)",
+        default_factory=list,
+        description="Without ."
+    )
+    nodes_list: list[NodeModel] = SettingsField(
+        title="Extra nodes",
+        description="Nodes to add after the loading and scengraph manipulation",
+        default_factory=list
+    )
+
+
 class SimpleSceneLoadModel(BaseSettingsModel):
     enabled: bool = SettingsField(
         title="Enabled")
@@ -82,9 +104,8 @@ class AdvancedSceneLoadModel(BaseSettingsModel):
         title="SceneReader node name profiles",
         default_factory=list
     )
-    extra_nodes: list[NodeModel] = SettingsField(
+    extra_nodes_profiles: list[ExtraNodesProfileModel] = SettingsField(
         title="Extra nodes",
-        description="Nodes to add after the loading and scengraph manipulation",
         default_factory=list
     )
 
@@ -210,7 +231,8 @@ DEFAULT_LOADER_PLUGINS_SETTINGS = {
                     "scenegraph_location_template": "{node}/geo",
                     "auxiliary_transforms": ["mat"]
                 }
-            ]
+            ],
+            "extra_nodes_profiles": []
         }
     },
     "GafferLoadImageReader": {
