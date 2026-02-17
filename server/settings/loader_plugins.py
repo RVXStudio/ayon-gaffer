@@ -76,7 +76,7 @@ class ExtraNodesProfileModel(BaseSettingsModel):
         default_factory=list
     )
     extension: list[str] = SettingsField(
-        title="Imported extension)",
+        title="Imported extension",
         default_factory=list,
         description="Without ."
     )
