@@ -1,4 +1,5 @@
 import qargparse
+import importlib
 
 from ayon_core.pipeline import (
     get_representation_path,
@@ -12,6 +13,7 @@ import ayon_gaffer.api.plugin
 import ayon_gaffer.api.utils
 
 import GafferScene
+import Gaffer
 
 
 class GafferLoadScene(ayon_gaffer.api.plugin.GafferLoaderBase):
@@ -69,6 +71,7 @@ class GafferLoadScene(ayon_gaffer.api.plugin.GafferLoaderBase):
 
         self.log.info(f"Load mode {load_mode}")
         product_type = context["product"]["productType"]
+        product_name = context["product"]["name"]
 
         if load_mode == "advanced":
             template_profiles = self.advanced_loading["template_profiles"]
@@ -98,6 +101,19 @@ class GafferLoadScene(ayon_gaffer.api.plugin.GafferLoaderBase):
                 sg_location_template,
                 aux_transforms
             )
+
+            # check for extra nodes
+            selected_profile = filter_profiles(
+                self.advanced_loading["extra_nodes_profiles"],
+                {
+                    'product_type': product_type,
+                    'product_name': product_name,
+                    'extension': context["representation"]["context"].get("ext")},
+            )
+
+            if selected_profile is not None:
+                # add extra extra nodes to the import box
+                self.add_extra_nodes(node, selected_profile)
         else:
             node = self.node_class()
             node_name = self._get_node_name(
@@ -145,3 +161,39 @@ class GafferLoadScene(ayon_gaffer.api.plugin.GafferLoaderBase):
     def _get_node_name(self, node_name, context):
         return ayon_gaffer.api.lib.node_name_from_template(
             node_name, context)
+
+    def add_extra_nodes(self, node, profile):
+        # first we find the bottom node plug so we can inject our extra nodes
+        out_plug = None
+        last_plug = None
+        box_outs = node.children(Gaffer.BoxOut)
+        if len(box_outs) > 0:
+            out_plug = box_outs[0]["in"]
+            last_plug = out_plug.getInput()
+
+        nodelist = profile["nodes_list"]
+
+        for idx, node_data in enumerate(nodelist):
+            class_name = node_data["class_name"]
+            node_class = class_name.split(".")[-1]
+            import_part = ".".join(class_name.split(".")[:-1])
+            mod = importlib.import_module(import_part)
+
+            new_node = getattr(mod, node_class)()
+            node.addChild(new_node)
+            ayon_gaffer.api.lib.set_plugs_from_settings(
+                new_node, node_data["plugs"])
+            if last_plug is not None and idx == 0:  # the top node
+                try:
+                    plug_name = node_data["in_plug_name"]
+                    new_node[plug_name].setInput(last_plug)
+                except KeyError:
+                    self.log.error(f"No plug named [{plug_name}] on {new_node}")
+        # now we connect the last node to the out plug of the box
+        if out_plug is not None:
+            try:
+                plug_name = node_data["out_plug_name"]
+                out_plug.setInput(new_node[plug_name])
+            except KeyError:
+                self.log.error(f"No plug named [{plug_name}] on {new_node}")
+

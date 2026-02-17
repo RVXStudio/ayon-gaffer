@@ -79,3 +79,23 @@ class PlugModel(BaseSettingsModel):
         default_factory=Color4fPlug,
         title="RGBA Float"
     )
+
+
+class NodeModel(BaseSettingsModel):
+    _layout = "expanded"
+    class_name: str = SettingsField(
+        title="Class Name",
+        description="The full name of the node to create it, e.g. GafferArnold.ArnoldAttributes",
+    )
+    in_plug_name: str = SettingsField(
+        "in",
+        title="In plug name"
+    )
+    plugs: list[PlugModel] = SettingsField(
+        title="Plugs",
+        default_factory=list
+    )
+    out_plug_name: str = SettingsField(
+        "out",
+        title="Out plut name"
+    )
