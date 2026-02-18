@@ -10,7 +10,7 @@ from ayon_server.settings import (
 from ayon_server.types import ColorRGBA_float
 
 
-from .common import PlugModel
+from .common import PlugModel, NodeModel
 
 
 class ProductColorEntryModel(BaseSettingsModel):
@@ -65,6 +65,28 @@ class LoaderTemplateProfileModel(BaseSettingsModel):
         return value
 
 
+class ExtraNodesProfileModel(BaseSettingsModel):
+    _layout = "expanded"
+    product_type: list[str] = SettingsField(
+        title="Imported product type",
+        default_factory=list
+    )
+    product_name: list[str] = SettingsField(
+        title="Imported product name",
+        default_factory=list
+    )
+    extension: list[str] = SettingsField(
+        title="Imported extension",
+        default_factory=list,
+        description="Without ."
+    )
+    nodes_list: list[NodeModel] = SettingsField(
+        title="Extra nodes",
+        description="Nodes to add after the loading and scengraph manipulation",
+        default_factory=list
+    )
+
+
 class SimpleSceneLoadModel(BaseSettingsModel):
     enabled: bool = SettingsField(
         title="Enabled")
@@ -80,6 +102,10 @@ class AdvancedSceneLoadModel(BaseSettingsModel):
     )
     template_profiles: list[LoaderTemplateProfileModel] = SettingsField(
         title="SceneReader node name profiles",
+        default_factory=list
+    )
+    extra_nodes_profiles: list[ExtraNodesProfileModel] = SettingsField(
+        title="Extra nodes",
         default_factory=list
     )
 
@@ -205,7 +231,8 @@ DEFAULT_LOADER_PLUGINS_SETTINGS = {
                     "scenegraph_location_template": "{node}/geo",
                     "auxiliary_transforms": ["mat"]
                 }
-            ]
+            ],
+            "extra_nodes_profiles": []
         }
     },
     "GafferLoadImageReader": {
