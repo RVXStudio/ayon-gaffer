@@ -121,12 +121,7 @@ class GafferLoadScene(ayon_gaffer.api.plugin.GafferLoaderBase):
             node.setName(node_name)
 
         path = self.filepath_from_context(context).replace("\\", "/")
-        seq = ayon_gaffer.api.utils.get_pyseq_sequence(path)
-        if len(seq) > 1:
-            # ok more than one frame, let's make a hash padding
-            padding = seq._get_padding()
-            hash_padding = int(padding[1:-1])*"#"  # convert %04d to ####
-            path = seq.format(f"%D%h{hash_padding}%t")
+        path = ayon_gaffer.api.utils.convert_path_to_sequence(path)
         node["fileName"].setValue(path)
         script.addChild(node)
 
@@ -145,6 +140,7 @@ class GafferLoadScene(ayon_gaffer.api.plugin.GafferLoaderBase):
         representation = context["representation"]
         path = get_representation_path(representation)
         path = path.replace("\\", "/")
+        path = ayon_gaffer.api.utils.convert_path_to_sequence(path)
 
         node = container["_node"]
         node["fileName"].setValue(path)

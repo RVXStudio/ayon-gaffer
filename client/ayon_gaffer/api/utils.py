@@ -83,3 +83,18 @@ def get_pyseq_sequence(in_path, frame_start=None, frame_end=None):
         seq = pyseq.Sequence([in_path, next_path])
         seq.remove(seq[1])
     return seq
+
+
+def convert_path_to_sequence(path):
+    """
+    Given a single frame `path` which usually happens when fetching paths
+    from representations. This utility method converts that converts a path
+    into a #-padded path suitable for gaffer
+    """
+    seq = get_pyseq_sequence(path)
+    if len(seq) > 1:
+        # ok more than one frame, let's make a hash padding
+        padding = seq._get_padding()
+        hash_padding = int(padding[1:-1]) * "#"  # convert %04d to ####
+        path = seq.format(f"%D%h{hash_padding}%t")
+    return path
