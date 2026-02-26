@@ -2,6 +2,7 @@ import os
 import re
 
 import pyseq
+import IECore
 
 from ayon_core.lib import Logger
 log = Logger.get_logger("ayon_gaffer.api.utils")
@@ -98,3 +99,43 @@ def convert_path_to_sequence(path):
         hash_padding = int(padding[1:-1]) * "#"  # convert %04d to ####
         path = seq.format(f"%D%h{hash_padding}%t")
     return path
+
+
+def get_render_layer_range(layer_node):
+    """
+    Find the current RenderLayerNode frame range IF it's 'frame_range' is set
+    to 'custom' or 'layer_range'
+
+    Raises:
+        RuntimeError: If custom range can't be parsed or is empty
+        ValueError: If the frame_range value is set to something besides
+            'custom' or 'layer_range'
+
+    Returns:
+        (int, int): The start and end frames
+    """
+
+    range_mode = layer_node["frame_range"].getValue()
+    if range_mode == "custom":
+        # parse custom string
+        try:
+            frames = IECore.FrameList.parse(
+                    layer_node["custom_frames"].getValue()
+                ).asList()
+        except IECore.Exception as err:
+            raise RuntimeError(
+                f"Could not parse custom frame range: {err}")
+        if len(frames) == 0:
+            raise RuntimeError(
+                "Custom frame range is empty"
+            )
+        frame_start = min(frames)
+        frame_end = max(frames)
+    elif range_mode == "layer_range":
+        # read layer_range
+        frame_start = layer_node["layer_range"]["x"].getValue()
+        frame_end = layer_node["layer_range"]["y"].getValue()
+    else:
+        raise ValueError(f"Frame range set to [{range_mode}], "
+                             "who knows what's going on")
+    return (frame_start, frame_end)
