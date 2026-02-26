@@ -17,6 +17,10 @@ from ayon_gaffer.api.workfile_template_builder import (
     update_placeholder,
     GafferTemplateBuilder,
 )
+import ayon_gaffer.api.pipeline
+from ayon_gaffer.api.nodes import (
+    RenderLayerNode,
+)
 import GafferUI
 import Gaffer
 import IECore
@@ -79,11 +83,29 @@ def ayon_menu(menu):
     definition.append(f"ActionsDivider", {"divider": True})
     definition.append(
         f"Set frame range...",
-        {"command": lambda menu: set_frame_range_callback(menu)}
+        {
+            "command": lambda menu: set_frame_range_callback(menu),
+            "description": "Set the script time slider to the context range"
+        }
     )
     definition.append(
         f"Update context variables",
         {"command": lambda menu: update_root_context_variables_callback(menu)}
+    )
+
+    definition.append(
+        "/Update renderlayer range/Selected nodes",
+        {
+            "command": lambda menu: update_range_for_selected_layers(menu),
+            "description": "Update the frame range for the selected layers"
+        }
+    )
+    definition.append(
+        "/Update renderlayer range/All nodes",
+        {
+            "command": lambda menu: update_range_for_all_layers(menu),
+            "description": "Update the frame range for all layers"
+        }
     )
 
     # Divider
@@ -155,6 +177,23 @@ def set_frame_range_callback(menu):
     scriptWindow = menu.ancestor(GafferUI.ScriptWindow)
     script_node = scriptWindow.scriptNode()
     lib.set_frame_range(script_node)
+
+
+def update_range_for_selected_layers(menu):
+    scriptWindow = menu.ancestor(GafferUI.ScriptWindow)
+    script_node = scriptWindow.scriptNode()
+    selection = script_node.selection()
+    # find RenderLayerNodes in the selection
+    nodes = [node for node in selection if isinstance(node, RenderLayerNode)]
+    ayon_gaffer.api.pipeline.update_range_on_layers(nodes)
+
+
+def update_range_for_all_layers(menu):
+    scriptWindow = menu.ancestor(GafferUI.ScriptWindow)
+    script_node = scriptWindow.scriptNode()
+    ayon_gaffer.api.pipeline.update_range_on_layers(
+        script_node.children(RenderLayerNode)
+    )
 
 
 def update_root_context_variables_callback(menu):

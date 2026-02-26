@@ -6,6 +6,7 @@ import json
 
 import Gaffer  # noqa
 import imath
+import IECore
 
 import ayon_api
 from ayon_core.host import HostBase, IWorkfileHost, ILoadHost, IPublishHost
@@ -24,6 +25,7 @@ from ayon_core.pipeline import (
     register_workfile_build_plugin_path,
     registered_host,
 )
+from ayon_gaffer.api.nodes import AyonPublishTask
 from ayon_gaffer import GAFFER_HOST_DIR
 import ayon_gaffer.api.nodes
 import ayon_gaffer.api.lib
@@ -31,6 +33,7 @@ from ayon_core.pipeline.context_tools import get_current_project_settings
 from ayon_core.lib import Logger, StringTemplate
 
 import ayon_gaffer.api.nodes
+import ayon_gaffer.api.utils
 
 log = Logger.get_logger("ayon_gaffer.api.pipeline")
 
@@ -489,3 +492,90 @@ def update_annotations_on_all_nodes():
         representation_id = container["representation"]
 
         _set_annotation(node, representation_id)
+
+
+def update_range_on_layers(layer_nodes):
+    import GafferUI
+
+    """
+    Given the list of RenderLayerNode, `layer_nodes` goes through and checks
+    and updates all the layer ranges on those nodes.
+
+    """
+
+    cache = {}
+    messages = []
+    for layer_node in layer_nodes:
+        result = _update_range_on_layer(layer_node, folder_cache=cache)
+        if result:
+            messages.extend(result)
+    if messages:
+        dlg = GafferUI.ConfirmationDialogue(
+            "Updated layer ranges",
+            "\n".join(messages))
+        dlg.waitForConfirmation()
+        dlg.close()
+
+
+def _update_range_on_layer(layer_node, range_type="custom", folder_cache={}):
+    RANGE_TYPES = ["custom", "layer_range"]
+    if range_type not in RANGE_TYPES:
+        raise RuntimeError(f"Range type needs to be 'custom' or 'layer_range', not '{range_type}'")  # noqa: E501
+    # get target folder
+    publish_nodes = Gaffer.NodeAlgo.downstreamNodes(
+                layer_node,
+                AyonPublishTask
+            )
+    if len(publish_nodes) == 0:
+        log.info("no publish node connected; doing nothing")
+        return
+    publish_node = publish_nodes[0]  # take the closest one
+    if "ayon_folderPath" not in publish_node["user"].keys():
+        log.error(f"no 'ayon_folderPath' on {publish_node}")
+        return
+    folder_path = publish_node["user"]["ayon_folderPath"].getValue()
+    project_name = registered_host().get_current_project_name()
+    if folder_path in folder_cache.keys():
+        folder_attr = folder_cache[folder_path]
+    else:
+        folder_obj = ayon_api.get_folder_by_path(project_name, folder_path)
+        folder_attr = folder_obj["attrib"]
+        folder_cache[folder_path] = folder_attr
+    folder_frame_start = folder_attr["frameStart"]
+    folder_frame_end = folder_attr["frameEnd"]
+    handle_start = folder_attr["handleStart"]
+    handle_end = folder_attr["handleEnd"]
+    frame_start = folder_frame_start - handle_start
+    frame_end = folder_frame_end + handle_end
+    results = []
+    active_range_type = layer_node["frame_range"].getValue()
+    if active_range_type not in RANGE_TYPES:
+        layer_node["range_type"].setValue(RANGE_TYPES[0])
+        results.append(f"Changed 'frame_range' on {layer_node.getName()}")
+    # now fetch the current value
+    try:
+        current_range = ayon_gaffer.api.utils.get_render_layer_range(
+            layer_node
+        )
+    except (RuntimeError, ValueError):
+        current_start = None
+        current_end = None
+    else:
+        current_start, current_end = current_range
+
+    # do we need to change the value?
+    if current_start != frame_start or current_end != frame_end:
+        # yes we do
+        frame_range = f"{frame_start}-{frame_end}"
+        if active_range_type == "custom":
+            layer_node["custom_frames"].setValue(frame_range)
+            results.append(
+                f"Updating {layer_node.getName()}, {active_range_type}: {frame_range}"  # noqa: E501
+            )
+        else:
+            layer_node["layer_range"]["x"].setValue(frame_start)
+            layer_node["layer_range"]["y"].setValue(frame_end)
+            results.append(
+                f"Updating {layer_node.getName()}, {active_range_type}: {frame_range}"  # noqa: E501
+            )
+    return results
