@@ -505,10 +505,16 @@ def update_range_on_layers(layer_nodes):
 
     cache = {}
     messages = []
-    for layer_node in layer_nodes:
-        result = _update_range_on_layer(layer_node, folder_cache=cache)
-        if result:
-            messages.extend(result)
+    if len(layer_nodes) > 0:
+        script_node = layer_nodes[0].scriptNode()
+    else:
+        return
+
+    with Gaffer.UndoScope(script_node):
+        for layer_node in layer_nodes:
+            result = _update_range_on_layer(layer_node, folder_cache=cache)
+            if result:
+                messages.extend(result)
     if messages:
         dlg = GafferUI.ConfirmationDialogue(
             "Updated layer ranges",
