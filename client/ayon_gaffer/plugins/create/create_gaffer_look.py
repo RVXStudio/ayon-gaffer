@@ -15,7 +15,8 @@ class CreateGafferLook(plugin.GafferCreatorBase):
     def _create_node(self,
                      product_name: str,
                      pre_create_data: dict,
-                     script: Gaffer.ScriptNode) -> Gaffer.Node:
+                     script: Gaffer.ScriptNode,
+                     instance=None) -> Gaffer.Node:
         node = GafferScene.SceneWriter(product_name)
         script.addChild(node)
         if len(self.selected_nodes) > 1:

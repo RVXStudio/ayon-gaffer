@@ -16,7 +16,8 @@ class CreateGafferNodes(plugin.GafferCreatorBase):
     def _create_node(self,
                      product_name: str,
                      pre_create_data: dict,
-                     script: Gaffer.ScriptNode) -> Gaffer.Node:
+                     script: Gaffer.ScriptNode,
+                     instance=None) -> Gaffer.Node:
 
         if len(self.selected_nodes) > 0:
             box_nodes = [node for node in self.selected_nodes
