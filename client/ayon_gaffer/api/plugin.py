@@ -177,7 +177,9 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
     @abstractmethod
     def _create_node(self,
                      product_name: str,
-                     pre_create_data: dict) -> Gaffer.Node:
+                     pre_create_data: dict,
+                     script: Gaffer.ScriptNode,
+                     instance=None) -> Gaffer.Node:
         """Create the relevant node type for the instance.
 
         This only gets called on Create, update is handled automatically by
@@ -188,6 +190,10 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
                 the node's name.
             pre_create_data (dict): The `pre_create_data` of the `create` call
                 of this Creator.
+            script (Gaffer.ScriptNode): The ScriptNode to use as a root for the
+                created node(s)
+            instance (None or Ayon Instance obj): The instance that the node being
+                crated for.
 
         Returns:
             Gaffer.Node: The created node.
@@ -225,9 +231,6 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
         # populate self.selecte_nodes
         self.set_selected_nodes(pre_create_data, script)
 
-        # Create a box node for publishing
-        node = self._create_node(product_name, pre_create_data, script)
-
         # Register the CreatedInstance
         instance = CreatedInstance(
             product_type=self.product_type,
@@ -236,6 +239,9 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
             creator=self,
         )
         data = instance.data_to_store()
+
+        # Create a box node for publishing
+        node = self._create_node(product_name, pre_create_data, script, instance=instance)
 
         self._imprint(node, data)
 
@@ -326,7 +332,9 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
     @abstractmethod
     def _create_node(self,
                      product_name: str,
-                     pre_create_data: dict) -> Gaffer.Node:
+                     pre_create_data: dict,
+                     script: Gaffer.ScriptNode,
+                     instance=None) -> Gaffer.Node:
         """Create the relevant node type for the instance.
 
         This only gets called on Create, update is handled automatically by
@@ -337,6 +345,10 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
                 for the node's name.
             pre_create_data (dict): The `pre_create_data` of the `create` call
                 of this Creator.
+            script (Gaffer.ScriptNode): The ScriptNode to use as a root for the
+                created node(s)
+            instance (None or Ayon Instance obj): The instance that the node being
+                crated for.
 
         Returns:
             Gaffer.Node: The created node.
@@ -354,6 +366,13 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
         script = get_root()
         assert script, "Must have a gaffer scene script as root"
 
+        # Register the CreatedInstance
+        instance = CreatedInstance(
+            product_type=self.product_type,
+            product_name=product_name,
+            data=instance_data,
+            creator=self,
+        )
         # Create a box node for publishing
         node = self._create_node(product_name, pre_create_data, script)
 
@@ -368,13 +387,7 @@ class GafferRenderCreator(NewCreator, CreatorImprintReadMixin):
             "annotation:user:color",
             imath.Color3f(0.150000006, 0.25999999, 0.25999999)
         )
-        # Register the CreatedInstance
-        instance = CreatedInstance(
-            product_type=self.product_type,
-            product_name=product_name,
-            data=instance_data,
-            creator=self,
-        )
+
         data = instance.data_to_store()
         self._imprint(node, data)
 

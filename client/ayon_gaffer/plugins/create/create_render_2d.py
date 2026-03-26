@@ -1,7 +1,8 @@
 import copy
 import os
 import pathlib
-
+import rvx_log
+log = rvx_log.logger("rvx.gaffer")
 import Gaffer
 
 from ayon_core.pipeline import CreatedInstance, get_current_context
@@ -36,13 +37,13 @@ class CreateGafferRender2D(plugin.GafferCreatorBase):
             .get("CreateRender2d", {})
             .get("temp_rendering_path_template", "{work}/renders/gaffer/{product[name]}.{frame}.{ext}")
         )
-
+        log.info(created_inst)
         file_name = str(script["fileName"].getValue())
 
         fpath_template = temp_rendering_path_template
         formatting_data["work"] = get_work_default_directory(formatting_data, file_name)
         fpath = StringTemplate(fpath_template).format_strict(formatting_data)
-
+        log.info(f'fpath {fpath}')
         staging_dir = self.apply_staging_dir(created_inst)
         if staging_dir:
             basename = os.path.basename(fpath)
@@ -51,7 +52,7 @@ class CreateGafferRender2D(plugin.GafferCreatorBase):
 
         return fpath
 
-    def _create_node(self, product_name: str, pre_create_data: dict, script: Gaffer.ScriptNode) -> Gaffer.Node:
+    def _create_node(self, product_name: str, pre_create_data: dict, script: Gaffer.ScriptNode, instance=None) -> Gaffer.Node:
 
         node = BoxNodeManagerInstance.create(script, "Render2D", "1")
 
