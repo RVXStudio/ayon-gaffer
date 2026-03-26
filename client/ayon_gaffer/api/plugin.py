@@ -207,8 +207,7 @@ class GafferCreatorBase(NewCreator, CreatorImprintReadMixin):
     def create_nice_label(self, instance_data):
         product_name = instance_data["productName"]
 
-        folder_path = instance_data["folderPath"]
-        return f"{product_name} [{folder_path}]"
+        return f"{product_name}"
 
     def create(self, product_name, instance_data, pre_create_data):
         instance_data.update({
