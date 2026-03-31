@@ -11,7 +11,7 @@ import GafferImage
 class GafferLoadImageReader(ayon_gaffer.api.plugin.GafferImageLoaderBase):
     """Load ImageReader"""
 
-    product_types = ["image", "imagesequence", "review", "render", "plate"]
+    product_types = ["image", "imagesequence", "review", "render", "plate", "paint", "roto"]
     representations = ["*"]
 
     label = "Load sequence (ImageReader)"
