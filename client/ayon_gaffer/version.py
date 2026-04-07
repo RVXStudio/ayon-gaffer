@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 """Package declaring AYON addon 'gaffer' version."""
-__version__ = "0.5.10"
+__version__ = "0.5.11"
