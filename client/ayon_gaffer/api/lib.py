@@ -558,6 +558,7 @@ def update_root_context_variables(script_node, project_name, folder_path):
     frame_end = folder["attrib"]["frameEnd"]
     handle_start = folder["attrib"]["handleStart"]
     handle_end = folder["attrib"]["handleEnd"]
+    pixel_aspect = folder["attrib"]["pixelAspect"]
 
     hierarchy = folder_path.split("/")
     folder_name = hierarchy[-1]
@@ -575,7 +576,8 @@ def update_root_context_variables(script_node, project_name, folder_path):
         "handle_end": handle_end,
         "folder_name": folder_name,
         "parent_folder_name": parent_folder_name,
-        "folder_type": folder_type
+        "folder_type": folder_type,
+        "pixel_aspect": pixel_aspect,
     })
 
 
