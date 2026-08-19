@@ -357,11 +357,15 @@ def get_next_valid_name(template, script_node):
             res = re.search(r'(.*)_*(\d+)(.*)', last_name)
             if res is not None:
                 next_number = int(res.group(2)) + 1
+            else:
+                # we found something that matches the first search
+                # but does not contain any digits. So we just set the number to 1
+                next_number = 1
         new_number = str(next_number).zfill(pad_len)
 
     return f"{head}{new_number}{tail}"
 
-
+    
 def arrange(nodes: List[Gaffer.Node], parent: Optional[Gaffer.Node] = None):
     """Layout the nodes in the graph.
 

@@ -107,6 +107,13 @@ def ayon_menu(menu):
             "description": "Update the frame range for all layers"
         }
     )
+    definition.append(
+        "/Update selected containers",
+        {
+            "command": lambda menu: update_selcted_containers(menu),
+            "description": "Update the selected containers to the latest version"
+        }
+    )
 
     # Divider
     definition.append(f"WorkFilesDivider", {"divider": True})
@@ -194,6 +201,11 @@ def update_range_for_all_layers(menu):
     ayon_gaffer.api.pipeline.update_range_on_layers(
         script_node.children(RenderLayerNode)
     )
+
+def update_selcted_containers(menu):
+    script_window = menu.ancestor(GafferUI.ScriptWindow)
+    set_root(script_window.scriptNode())
+    ayon_gaffer.api.pipeline.update_selected_container(script_window)
 
 
 def update_root_context_variables_callback(menu):

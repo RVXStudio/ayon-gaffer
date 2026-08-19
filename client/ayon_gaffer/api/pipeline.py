@@ -585,3 +585,41 @@ def _update_range_on_layer(layer_node, range_type="custom", folder_cache={}):
                 f"Updating {layer_node.getName()}, {active_range_type}: {frame_range}"  # noqa: E501
             )
     return results
+
+
+def update_selected_container(main_window):
+    window_widget = main_window._qtWidget()
+    script_node = main_window.scriptNode()
+    from ayon_core.tools.utils import host_tools
+
+    h = host_tools.get_tool_by_name("sceneinventory", window_widget)
+
+
+    h.refresh()
+
+    item_ids = h._view._model.get_outdated_item_ids()
+    cont_ids = h._view._controller.get_container_items_by_id(item_ids)
+    log.info(f"Item ids: {item_ids}")
+    log.info(f"Cont ids: {cont_ids}")
+    nodes = script_node.selection()
+    interesting_ids = []
+    for node in nodes:
+        try:
+            for i, c in cont_ids.items():
+                log.info(f"{i}, {c.object_name}")
+                if c.object_name == node.getName():
+                   interesting_ids.append(i)
+        except NameError as err:
+            print(f"ERROR! {err}")
+            # this is probably not an ayon container. Ignore it
+            continue
+
+    vers = [-1 for i in interesting_ids]
+
+    h._view._update_containers(interesting_ids, vers)
+
+    '''
+    from importlib import reload
+    import ayon_gaffer.api.pipeline as gap
+    reload(gap)
+    '''
