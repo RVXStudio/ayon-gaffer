@@ -25,6 +25,8 @@ from ayon_core.pipeline import (
     register_workfile_build_plugin_path,
     registered_host,
 )
+from ayon_core.pipeline.template_data import get_template_data_with_names
+
 from ayon_gaffer.api.nodes import AyonPublishTask
 from ayon_gaffer import GAFFER_HOST_DIR
 import ayon_gaffer.api.nodes
@@ -439,12 +441,16 @@ def get_boxnode_paths_from_settings():
     Returns: list
     """
     paths = get_current_project_settings()["gaffer"]["node_preset_paths"]
-    env = os.environ.copy()
+
+    host = registered_host()
+    ctx = host.get_current_context()
+    template_data = get_template_data_with_names(ctx["project_name"], ctx["folder_path"], ctx["task_name"])
+    template_data.update(os.environ.copy())
     boxnode_paths = []
     for boxpath in paths:
         log.debug(f"Adding boxnode path: {boxpath}")
         template = StringTemplate(boxpath)
-        resolved_path = template.format(env)
+        resolved_path = template.format(template_data)
         boxnode_paths.append(resolved_path)
     return boxnode_paths
 
