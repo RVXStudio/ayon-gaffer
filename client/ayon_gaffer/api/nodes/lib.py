@@ -57,7 +57,12 @@ class BoxNodeManager():
 
         cls._nodetree = {}
         for path in cls._paths:
-            node_types = os.listdir(path)
+            try:
+                node_types = os.listdir(path)
+            except (PermissionError, FileNotFoundError) as err:
+                # we can't read this folder
+                log.error(err)
+                return
             for node_type in node_types:
                 node_type_path = os.path.join(path, node_type)
                 if not os.path.isdir(node_type_path):
