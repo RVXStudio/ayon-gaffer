@@ -62,7 +62,7 @@ class BoxNodeManager():
             except (PermissionError, FileNotFoundError) as err:
                 # we can't read this folder
                 log.error(err)
-                return
+                continue
             for node_type in node_types:
                 node_type_path = os.path.join(path, node_type)
                 if not os.path.isdir(node_type_path):
