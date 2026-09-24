@@ -75,7 +75,7 @@ class BoxNodeManager():
                         log.debug(f"File [{version_file}] does not match"
                                   f"expression [{version_expression}]")
                         continue
-                    version = match.group(1)
+                    version = str(int(match.group(1)))
                     node_file = os.path.join(
                         node_type_path,
                         f"{version_file}"
@@ -94,7 +94,6 @@ class BoxNodeManager():
         node_info = cls.list().get(node_type)
         if node_info is None:
             raise RuntimeError(f"Node of type [{node_type}] not found!")
-
         node_file_path = node_info.get(node_version)
         if node_file_path is None:
             raise RuntimeError(f"Version [{node_version}] does "
