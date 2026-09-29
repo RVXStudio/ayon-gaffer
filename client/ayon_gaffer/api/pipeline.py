@@ -9,6 +9,7 @@ import imath
 import IECore
 
 import ayon_api
+from ayon_api.graphql import GraphQlQuery
 from ayon_core.host import HostBase, IWorkfileHost, ILoadHost, IPublishHost
 from ayon_gaffer.api.nodes import RenderLayerNode
 
@@ -465,7 +466,18 @@ def register_boxnode_paths_from_settings():
         log.info(f"Added [{boxnode_path}] to boxnode paths")
 
 
-def _set_annotation(node, representation_id):
+def _set_annotation(node, is_latest, current_version):
+    Gaffer.Metadata.registerValue(node, 'annotation:user:text', current_version)
+    if is_latest:
+        Gaffer.Metadata.registerValue(node, 'annotation:user:color', imath.Color3f(0.25, 0.55, 0.25))
+    else:
+        Gaffer.Metadata.registerValue(node, 'annotation:user:color', imath.Color3f(0.55, 0.25, 0.25))
+    
+
+def update_annotations(node):
+    if "representation" not in node["user"]:
+        return
+    representation_id = node["user"]["representation"].getValue()
     try:
         project_name = os.environ.get("AYON_PROJECT_NAME")
         rep = ayon_api.get_representation_by_id(project_name, representation_id)
@@ -475,29 +487,97 @@ def _set_annotation(node, representation_id):
         current_version = version["version"]
 
         last_version = ayon_api.get_last_version_by_product_id(project_name, product_id)
-        Gaffer.Metadata.registerValue(node, 'annotation:user:text', "v{:03d}".format(current_version))
-        if current_version != last_version["version"]:
-            Gaffer.Metadata.registerValue(node, 'annotation:user:color', imath.Color3f(0.55, 0.25, 0.25))
-        else:
-            Gaffer.Metadata.registerValue(node, 'annotation:user:color', imath.Color3f(0.25, 0.55, 0.25))
+        is_latest = current_version == last_version["version"]
+        _set_annotation(node, is_latest, current_version)
     except Exception as e:
         print(e)
 
+    
 
-def update_annotations(node):
-    if "representation" not in node["user"]:
-        return
 
-    _set_annotation(node, node["user"]["representation"].getValue())
+
+def _check_version_status(rep_ids_per_node):
+    """Check whether each node's representation is from the latest version.
+
+    Args:
+        rep_ids_per_node (dict): Node as key, representation id as value.
+
+    Returns:
+        dict: Node as key, dict as value with keys:
+            is_latest (bool): True if the representation belongs to the
+                latest version of its product.
+            current_version (str): Name of the version the representation
+                belongs to, None if the representation was not found.
+
+    """
+    if not rep_ids_per_node:
+        return {}
+
+    project_name = registered_host().get_current_project_name()
+    representation_ids = list(set(rep_ids_per_node.values()))
+
+    query = GraphQlQuery("RepresentationsLatestVersion")
+    project_name_var = query.add_variable(
+        "projectName", "String!", project_name
+    )
+    repre_ids_var = query.add_variable(
+        "representationIds", "[String!]", representation_ids
+    )
+    project_field = query.add_field("project")
+    project_field.set_filter("name", project_name_var)
+    repres_field = project_field.add_field_with_edges("representations")
+    repres_field.set_filter("ids", repre_ids_var)
+    repres_field.add_field("id")
+    version_field = repres_field.add_field("version")
+    version_field.add_field("version")
+    version_field.add_field("name")
+    product_field = version_field.add_field("product")
+    product_field.add_field("latestVersion").add_field("version")
+
+    status_by_repre_id = {}
+    con = ayon_api.get_server_api_connection()
+    for parsed_data in query.continuous_query(con):
+        for repre in parsed_data["project"]["representations"]:
+            version = repre["version"]
+            latest_version = version["product"]["latestVersion"]
+            # hero versions have negative version numbers
+            status_by_repre_id[repre["id"]] = {
+                "is_latest": (
+                    latest_version is not None
+                    and abs(version["version"]) == latest_version["version"]
+                ),
+                "current_version": version["name"],
+            }
+
+    return {
+        node: dict(status_by_repre_id.get(
+            representation_id,
+            {"is_latest": False, "current_version": None}
+        ))
+        for node, representation_id in rep_ids_per_node.items()
+    }
 
 
 def update_annotations_on_all_nodes():
+    import time
+    print("===")
+    print("UPDATING ANNOTATIONS")
+    print("===")
+    a = time.time()
     host = registered_host()
+    representation_ids = {}
     for container in host.get_containers():
         node = container["_node"]
         representation_id = container["representation"]
+        representation_ids[node] = representation_id
+    
+    rep_info = _check_version_status(representation_ids)
 
-        _set_annotation(node, representation_id)
+    for node, data in rep_info.items():
+        _set_annotation(node, data["is_latest"], data["current_version"])
+    print("==--")
+    print(f"TOOK {time.time() - a}")
+    print("--==")
 
 
 def update_range_on_layers(layer_nodes):
