@@ -75,7 +75,7 @@ class BoxNodeManager():
                         log.debug(f"File [{version_file}] does not match"
                                   f"expression [{version_expression}]")
                         continue
-                    version = str(int(match.group(1)))
+                    version = str(match.group(1))
                     node_file = os.path.join(
                         node_type_path,
                         f"{version_file}"
