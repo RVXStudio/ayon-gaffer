@@ -533,6 +533,9 @@ def set_frame_range(script_node,
     log.info(f"Setting frame range: [{frame_start}-{frame_end}")
     script_node["frameRange"]["start"].setValue(int(frame_start))
     script_node["frameRange"]["end"].setValue(int(frame_end))
+    current_frame = script_node["frame"].getValue()
+    if not (int(frame_start) <= current_frame <= int(frame_end)):
+        script_node["frame"].setValue(int(frame_start))
 
     # if we are in a GUI session we also reset the frame slider
     application = script_node.ancestor(Gaffer.ApplicationRoot)
