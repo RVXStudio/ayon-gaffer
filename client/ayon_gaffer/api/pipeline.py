@@ -221,6 +221,7 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         self.update_ocio_settings(script_node)
         ayon_gaffer.api.lib.create_multishot_context_vars(script_node)
         ayon_gaffer.api.lib.set_framerate(script_node)
+        ayon_gaffer.api.lib.set_frame_range(script_node)
         log.debug(f'Adding childAddedSignal to {script_node}')
         script_node.childAddedSignal().connect(
             self.connect_render_layer_signals,
