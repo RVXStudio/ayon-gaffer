@@ -7,6 +7,7 @@ from ayon_server.settings import (
 from ayon_server.types import ColorRGB_float
 
 class PackageColorModel(BaseSettingsModel):
+    _layout = "compact"
     package_name: str = SettingsField("", title="Package name", description="The package to colorize e.g. GafferArnold or GafferScene or straight up Gaffer")
     color: ColorRGB_float = SettingsField(
         title="Color"
@@ -15,6 +16,7 @@ class PackageColorModel(BaseSettingsModel):
 
 
 class NodeColorModel(BaseSettingsModel):
+    _layout = "compact"
     node_class: str = SettingsField("", title="Node class", description="The class name of the node you want to change the default color of, e.g. GafferImage.Clamp, this value overrides the package colors above")
     color: ColorRGB_float = SettingsField(
         title="Color"
