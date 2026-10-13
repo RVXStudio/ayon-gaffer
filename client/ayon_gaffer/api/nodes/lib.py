@@ -213,8 +213,9 @@ class BoxNodeManager():
                 continue
             current_version = box_node[BOXNODE_VERSION_PLUG_NAME].getValue()
             if node_type in node_types:
-                existing_versions = sorted(
-                    list(node_tree[node_type].keys()), reverse=True)
+                existing_versions = list(node_tree[node_type].keys())
+                existing_versions.sort(key=lambda x: float(x), reverse=True)
+                log.info(f"Existing [{existing_versions}]")
                 if (current_version not in existing_versions or
                         existing_versions.index(current_version) != 0):
                     Gaffer.Metadata.registerValue(
@@ -223,7 +224,11 @@ class BoxNodeManager():
                 else:
                     default_icon = Gaffer.Metadata.value(
                         box_node, "defaulticon")
-                    icon_name = default_icon or "boxNode.png"
+                    # if the node has 'icon' set
+                    icon = Gaffer.Metadata.value(
+                        box_node, "icon"
+                    )
+                    icon_name = icon or default_icon or "boxNode.png"
                     Gaffer.Metadata.registerValue(
                         box_node, 'icon', icon_name)
                     ok_count += 1
