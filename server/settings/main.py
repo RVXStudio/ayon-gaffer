@@ -12,6 +12,7 @@ from .imageio import ImageIOSettings, DEFAULT_IMAGEIO_SETTINGS
 from .deadline import GafferDeadlineSettings, DEFAULT_DEADLINE_SETTINGS
 from .create_plugins import CreatorPluginsSettings, DEFAULT_CREATE_SETTINGS
 from .templated_workfile_build import TemplatedWorkfileBuildModel
+from .colors import NodeColorSettings, DEFAULT_COLOR_SETTINGS
 
 
 class GafferSettings(BaseSettingsModel):
@@ -27,6 +28,10 @@ class GafferSettings(BaseSettingsModel):
         default_factory=list,
         title="Node preset paths"
     )
+    node_colors: NodeColorSettings = SettingsField(
+        title="Default Node colors",
+        default_factory=NodeColorSettings
+    )
     deadline: GafferDeadlineSettings = SettingsField(
         default_factory=GafferDeadlineSettings,
         title="Deadline"
@@ -41,6 +46,7 @@ DEFAULT_VALUES = {
     "imageio": DEFAULT_IMAGEIO_SETTINGS,
     "load": DEFAULT_LOADER_PLUGINS_SETTINGS,
     "node_preset_paths": [],
+    "node_colors": DEFAULT_COLOR_SETTINGS,
     "deadline": DEFAULT_DEADLINE_SETTINGS,
     "create": DEFAULT_CREATE_SETTINGS,
     "templated_workfile_build": {"profiles": []},
