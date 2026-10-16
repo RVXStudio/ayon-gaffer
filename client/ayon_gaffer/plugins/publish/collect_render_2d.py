@@ -72,7 +72,10 @@ class CollectRender2D(pyblish.api.InstancePlugin):
             # this utilizes an RVX modification to the publishing process
             # where we can enable/disable hardlinking when instances
             # request it
-            "do_hardlink": True
+            # "do_hardlink": True
+            # -since we don't do any cleanup on our rendered files,
+            # they are still linked to the published stuff if we do hardlinking, 
+            # so we disable it (RVX-569) -sjt
         }
 
         render_target = instance.data["creator_attributes"]["render_target"]
