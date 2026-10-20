@@ -239,18 +239,16 @@ class BoxNodeManager():
         node_tree = cls.list()
         if node_type not in node_tree:
             raise RuntimeError(f"Boxnode type [{node_type}] not registered")
-        # let's try and make the keys into integes
-        keylist = list(node_tree[node_type].keys())
+        # pair each key with itself so we can sort on the integer value of
+        # the first item while returning the original (str) second item
+        keylist = [(k, k) for k in node_tree[node_type]]
         try:
-            sorted_keys = [int(k) for k in keylist]
-            sorted_keys.sort(reverse=True)
-            # and back to str
-            sorted_keys = [str(k) for k in sorted_keys]
+            keylist.sort(key=lambda kv: int(kv[0]), reverse=True)
         except ValueError:
             # ok, we just bail here
-            sorted_keys = sorted(keylist, reverse=True)
+            keylist.sort(key=lambda kv: kv[0], reverse=True)
 
-        return sorted_keys
+        return [kv[1] for kv in keylist]
 
 
 def get_boxnode_type(box_node):
