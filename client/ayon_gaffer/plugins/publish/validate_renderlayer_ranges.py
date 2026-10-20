@@ -18,6 +18,9 @@ class ValidateRenderlayerRanges(InstancePlugin, OptionalPyblishPluginMixin):
         if not self.is_active(instance.data):
             return
         node = instance.data["transientData"]["node"]
+        if node.typeName() == "AyonGaffer::Render2D":
+            self.log.info(f"Skipping render2d node {node.getName()}")
+            return
         try:
             frame_range = ayon_gaffer.api.utils.get_render_layer_range(
                 node
