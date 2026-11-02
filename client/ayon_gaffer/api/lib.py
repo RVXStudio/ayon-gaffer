@@ -558,17 +558,24 @@ def set_framerate(script_node):
     log.info(f"Set framerate to [{fps}]")
 
 
-def update_root_context_variables(script_node, project_name, folder_path):
+def update_root_context_variables(script_node, project_name, folder_path, task_name=None):
     folder = ayon_api.get_folder_by_path(project_name, folder_path)
+    task = ayon_api.get_task_by_name(project_name, folder["id"], task_name)
+    if task is not None:
+        log.info(f"Got context from task [{folder_path}/{task_name}]")
+        ctxt_data = task
+    else:
+        log.info(f"Got context from folder [{folder_path}]")
+        ctxt_data = folder
 
-    fps = folder["attrib"]["fps"]
-    res_x = folder["attrib"]["resolutionWidth"]
-    res_y = folder["attrib"]["resolutionHeight"]
-    frame_start = folder["attrib"]["frameStart"]
-    frame_end = folder["attrib"]["frameEnd"]
-    handle_start = folder["attrib"]["handleStart"]
-    handle_end = folder["attrib"]["handleEnd"]
-    pixel_aspect = folder["attrib"]["pixelAspect"]
+    fps = ctxt_data["attrib"]["fps"]
+    res_x = ctxt_data["attrib"]["resolutionWidth"]
+    res_y = ctxt_data["attrib"]["resolutionHeight"]
+    frame_start = ctxt_data["attrib"]["frameStart"]
+    frame_end = ctxt_data["attrib"]["frameEnd"]
+    handle_start = ctxt_data["attrib"]["handleStart"]
+    handle_end = ctxt_data["attrib"]["handleEnd"]
+    pixel_aspect = ctxt_data["attrib"]["pixelAspect"]
 
     hierarchy = folder_path.split("/")
     folder_name = hierarchy[-1]
