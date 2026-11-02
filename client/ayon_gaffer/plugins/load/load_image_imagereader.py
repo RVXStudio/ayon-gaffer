@@ -14,7 +14,7 @@ class GafferLoadImageReader(ayon_gaffer.api.plugin.GafferImageLoaderBase):
     product_types = ["image", "imagesequence", "review", "render", "plate", "paint", "roto"]
     representations = ["*"]
 
-    label = "Load sequence (ImageReader)"
+    label = "Load as image"
     order = -10
     icon = "code-fork"
     color = "orange"

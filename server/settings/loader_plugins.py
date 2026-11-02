@@ -180,12 +180,12 @@ class LoaderPluginsModel(BaseSettingsModel):
 
     GafferLoadImageReader: LoadImageModel = SettingsField(
         default_factory=LoadImageModel,
-        title="Load Image (ImageReader)"
+        title="Load Image as Image (ImageReader)"
     )
 
     GafferLoadImageAiImage: LoadImageModel = SettingsField(
         default_factory=LoadImageModel,
-        title="Load Image (aiImage)"
+        title="Load Image as Shader (aiImage)"
     )
 
     @validator("GafferLoadScene")
