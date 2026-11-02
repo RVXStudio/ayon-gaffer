@@ -243,6 +243,10 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         if os.path.exists(os.environ.get("AYON_LAST_WORKFILE")):
             log.info(f"$AYON_LAST_WORKFILE exists!, not creating template")
             return
+        
+        if len(script_node.children(Gaffer.Node)) > 0:
+            log.info("This is not an empty script being opened, let's don't do anything")
+            return
 
         log.info("Building from template")
         try:
