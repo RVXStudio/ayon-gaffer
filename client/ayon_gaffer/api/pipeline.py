@@ -197,7 +197,9 @@ class GafferHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         ayon_gaffer.api.lib.update_root_context_variables(
             script_node,
             ctxt["project_name"],
-            ctxt["folder_path"]
+            ctxt["folder_path"],
+            ctxt["task_name"],
+
         )
 
     def update_ocio_settings(self, script_node):
