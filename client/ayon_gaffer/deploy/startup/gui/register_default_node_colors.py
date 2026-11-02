@@ -74,12 +74,13 @@ def colorize_package_nodes(package_name, color):
     except Exception:
         log.exception(f"Could not register color {color} for {package_name}")
 
-def colorize_node(node_class, color):
-    try:
-        cls = get_node_class(node_class)
-        set_node_color(cls, color)
-    except Exception:
-        log.exception(f"Could not register color {color} for node {node_class}")
+def colorize_nodes(node_class_list, color):
+    for node_class in node_class_list:
+        try:
+            cls = get_node_class(node_class)
+            set_node_color(cls, color)
+        except Exception:
+            log.exception(f"Could not register color {color} for node {node_class}")
 
 # first packages
 for package_info in color_settings.get("packages", []):
@@ -92,7 +93,7 @@ for package_info in color_settings.get("packages", []):
 # then node overrides
 for node_info in color_settings.get("nodes", []):
     log.info(f"Node: {node_info}")
-    node_class = node_info["node_class"]
+    node_classes = node_info["node_classes"]
     color = node_info["color"]
 
-    colorize_node(node_class, color)
+    colorize_nodes(node_classes, color)
