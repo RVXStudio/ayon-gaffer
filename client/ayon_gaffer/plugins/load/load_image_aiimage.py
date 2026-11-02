@@ -14,7 +14,7 @@ class GafferLoadImageAiImage(ayon_gaffer.api.plugin.GafferImageLoaderBase):
     product_types = ["image", "render"]
     representations = ["*"]
 
-    label = "Load sequence (AiImage)"
+    label = "Load as shader"
     order = -10
     icon = "code-fork"
     color = "orange"
