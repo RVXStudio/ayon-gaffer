@@ -246,6 +246,9 @@ def make_scene_load_box(
 
     main_group = GafferScene.Group(main_group_name)
     main_group["name"].setValue(main_group_name)
+    # lock the transform (translate, rotate, scale and pivot)
+    Gaffer.MetadataAlgo.setReadOnly(main_group["transform"], True)
+
     box.addChild(main_group)
     main_group["in"][0].setInput(merge_scenes["out"])
     box_outs = box.children(Gaffer.BoxOut)
